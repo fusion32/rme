@@ -11,8 +11,6 @@ find_package(ZLIB REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(wxWidgets COMPONENTS html aui gl adv core net base REQUIRED)
 
-find_package(nlohmann_json CONFIG REQUIRED)
-
 # LibArchive disabled in compilation level by default, see "#define OTGZ_SUPPORT" in the "definitions.h" file
 # If you need use, enable this:
 #find_package(LibArchive REQUIRED)
@@ -46,5 +44,4 @@ target_link_libraries(${PROJECT_NAME}
     ${OPENGL_LIBRARIES}
     ${GLUT_LIBRARIES}
     ${ZLIB_LIBRARIES}
-    nlohmann_json::nlohmann_json
 )

@@ -25,7 +25,6 @@
 #include "client_version.h"
 #include "otml.h"
 #include <wx/dir.h>
-#include <nlohmann/json.hpp>
 
 // Static methods to load/save
 
@@ -121,23 +120,25 @@ void ClientVersion::loadVersions()
 	}
 
 	// Load the data directory info
-	using json = nlohmann::json;
-	try
 	{
-		json read_obj = json::parse(g_settings.getString(Config::ASSETS_DATA_DIRS));
-		auto vers_obj = read_obj.get<std::vector<json>>();
-		for (const auto& ver_iter : vers_obj) {
-			const auto& ver_obj = ver_iter.get<json::object_t>();
-			auto version = get(ver_obj.at("id").get<std::string>());
-			if (version == nullptr) {
+		std::string line;
+		std::istringstream in(g_settings.getString(Config::ASSETS_DATA_DIRS));
+		while(getline(in, line)){
+			size_t sep = line.find("=>");
+			if(sep == std::string::npos){
 				continue;
 			}
-			version->setClientPath(wxstr(ver_obj.at("path").get<std::string>()));
+
+			std::string versionString = line.substr(0, sep);
+			std::string path = line.substr(sep + 2);
+			trim(versionString);
+			trim(path);
+
+			ClientVersion *version = get(versionString);
+			if(version){
+				version->setClientPath(wxstr(path));
+			}
 		}
-	}
-	catch ([[maybe_unused]]const json::exception& e)
-	{
-		// pass
 	}
 }
 
@@ -344,24 +345,14 @@ void ClientVersion::loadVersionExtensions(pugi::xml_node versionNode)
 
 void ClientVersion::saveVersions()
 {
-	using json = nlohmann::json;
-	try {
-		json vers_obj;
-
-		for(auto& [id, version] : client_versions) {
-			json ver_obj;
-			ver_obj["id"] = version->getName();
-			ver_obj["path"] = version->getClientPath().GetFullPath().ToStdString();
-			vers_obj.push_back(ver_obj);
-		}
-
-		std::ostringstream out;
-		out << vers_obj;
-		g_settings.setString(Config::ASSETS_DATA_DIRS, out.str());
+	std::ostringstream out;
+	for(const auto &[id, version]: client_versions){
+		out << version->getName()
+			<< "=>"
+			<< version->getClientPath().GetFullPath()
+			<< "\n";
 	}
-	catch ([[maybe_unused]]const json::exception& e) {
-		// pass
-	}
+	g_settings.setString(Config::ASSETS_DATA_DIRS, out.str());
 }
 
 // Client version class
