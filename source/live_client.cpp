@@ -53,15 +53,14 @@ bool LiveClient::connect(const std::string& address, uint16_t port)
 		socket = std::make_shared<asio::ip::tcp::socket>(service);
 	}
 
-	asio::ip::tcp::resolver::query query(address, std::to_string(port));
-	resolver->async_resolve(query, [this](const std::error_code& error, asio::ip::tcp::resolver::iterator endpoint_iterator) -> void
-	{
-		if(error) {
-			logMessage("Error: " + error.message());
-		} else {
-			tryConnect(endpoint_iterator);
-		}
-	});
+	resolver->async_resolve(address, std::to_string(port),
+		[this](const std::error_code& error, asio::ip::tcp::resolver::results_type results){
+			if(error) {
+				logMessage("Error: " + error.message());
+			} else {
+				tryConnect(results);
+			}
+		});
 
 	/*
 	if(!client->WaitOnConnect(5, 0)) {
@@ -90,43 +89,35 @@ bool LiveClient::connect(const std::string& address, uint16_t port)
 	return true;
 }
 
-void LiveClient::tryConnect(asio::ip::tcp::resolver::iterator endpoint_iterator)
+void LiveClient::tryConnect(asio::ip::tcp::resolver::results_type results)
 {
 	if(stopped) {
 		return;
 	}
 
-	if(endpoint_iterator == asio::ip::tcp::resolver::iterator()) {
-		return;
-	}
+	asio::async_connect(*socket, results,
+		[this](std::error_code error, asio::ip::tcp::endpoint endpoint){
+			if(error){
+				if(!handleError(error)){
+					wxTheApp->CallAfter([this]() {
+						close();
+						g_gui.CloseLiveEditors(this);
+					});
+				}
+			}else{
+				logMessage("Joining server " + endpoint.address().to_string() + "...");
 
-	logMessage("Joining server " + endpoint_iterator->host_name() + ":" + endpoint_iterator->service_name() + "...");
+				socket->set_option(asio::ip::tcp::no_delay(true), error);
+				if(error) {
+					wxTheApp->CallAfter([this] { close(); });
+					return;
+				}
 
-	asio::async_connect(*socket, endpoint_iterator, [this](std::error_code error, asio::ip::tcp::resolver::iterator endpoint_iterator) -> void
-	{
-		if(!socket->is_open()) {
-			tryConnect(++endpoint_iterator);
-		} else if(error) {
-			if(handleError(error)) {
-				tryConnect(++endpoint_iterator);
-			} else {
-				wxTheApp->CallAfter([this]() {
-					close();
-					g_gui.CloseLiveEditors(this);
-				});
+				sendHello();
+				receiveHeader();
 			}
-		} else {
-			socket->set_option(asio::ip::tcp::no_delay(true), error);
-			if(error) {
-				wxTheApp->CallAfter([this]() {
-					close();
-				});
-				return;
-			}
-			sendHello();
-			receiveHeader();
-		}
-	});
+
+		});
 }
 
 void LiveClient::close()

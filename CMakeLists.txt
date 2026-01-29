@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.30)
 
 project(rme)
 
@@ -6,7 +6,7 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
-find_package(Boost 1.66.0 REQUIRED COMPONENTS date_time system filesystem iostreams)
+find_package(Boost CONFIG REQUIRED COMPONENTS date_time filesystem iostreams)
 find_package(fmt CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
@@ -25,6 +25,10 @@ if(WIN32)
     set(Boost_THREADAPI win32)
 endif()
 
+if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
+	add_compile_options(-Wno-deprecated-enum-enum-conversion)
+endif ()
+
 find_package(wxWidgets COMPONENTS html aui gl adv core net base REQUIRED)
 
 find_package(GLUT REQUIRED)
@@ -42,8 +46,8 @@ include_directories(
     ${OPENGL_INCLUDE_DIR}
     ${GLUT_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIR}
-
     )
+
 target_link_libraries(${PROJECT_NAME}
     ${wxWidgets_LIBRARIES}
     ${LibArchive_LIBRARIES}
@@ -52,7 +56,6 @@ target_link_libraries(${PROJECT_NAME}
     ${ZLIB_LIBRARIES}
     fmt::fmt
     Boost::date_time
-    Boost::system
     Boost::filesystem
     Boost::iostreams
     nlohmann_json::nlohmann_json

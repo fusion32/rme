@@ -73,10 +73,10 @@ class NetworkConnection
 		bool start();
 		void stop();
 
-		asio::io_service& get_service();
+		asio::io_context& get_service();
 
 	private:
-		asio::io_service* service;
+		asio::io_context* service;
 		std::thread thread;
 		bool stopped;
 };
