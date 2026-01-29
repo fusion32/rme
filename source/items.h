@@ -372,8 +372,7 @@ public:
 	bool loadItemFromGameXml(pugi::xml_node itemNode, uint16_t id);
 	bool loadMetaItem(pugi::xml_node node);
 
-	//typedef std::map<int32_t, ItemType*> ItemMap;
-	typedef contigous_vector<ItemType*> ItemMap;
+	typedef std::vector<ItemType*> ItemMap;
 	typedef std::map<std::string, ItemType*> ItemNameMap;
 
 	// Version information
@@ -387,6 +386,42 @@ protected:
 	bool loadFromOtbVer3(BinaryNode* itemNode, wxString& error, wxArrayString& warnings);
 
 protected:
+	ItemType *internalGet(uint16_t id){
+		ItemType *type = nullptr;
+		if(id < items.size()){
+			type = items[id];
+		}
+		return type;
+	}
+
+	const ItemType *internalGet(uint16_t id) const {
+		const ItemType *type = nullptr;
+		if(id < items.size()){
+			type = items[id];
+		}
+		return type;
+	}
+
+	void internalSet(uint16_t id, ItemType *type){
+		constexpr size_t MIN_CAPACITY = 256;
+		constexpr size_t MAX_CAPACITY = UINT16_MAX + 1;
+		if((id + 1) > items.size()){
+			// NOTE(fusion): The behaviour of `vector::resize` depends on the
+			// implementation, but we can make sure it grows exponentially by
+			// calling `vector::reserve` before resizing.
+			size_t capacity = items.capacity();
+			if((id + 1) > capacity){
+				if(capacity < MIN_CAPACITY) capacity = MIN_CAPACITY;
+				while((id + 1) > capacity)  capacity += capacity / 2;
+				if(capacity > MAX_CAPACITY) capacity = MAX_CAPACITY;
+				ASSERT((id + 1) <= capacity);
+				items.reserve(capacity);
+			}
+			items.resize(id + 1, nullptr);
+		}
+		items[id] = type;
+	}
+
 	ItemMap items;
 
 	// Count of GameSprite types

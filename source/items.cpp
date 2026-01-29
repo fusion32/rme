@@ -135,7 +135,7 @@ void ItemDatabase::clear()
 {
 	for(size_t i = 0; i < items.size(); i++) {
 		delete items[i];
-		items.set(i, nullptr);
+		items[i] = nullptr;
 	}
 }
 
@@ -398,11 +398,11 @@ bool ItemDatabase::loadFromOtbVer1(BinaryNode* itemNode, wxString& error, wxArra
 			}
 		}
 
-		if(items[item->id]) {
+		if(ItemType *prev = internalGet(item->id)){
 			warnings.push_back("items.otb: Duplicate items");
-			delete items[item->id];
+			delete prev;
 		}
-		items.set(item->id, item);
+		internalSet(item->id, item);
 	}
 	return true;
 }
@@ -559,11 +559,11 @@ bool ItemDatabase::loadFromOtbVer2(BinaryNode* itemNode, wxString& error, wxArra
 			}
 		}
 
-		if(items[item->id]) {
+		if(ItemType *prev = internalGet(item->id)) {
 			warnings.push_back("items.otb: Duplicate items");
-			delete items[item->id];
+			delete prev;
 		}
-		items.set(item->id, item);
+		internalSet(item->id, item);
 	}
 	return true;
 }
@@ -710,11 +710,11 @@ bool ItemDatabase::loadFromOtbVer3(BinaryNode* itemNode, wxString& error, wxArra
 			}
 		}
 
-		if(items[item->id]) {
+		if(ItemType *prev = internalGet(item->id)) {
 			warnings.push_back("items.otb: Duplicate items");
-			delete items[item->id];
+			delete prev;
 		}
-		items.set(item->id, item);
+		internalSet(item->id, item);
 	}
 	return true;
 }
@@ -979,14 +979,14 @@ bool ItemDatabase::loadMetaItem(pugi::xml_node node)
 {
 	if(const pugi::xml_attribute attribute = node.attribute("id")) {
 		const uint16_t id = attribute.as_ushort();
-		if(id == 0 || items[id]) {
+		if(id == 0 || internalGet(id)) {
 			return false;
 		}
 
 		ItemType* item = new ItemType();
 		item->is_metaitem = true;
 		item->id = id;
-		items.set(id, item);
+		internalSet(id, item);
 		return true;
 	}
 	return false;
@@ -997,8 +997,9 @@ const ItemType& ItemDatabase::getItemType(uint16_t id) const
 	if(id == 0 || id > maxItemId)
 		return dummy;
 
-	const ItemType* type = items[id];
-	if(type) return *type;
+	if(const ItemType *type = internalGet(id)){
+		return *type;
+	}
 
 	return dummy;
 }
@@ -1007,12 +1008,13 @@ ItemType* ItemDatabase::getRawItemType(uint16_t id)
 {
 	if(id == 0 || id > maxItemId)
 		return nullptr;
-	return items[id];
+	return internalGet(id);
 }
 
 bool ItemDatabase::isValidID(uint16_t id) const
 {
 	if(id == 0 || id > maxItemId)
 		return false;
-	return items[id] != nullptr;
+	return internalGet(id) != nullptr;
 }
+
