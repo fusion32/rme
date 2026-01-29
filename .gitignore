@@ -52,3 +52,7 @@ cmake-build-debug/
 # Clangd
 .cache/
 compile_commands.json
+
+# Miscellaneous
+local/
+
