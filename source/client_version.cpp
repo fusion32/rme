@@ -25,6 +25,7 @@
 #include "client_version.h"
 #include "otml.h"
 #include <wx/dir.h>
+#include <nlohmann/json.hpp>
 
 // Static methods to load/save
 

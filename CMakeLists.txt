@@ -6,11 +6,12 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
-find_package(Boost CONFIG REQUIRED COMPONENTS date_time filesystem iostreams)
-find_package(fmt CONFIG REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
-
+find_package(GLUT REQUIRED)
+find_package(ZLIB REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(wxWidgets COMPONENTS html aui gl adv core net base REQUIRED)
+
+find_package(nlohmann_json CONFIG REQUIRED)
 
 # LibArchive disabled in compilation level by default, see "#define OTGZ_SUPPORT" in the "definitions.h" file
 # If you need use, enable this:
@@ -21,18 +22,9 @@ find_package(OpenGL REQUIRED)
 #    set(CMAKE_PREFIX_PATH /usr/local/opt/libarchive)
 #endif()
 
-if(WIN32)
-    set(Boost_THREADAPI win32)
-endif()
-
 if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
 	add_compile_options(-Wno-deprecated-enum-enum-conversion)
 endif ()
-
-find_package(wxWidgets COMPONENTS html aui gl adv core net base REQUIRED)
-
-find_package(GLUT REQUIRED)
-find_package(ZLIB REQUIRED)
 
 include(${wxWidgets_USE_FILE})
 include(source/CMakeLists.txt)
@@ -46,7 +38,7 @@ include_directories(
     ${OPENGL_INCLUDE_DIR}
     ${GLUT_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIR}
-    )
+)
 
 target_link_libraries(${PROJECT_NAME}
     ${wxWidgets_LIBRARIES}
@@ -54,9 +46,5 @@ target_link_libraries(${PROJECT_NAME}
     ${OPENGL_LIBRARIES}
     ${GLUT_LIBRARIES}
     ${ZLIB_LIBRARIES}
-    fmt::fmt
-    Boost::date_time
-    Boost::filesystem
-    Boost::iostreams
     nlohmann_json::nlohmann_json
 )

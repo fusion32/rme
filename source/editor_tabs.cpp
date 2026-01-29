@@ -71,17 +71,9 @@ void MapTabbook::OnNotebookPageClose(wxAuiNotebookEvent& event)
 	if(map_tab && map_tab->IsUniqueReference() && map_tab->GetMap()) {
 		bool need_refresh = true;
 		Editor* editor = map_tab->GetEditor();
-		if(editor->IsLive()) {
-			if(editor->hasChanges()) {
-				SetFocusedTab(event.GetInt());
-				if(!g_gui.root->DoQuerySave(false)) {
-					need_refresh = false;
-					event.Veto();
-				}
-			}
-		} else if(editor->hasChanges()) {
+		if(editor->hasChanges()) {
 			SetFocusedTab(event.GetInt());
-			if(!g_gui.root->DoQuerySave()) {
+			if(!g_gui.root->DoQuerySave(false)) {
 				need_refresh = false;
 				event.Veto();
 			}
