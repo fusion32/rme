@@ -27,6 +27,8 @@
 
 #include "mt_rand.h"
 
+#define NARRAY(arr) (int)(sizeof(arr)/sizeof((arr)[0]))
+
 //
 inline bool testFlags(size_t flags, size_t test) noexcept {
 	return (flags & test) != 0;
@@ -56,6 +58,8 @@ void to_lower_str(std::string& source);
 void to_upper_str(std::string& source);
 std::string as_lower_str(const std::string& other);
 std::string as_upper_str(const std::string& other);
+// Compare two strings in a case insensitive manner
+bool strcmp_ci(std::string_view a, std::string_view b);
 
 // isFalseString returns true if the string is either "0", "false", "no", "not" or blank
 // isTrueString returns the opposite value of isFalseString

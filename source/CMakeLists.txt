@@ -39,7 +39,6 @@ ${CMAKE_CURRENT_LIST_DIR}/house_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/house_exit_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/iomap.h
 ${CMAKE_CURRENT_LIST_DIR}/iomap_otbm.h
-#${CMAKE_CURRENT_LIST_DIR}/iomap_otmm.h
 ${CMAKE_CURRENT_LIST_DIR}/iominimap.h
 ${CMAKE_CURRENT_LIST_DIR}/item.h
 ${CMAKE_CURRENT_LIST_DIR}/item_attributes.h
@@ -87,6 +86,7 @@ ${CMAKE_CURRENT_LIST_DIR}/replace_items_window.h
 ${CMAKE_CURRENT_LIST_DIR}/result_window.h
 ${CMAKE_CURRENT_LIST_DIR}/rme_forward_declarations.h
 ${CMAKE_CURRENT_LIST_DIR}/rme_net.h
+${CMAKE_CURRENT_LIST_DIR}/script.h
 ${CMAKE_CURRENT_LIST_DIR}/selection.h
 ${CMAKE_CURRENT_LIST_DIR}/settings.h
 ${CMAKE_CURRENT_LIST_DIR}/spawn.h
@@ -146,7 +146,6 @@ ${CMAKE_CURRENT_LIST_DIR}/house_exit_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/iomap.cpp
 ${CMAKE_CURRENT_LIST_DIR}/iomap_otbm.cpp
 ${CMAKE_CURRENT_LIST_DIR}/iominimap.cpp
-#${CMAKE_CURRENT_LIST_DIR}/iomap_otmm.cpp
 ${CMAKE_CURRENT_LIST_DIR}/item_attributes.cpp
 ${CMAKE_CURRENT_LIST_DIR}/item.cpp
 ${CMAKE_CURRENT_LIST_DIR}/items.cpp
@@ -186,6 +185,7 @@ ${CMAKE_CURRENT_LIST_DIR}/raw_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/replace_items_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/result_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/rme_net.cpp
+${CMAKE_CURRENT_LIST_DIR}/script.cpp
 ${CMAKE_CURRENT_LIST_DIR}/selection.cpp
 ${CMAKE_CURRENT_LIST_DIR}/settings.cpp
 ${CMAKE_CURRENT_LIST_DIR}/spawn_brush.cpp

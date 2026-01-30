@@ -15,8 +15,8 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
-#ifndef RME_OTMM_H_
-#define RME_OTMM_H_
+#ifndef RME_IOMINIMAP_H_
+#define RME_IOMINIMAP_H_
 
 #include "map.h"
 
@@ -35,7 +35,7 @@ enum class MinimapExportMode {
 
 enum {
 	MMBLOCK_SIZE = 64,
-	OTMM_SIGNATURE = 0x4D4d544F,
+	OTMM_SIGNATURE = 0x4D4D544F,
 	OTMM_VERSION = 1
 };
 

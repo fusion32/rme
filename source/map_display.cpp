@@ -2286,19 +2286,19 @@ void MapPopupMenu::Update()
 
 	bool anything_selected = editor.hasSelection();
 
-	wxMenuItem* cutItem = Append( MAP_POPUP_MENU_CUT, "&Cut\tCTRL+X", "Cut out all selected items");
+	wxMenuItem* cutItem = Append(MAP_POPUP_MENU_CUT, "&Cut\tCTRL+X", "Cut out all selected items");
 	cutItem->Enable(anything_selected);
 
-	wxMenuItem* copyItem = Append( MAP_POPUP_MENU_COPY, "&Copy\tCTRL+C", "Copy all selected items");
+	wxMenuItem* copyItem = Append(MAP_POPUP_MENU_COPY, "&Copy\tCTRL+C", "Copy all selected items");
 	copyItem->Enable(anything_selected);
 
-	wxMenuItem* copyPositionItem = Append( MAP_POPUP_MENU_COPY_POSITION, "&Copy Position", "Copy the position as a lua table");
+	wxMenuItem* copyPositionItem = Append(MAP_POPUP_MENU_COPY_POSITION, "&Copy Position", "Copy the position as a lua table");
 	copyPositionItem->Enable(true);
 
-	wxMenuItem* pasteItem = Append( MAP_POPUP_MENU_PASTE, "&Paste\tCTRL+V", "Paste items in the copybuffer here");
+	wxMenuItem* pasteItem = Append(MAP_POPUP_MENU_PASTE, "&Paste\tCTRL+V", "Paste items in the copybuffer here");
 	pasteItem->Enable(editor.copybuffer.canPaste());
 
-	wxMenuItem* deleteItem = Append( MAP_POPUP_MENU_DELETE, "&Delete\tDEL", "Removes all seleceted items");
+	wxMenuItem* deleteItem = Append(MAP_POPUP_MENU_DELETE, "&Delete\tDEL", "Removes all seleceted items");
 	deleteItem->Enable(anything_selected);
 
 	if(anything_selected) {

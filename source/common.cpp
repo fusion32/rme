@@ -160,6 +160,20 @@ std::string as_upper_str(const std::string& other)
 	return ret;
 }
 
+bool strcmp_ci(std::string_view a, std::string_view b){
+	if(a.size() != b.size()){
+		return false;
+	}
+
+	for(size_t i = 0; i < a.size(); i += 1){
+		if(tolower(a[i]) != tolower(b[i])){
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool isFalseString(std::string& str)
 {
 	if(str == "false" || str == "0" || str == "" || str == "no" || str == "not") {
