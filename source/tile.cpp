@@ -150,17 +150,14 @@ void Tile::merge(Tile* other)
 	other->items.clear();
 }
 
-bool Tile::hasProperty(enum ITEMPROPERTY prop) const
+bool Tile::getFlag(ObjectFlag flag) const
 {
-	if(prop == PROTECTIONZONE && isPZ())
-		return true;
-
-	if(ground && ground->hasProperty(prop)){
+	if(ground && ground->getFlag(flag)){
 		return true;
 	}
 
 	for(const Item* item : items) {
-		if(item->hasProperty(prop))
+		if(item->getFlag(flag))
 			return true;
 	}
 
@@ -169,8 +166,8 @@ bool Tile::hasProperty(enum ITEMPROPERTY prop) const
 
 uint16_t Tile::getGroundSpeed() const noexcept
 {
-	if(ground && !ground->isMetaItem()) {
-		return ground->getGroundSpeed();
+	if(ground) {
+		return ground->getAttribute(WAYPOINTS);
 	}
 	return 0;
 }
@@ -407,8 +404,8 @@ void Tile::update()
 			minimapColor = item->getMiniMapColor();
 		}
 
-		const ItemType& type = g_items.getItemType(item->getID());
-		if(type.unpassable) {
+		const ItemType &type = GetItemType(item->getID());
+		if(type.getFlag(UNPASS)) {
 			statflags |= TILESTATE_BLOCKING;
 		}
 		if(type.isOptionalBorder) {
@@ -456,7 +453,7 @@ void Tile::cleanBorders()
 	for(auto it = items.begin(); it != items.end();) {
 		Item* item = (*it);
 		// Borders should only be on the bottom, we can ignore the rest of the items
-		if(!item->isBorder()) break; 
+		if(!item->isBorder()) break;
 
 		delete item;
 		it = items.erase(it);

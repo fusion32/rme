@@ -42,10 +42,6 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		look_id = attribute.as_ushort();
 	}
 
-	if((attribute = node.attribute("server_lookid"))) {
-		look_id = g_items.getItemType(attribute.as_ushort()).clientID;
-	}
-
 	for(pugi::xml_node childNode = node.first_child(); childNode; childNode = childNode.next_sibling()) {
 		const std::string& childName = as_lower_str(childNode.name());
 		if(childName == "wall") {

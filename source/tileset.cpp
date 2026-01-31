@@ -176,8 +176,8 @@ void TilesetCategory::loadBrush(pugi::xml_node node, wxArrayString& warnings)
 
 	std::string brushName = node.attribute("after").as_string();
 	if((attribute = node.attribute("afteritem"))) {
-		const ItemType& type = g_items.getItemType(attribute.as_ushort());
-		if(type.id != 0) {
+		const ItemType& type = GetItemType(attribute.as_ushort());
+		if(type.typeId != 0) {
 			brushName = type.raw_brush ? type.raw_brush->getName() : std::string();
 		}
 	}
@@ -218,7 +218,7 @@ void TilesetCategory::loadBrush(pugi::xml_node node, wxArrayString& warnings)
 
 		std::vector<Brush*> tempBrushVector;
 		for(uint16_t id = fromId; id <= toId; ++id) {
-			ItemType* type = g_items.getRawItemType(id);
+			ItemType *type = GetMutableItemType(id);
 			if(!type) {
 				warnings.push_back(wxString::Format("Brush: %s, From: %d, To: %d", wxstr(brushName), fromId, toId));
 				warnings.push_back("Unknown item id #" + std::to_string(id) + ".");
@@ -229,7 +229,7 @@ void TilesetCategory::loadBrush(pugi::xml_node node, wxArrayString& warnings)
 			if(type->raw_brush) {
 				brush = type->raw_brush;
 			} else {
-				brush = type->raw_brush = newd RAWBrush(type->id);
+				brush = type->raw_brush = newd RAWBrush(type->typeId);
 				type->has_raw = true;
 				tileset.brushes.addBrush(brush); // This will take care of cleaning up afterwards
 			}

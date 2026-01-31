@@ -82,24 +82,22 @@ bool AutoBorder::load(pugi::xml_node node, wxArrayString& warnings, GroundBrush*
 
 		const std::string& orientation = attribute.as_string();
 
-		ItemType* type = g_items.getRawItemType(itemid);
+		ItemType *type = GetMutableItemType(itemid);
 		if(!type) {
 			warnings.push_back("Invalid item ID " + std::to_string(itemid) + " for border " + std::to_string(id));
 			continue;
 		}
 
 		if(ground) { // We are a ground border
-			type->group = ITEM_GROUP_NONE;
 			type->ground_equivalent = ground_equivalent;
 			type->brush = owner;
 
-			ItemType* type2 = g_items.getRawItemType(ground_equivalent);
-			type2->has_equivalent = type2->id != 0;
+			ItemType* type2 = GetMutableItemType(ground_equivalent);
+			type2->has_equivalent = (type2->typeId != 0);
 		}
 
-		type->alwaysOnBottom = true; // Never-ever place other items under this, will confuse the user something awful.
 		type->isBorder = true;
-		type->isOptionalBorder = type->isOptionalBorder ? true : optionalBorder;
+		type->isOptionalBorder = type->isOptionalBorder || optionalBorder;
 		if(group && !type->border_group) {
 			type->border_group = group;
 		}
@@ -153,10 +151,6 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		look_id = attribute.as_ushort();
 	}
 
-	if((attribute = node.attribute("server_lookid"))) {
-		look_id = g_items.getItemType(attribute.as_ushort()).clientID;
-	}
-
 	if((attribute = node.attribute("z-order"))) {
 		z_order = attribute.as_int();
 	}
@@ -175,13 +169,13 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 			uint16_t itemId = childNode.attribute("id").as_ushort();
 			int32_t chance = childNode.attribute("chance").as_int();
 
-			ItemType* type = g_items.getRawItemType(itemId);
+			ItemType *type = GetMutableItemType(itemId);
 			if(!type) {
 				warnings.push_back("\nInvalid item id " + std::to_string(itemId));
 				return false;
 			}
 
-			if(!type->isGroundTile()) {
+			if(!type->getFlag(BANK)) {
 				warnings.push_back("\nItem " + std::to_string(itemId) + " is not ground item.");
 				return false;
 			}
@@ -209,11 +203,11 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 				uint16_t ground_equivalent = attribute.as_ushort();
 
 				// Load from inline definition
-				const ItemType& type = g_items.getItemType(ground_equivalent);
-				if(type.id == 0) {
+				const ItemType &type = GetItemType(ground_equivalent);
+				if(type.typeId == 0) {
 					warnings.push_back("Invalid id of ground dependency equivalent item.\n");
 					continue;
-				} else if(!type.isGroundTile()) {
+				} else if(!type.getFlag(BANK)) {
 					warnings.push_back("Ground dependency equivalent is not a ground item.\n");
 					continue;
 				} else if(type.brush && type.brush != this) {
@@ -248,12 +242,12 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 				}
 
 				uint16_t ground_equivalent = attribute.as_ushort();
-				const ItemType& it = g_items.getItemType(ground_equivalent);
-				if(it.id == 0) {
+				const ItemType &it = GetItemType(ground_equivalent);
+				if(it.typeId == 0) {
 					warnings.push_back("Invalid id of ground dependency equivalent item.\n");
 				}
 
-				if(!it.isGroundTile()) {
+				if(!it.getFlag(BANK)) {
 					warnings.push_back("Ground dependency equivalent is not a ground item.\n");
 				}
 
@@ -424,7 +418,7 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 								AutoBorder* autoBorder = itt->second;
 								ASSERT(autoBorder != nullptr);
 
-								ItemType* type = g_items.getRawItemType(with_id);
+								ItemType *type = GetMutableItemType(with_id);
 								if(!type) {
 									return false;
 								}
@@ -447,7 +441,7 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 								}
 
 								int32_t with_id = attribute.as_int();
-								ItemType* type = g_items.getRawItemType(with_id);
+								ItemType *type = GetMutableItemType(with_id);
 								if(!type) {
 									return false;
 								}

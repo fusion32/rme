@@ -179,10 +179,6 @@ bool DoodadBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		look_id = attribute.as_ushort();
 	}
 
-	if((attribute = node.attribute("server_lookid"))) {
-		look_id = g_items.getItemType(attribute.as_ushort()).clientID;
-	}
-
 	if((attribute = node.attribute("on_blocking"))) {
 		on_blocking = attribute.as_bool();
 	}

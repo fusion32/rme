@@ -18,6 +18,7 @@
 #ifndef RME_ITEMS_H_
 #define RME_ITEMS_H_
 
+#include "bitset.h"
 #include "filehandle.h"
 #include "brush_enums.h"
 
@@ -35,411 +36,223 @@ class DoorBrush;
 class FlagBrush;
 class RAWBrush;
 
-class ItemType;
-class GameSprite;
 class GameSprite;
 class ItemDatabase;
 
-typedef uint8_t attribute_t;
-typedef uint32_t flags_t;
-typedef uint16_t datasize_t;
+// NOTE(fusion): We could add prefixes to these enums but it would make it a lot
+// more verbose and I don't think there is any risk of name collisions. We can
+// probably review this if it becomes a problem (probably won't).
 
-enum ItemGroup_t {
-	ITEM_GROUP_NONE = 0,
-	ITEM_GROUP_GROUND,
-	ITEM_GROUP_CONTAINER,
-	ITEM_GROUP_WEAPON,
-	ITEM_GROUP_AMMUNITION,
-	ITEM_GROUP_ARMOR,
-	ITEM_GROUP_RUNE,
-	ITEM_GROUP_TELEPORT,
-	ITEM_GROUP_MAGICFIELD,
-	ITEM_GROUP_WRITEABLE,
-	ITEM_GROUP_KEY,
-	ITEM_GROUP_SPLASH,
-	ITEM_GROUP_FLUID,
-	ITEM_GROUP_DOOR,
-	ITEM_GROUP_DEPRECATED,
-	ITEM_GROUP_LAST
+enum ObjectFlag {
+	BANK					= 0,
+	CLIP					= 1,
+	BOTTOM					= 2,
+	TOP						= 3,
+	CONTAINER				= 4,
+	CHEST					= 5,
+	CUMULATIVE				= 6,
+	USEEVENT				= 7,
+	CHANGEUSE				= 8,
+	FORCEUSE				= 9,
+	MULTIUSE				= 10,
+	DISTUSE					= 11,
+	MOVEMENTEVENT			= 12,
+	COLLISIONEVENT			= 13,
+	SEPARATIONEVENT			= 14,
+	KEY						= 15,
+	KEYDOOR					= 16,
+	NAMEDOOR				= 17,
+	LEVELDOOR				= 18,
+	QUESTDOOR				= 19,
+	BED						= 20,
+	FOOD					= 21,
+	RUNE					= 22,
+	INFORMATION				= 23,
+	TEXT					= 24,
+	WRITE					= 25,
+	WRITEONCE				= 26,
+	LIQUIDCONTAINER			= 27,
+	LIQUIDSOURCE			= 28,
+	LIQUIDPOOL				= 29,
+	TELEPORTABSOLUTE		= 30,
+	TELEPORTRELATIVE		= 31,
+	UNPASS					= 32,
+	UNMOVE					= 33,
+	UNTHROW					= 34,
+	UNLAY					= 35,
+	AVOID					= 36,
+	MAGICFIELD				= 37,
+	RESTRICTLEVEL			= 38,
+	RESTRICTPROFESSION		= 39,
+	TAKE					= 40,
+	HANG					= 41,
+	HOOKSOUTH				= 42,
+	HOOKEAST				= 43,
+	ROTATE					= 44,
+	DESTROY					= 45,
+	CLOTHES					= 46,
+	SKILLBOOST				= 47,
+	PROTECTION				= 48,
+	LIGHT					= 49,
+	ROPESPOT				= 50,
+	CORPSE					= 51,
+	EXPIRE					= 52,
+	EXPIRESTOP				= 53,
+	WEAROUT					= 54,
+	WEAPON					= 55,
+	SHIELD					= 56,
+	BOW						= 57,
+	THROW					= 58,
+	WAND					= 59,
+	AMMO					= 60,
+	ARMOR					= 61,
+	HEIGHT					= 62,
+	DISGUISE				= 63,
+	SHOWDETAIL				= 64,
+	SPECIALOBJECT			= 65,
+	NUM_FLAGS				= 66,
 };
 
-enum ItemTypes_t {
-	ITEM_TYPE_NONE = 0,
-	ITEM_TYPE_DEPOT,
-	ITEM_TYPE_MAILBOX,
-	ITEM_TYPE_TRASHHOLDER,
-	ITEM_TYPE_CONTAINER,
-	ITEM_TYPE_DOOR,
-	ITEM_TYPE_MAGICFIELD,
-	ITEM_TYPE_TELEPORT,
-	ITEM_TYPE_BED,
-	ITEM_TYPE_KEY,
-	ITEM_TYPE_LAST
+enum ObjectTypeAttribute {
+	WAYPOINTS				= 0,
+	CAPACITY				= 1,
+	CHANGETARGET			= 2,
+	KEYDOORTARGET			= 3,
+	NAMEDOORTARGET			= 4,
+	LEVELDOORTARGET			= 5,
+	QUESTDOORTARGET			= 6,
+	NUTRITION				= 7,
+	INFORMATIONTYPE			= 8,
+	FONTSIZE				= 9,
+	MAXLENGTH				= 10,
+	MAXLENGTHONCE			= 11,
+	SOURCELIQUIDTYPE		= 12,
+	ABSTELEPORTEFFECT		= 13,
+	RELTELEPORTDISPLACEMENT	= 14,
+	RELTELEPORTEFFECT		= 15,
+	AVOIDDAMAGETYPES		= 16,
+	MINIMUMLEVEL			= 17,
+	PROFESSIONS				= 18,
+	WEIGHT					= 19,
+	ROTATETARGET			= 20,
+	DESTROYTARGET			= 21,
+	BODYPOSITION			= 22,
+	SKILLNUMBER				= 23,
+	SKILLMODIFICATION		= 24,
+	PROTECTIONDAMAGETYPES	= 25,
+	DAMAGEREDUCTION			= 26,
+	BRIGHTNESS				= 27,
+	LIGHTCOLOR				= 28,
+	CORPSETYPE				= 29,
+	TOTALEXPIRETIME			= 30,
+	EXPIRETARGET			= 31,
+	TOTALUSES				= 32,
+	WEAROUTTARGET			= 33,
+	WEAPONTYPE				= 34,
+	WEAPONATTACKVALUE		= 35,
+	WEAPONDEFENDVALUE		= 36,
+	SHIELDDEFENDVALUE		= 37,
+	BOWRANGE				= 38,
+	BOWAMMOTYPE				= 39,
+	THROWRANGE				= 40,
+	THROWATTACKVALUE		= 41,
+	THROWDEFENDVALUE		= 42,
+	THROWMISSILE			= 43,
+	THROWSPECIALEFFECT		= 44,
+	THROWEFFECTSTRENGTH		= 45,
+	THROWFRAGILITY			= 46,
+	WANDRANGE				= 47,
+	WANDMANACONSUMPTION		= 48,
+	WANDATTACKSTRENGTH		= 49,
+	WANDATTACKVARIATION		= 50,
+	WANDDAMAGETYPE			= 51,
+	WANDMISSILE				= 52,
+	AMMOTYPE				= 53,
+	AMMOATTACKVALUE			= 54,
+	AMMOMISSILE				= 55,
+	AMMOSPECIALEFFECT		= 56,
+	AMMOEFFECTSTRENGTH		= 57,
+	ARMORVALUE				= 58,
+	ELEVATION				= 59,
+	DISGUISETARGET			= 60,
+	MEANING					= 61,
+	NUM_TYPE_ATTRIBUTES		= 62,
 };
 
-/////////OTB specific//////////////
-
-enum rootattrib_t{
-	ROOT_ATTR_VERSION = 0x01
+enum ObjectInstanceAttribute {
+	CONTENT					= 0,
+	CHESTQUESTNUMBER		= 1,
+	AMOUNT					= 2,
+	KEYNUMBER				= 3,
+	KEYHOLENUMBER			= 4,
+	DOORLEVEL				= 5,
+	DOORQUESTNUMBER			= 6,
+	DOORQUESTVALUE			= 7,
+	CHARGES					= 8,
+	TEXTSTRING				= 9,
+	EDITOR					= 10,
+	CONTAINERLIQUIDTYPE		= 11,
+	POOLLIQUIDTYPE			= 12,
+	ABSTELEPORTDESTINATION	= 13,
+	RESPONSIBLE				= 14,
+	REMAININGEXPIRETIME		= 15,
+	SAVEDEXPIRETIME			= 16,
+	REMAININGUSES			= 17,
+	NUM_INSTANCE_ATTRIBUTES	= 18,
 };
 
-enum itemattrib_t {
-	ITEM_ATTR_FIRST = 0x10,
-	ITEM_ATTR_SERVERID = ITEM_ATTR_FIRST,
-	ITEM_ATTR_CLIENTID,
-	ITEM_ATTR_NAME,
-	ITEM_ATTR_DESCR,
-	ITEM_ATTR_SPEED,
-	ITEM_ATTR_SLOT,
-	ITEM_ATTR_MAXITEMS,
-	ITEM_ATTR_WEIGHT,
-	ITEM_ATTR_WEAPON,
-	ITEM_ATTR_AMU,
-	ITEM_ATTR_ARMOR,
-	ITEM_ATTR_MAGLEVEL,
-	ITEM_ATTR_MAGFIELDTYPE,
-	ITEM_ATTR_WRITEABLE,
-	ITEM_ATTR_ROTATETO,
-	ITEM_ATTR_DECAY,
-	ITEM_ATTR_SPRITEHASH,
-	ITEM_ATTR_MINIMAPCOLOR,
-	ITEM_ATTR_07,
-	ITEM_ATTR_08,
-	ITEM_ATTR_LIGHT,
-
-	//1-byte aligned
-	ITEM_ATTR_DECAY2,
-	ITEM_ATTR_WEAPON2,
-	ITEM_ATTR_AMU2,
-	ITEM_ATTR_ARMOR2,
-	ITEM_ATTR_WRITEABLE2,
-	ITEM_ATTR_LIGHT2,
-
-	ITEM_ATTR_TOPORDER,
-
-	ITEM_ATTR_WRITEABLE3,
-
-	ITEM_ATTR_LAST
-};
-
-enum itemflags_t {
-	FLAG_UNPASSABLE = 1 << 0,
-	FLAG_BLOCK_MISSILES = 1 << 1,
-	FLAG_BLOCK_PATHFINDER = 1 << 2,
-	FLAG_HAS_ELEVATION = 1 << 3,
-	FLAG_USEABLE = 1 << 4,
-	FLAG_PICKUPABLE = 1 << 5,
-	FLAG_MOVEABLE = 1 << 6,
-	FLAG_STACKABLE = 1 << 7,
-	FLAG_FLOORCHANGEDOWN = 1 << 8,
-	FLAG_FLOORCHANGENORTH = 1 << 9,
-	FLAG_FLOORCHANGEEAST = 1 << 10,
-	FLAG_FLOORCHANGESOUTH = 1 << 11,
-	FLAG_FLOORCHANGEWEST = 1 << 12,
-	FLAG_ALWAYSONTOP = 1 << 13,
-	FLAG_READABLE = 1 << 14,
-	FLAG_ROTABLE = 1 << 15,
-	FLAG_HANGABLE = 1 << 16,
-	FLAG_HOOK_EAST = 1 << 17,
-	FLAG_HOOK_SOUTH = 1 << 18,
-	FLAG_CANNOTDECAY = 1 << 19,
-	FLAG_ALLOWDISTREAD = 1 << 20,
-	FLAG_UNUSED = 1 << 21,
-	FLAG_CLIENTCHARGES = 1 << 22,
-	FLAG_IGNORE_LOOK = 1 << 23
-};
-
-enum slotsOTB_t{
-	OTB_SLOT_DEFAULT,
-	OTB_SLOT_HEAD,
-	OTB_SLOT_BODY,
-	OTB_SLOT_LEGS,
-	OTB_SLOT_BACKPACK,
-	OTB_SLOT_WEAPON,
-	OTB_SLOT_2HAND,
-	OTB_SLOT_FEET,
-	OTB_SLOT_AMULET,
-	OTB_SLOT_RING,
-	OTB_SLOT_HAND,
-};
-
-enum ShootTypeOtb_t {
-	OTB_SHOOT_NONE          = 0,
-	OTB_SHOOT_BOLT          = 1,
-	OTB_SHOOT_ARROW         = 2,
-	OTB_SHOOT_FIRE          = 3,
-	OTB_SHOOT_ENERGY        = 4,
-	OTB_SHOOT_POISONARROW   = 5,
-	OTB_SHOOT_BURSTARROW    = 6,
-	OTB_SHOOT_THROWINGSTAR  = 7,
-	OTB_SHOOT_THROWINGKNIFE = 8,
-	OTB_SHOOT_SMALLSTONE    = 9,
-	OTB_SHOOT_SUDDENDEATH   = 10,
-	OTB_SHOOT_LARGEROCK     = 11,
-	OTB_SHOOT_SNOWBALL      = 12,
-	OTB_SHOOT_POWERBOLT     = 13,
-	OTB_SHOOT_SPEAR         = 14,
-	OTB_SHOOT_POISONFIELD   = 15,
-	OTB_SHOOT_INFERNALBOLT  = 16
-};
-
-//1-byte aligned structs
-#pragma pack(1)
-
-struct VERSIONINFO {
-	uint32_t dwMajorVersion;
-	uint32_t dwMinorVersion;
-	uint32_t dwBuildNumber;
-	uint8_t CSDVersion[128];
-};
-
-struct decayBlock2 {
-	uint16_t decayTo;
-	uint16_t decayTime;
-};
-
-struct weaponBlock2 {
-	uint8_t weaponType;
-	uint8_t amuType;
-	uint8_t shootType;
-	uint8_t attack;
-	uint8_t defence;
-};
-
-struct amuBlock2 {
-	uint8_t amuType;
-	uint8_t shootType;
-	uint8_t attack;
-};
-
-struct armorBlock2 {
-	uint16_t armor;
-	double weight;
-	uint16_t slot_position;
-};
-
-struct writeableBlock2 {
-	uint16_t readOnlyId;
-};
-
-struct lightBlock2 {
-	uint16_t lightLevel;
-	uint16_t lightColor;
-};
-
-struct writeableBlock3 {
-	uint16_t readOnlyId;
-	uint16_t maxTextLen;
-};
-
-#pragma pack()
-
-class ItemType
-{
-private:
-	ItemType(const ItemType&) {}
+class ItemType {
+public:
+	ItemType(void);
 
 public:
-	ItemType();
-
-	bool isGroundTile() const noexcept { return group == ITEM_GROUP_GROUND; }
-	bool isSplash() const noexcept { return group == ITEM_GROUP_SPLASH; }
-	bool isFluidContainer() const noexcept { return group == ITEM_GROUP_FLUID; }
-
-	bool isClientCharged() const { return client_chargeable; }
-	bool isExtraCharged() const { return !client_chargeable && extra_chargeable; }
-
-	bool isDepot() const noexcept { return type == ITEM_TYPE_DEPOT; }
-	bool isMailbox() const noexcept { return type == ITEM_TYPE_MAILBOX; }
-	bool isTrashHolder() const noexcept { return type == ITEM_TYPE_TRASHHOLDER; }
-	bool isContainer() const noexcept { return type == ITEM_TYPE_CONTAINER; }
-	bool isDoor() const noexcept { return type == ITEM_TYPE_DOOR; }
-	bool isMagicField() const noexcept { return type == ITEM_TYPE_MAGICFIELD; }
-	bool isTeleport() const noexcept { return type == ITEM_TYPE_TELEPORT; }
-	bool isBed() const noexcept { return type == ITEM_TYPE_BED; }
-	bool isKey() const noexcept { return type == ITEM_TYPE_KEY; }
-
-	bool isStackable() const noexcept { return stackable; }
-	bool isMetaItem() const noexcept { return is_metaitem; }
-
-	bool isFloorChange() const noexcept;
-
-	float getWeight() const noexcept { return weight; }
-	uint16_t getVolume() const noexcept { return volume; }
-
-// editor related
-public:
-	Brush* brush;
-	Brush* doodad_brush;
-	RAWBrush* raw_brush;
-	bool is_metaitem;
+	// editor related
+	GameSprite	*sprite = nullptr;
+	Brush		*brush = nullptr;
+	Brush		*doodad_brush = nullptr;
+	RAWBrush	*raw_brush = nullptr;
+	bool		is_metaitem = false;
 	// This is needed as a consequence of the item palette & the raw palette
 	// using the same brushes ("others" category consists of items with this
 	// flag set to false)
-	bool has_raw;
-	bool in_other_tileset;
-
-	uint16_t ground_equivalent;
-	uint32_t border_group;
-	bool has_equivalent; // True if any item has this as ground_equivalent
-	bool wall_hate_me; // (For wallbrushes, regard this as not part of the wall)
-
-	bool isBorder;
-	bool isOptionalBorder;
-	bool isWall;
-	bool isBrushDoor;
-	bool isOpen;
-	bool isTable;
-	bool isCarpet;
+	bool		has_raw = false;
+	bool		in_other_tileset = false;
+	uint16_t	ground_equivalent = 0;
+	uint32_t	border_group = 0;
+	bool		has_equivalent = false; // True if any item has this as ground_equivalent
+	bool		wall_hate_me = false; // (For wallbrushes, regard this as not part of the wall)
+	bool		isBorder = false;
+	bool		isOptionalBorder = false;
+	bool		isWall = false;
+	bool		isBrushDoor = false;
+	bool		isOpen = false;
+	bool		isTable = false;
+	bool		isCarpet = false;
+	BorderType	border_alignment = BORDER_NONE;
 
 public:
-	GameSprite* sprite;
+	uint16_t	typeId = 0;
+	BitSet<NUM_FLAGS> flags = {};
+	int			attributes[NUM_TYPE_ATTRIBUTES] = {};
+	int			attributeOffsets[NUM_INSTANCE_ATTRIBUTES] = {};
+	std::string	name = {};
+	std::string	description = {};
 
-	uint16_t id;
-	uint16_t clientID;
-
-	ItemGroup_t group;
-	ItemTypes_t type;
-
-	uint16_t volume;
-	uint16_t maxTextLen;
-	//uint16_t writeOnceItemId;
-
-	std::string name;
-	std::string editorsuffix;
-	std::string description;
-
-	float weight;
-	// It might be useful to be able to extrapolate this information in the future
-	int attack;
-	int defense;
-	int armor;
-	uint32_t charges;
-	bool client_chargeable;
-	bool extra_chargeable;
-	bool ignoreLook;
-
-	bool isHangable;
-	bool hookEast;
-	bool hookSouth;
-	bool canReadText;
-	bool canWriteText;
-	bool allowDistRead;
-	bool replaceable;
-	bool decays;
-
-	bool stackable;
-	bool moveable;
-	bool alwaysOnBottom;
-	bool pickupable;
-	bool rotable;
-
-	bool floorChangeDown;
-	bool floorChangeNorth;
-	bool floorChangeSouth;
-	bool floorChangeEast;
-	bool floorChangeWest;
-	bool floorChange;
-
-	bool unpassable;
-	bool blockPickupable;
-	bool blockMissiles;
-	bool blockPathfinder;
-	bool hasElevation;
-
-	int alwaysOnTopOrder;
-	uint16_t rotateTo;
-	BorderType border_alignment;
+	bool getFlag(ObjectFlag flag) const;
+	int getAttribute(ObjectTypeAttribute attr) const;
+	int getAttributeOffset(ObjectInstanceAttribute attr) const;
 };
 
-class ItemDatabase
-{
-public:
-	ItemDatabase();
-	~ItemDatabase();
-
-	void clear();
-
-	uint16_t getMinID() const noexcept { return 100; }
-	uint16_t getMaxID() const noexcept { return maxItemId; }
-	const ItemType& getItemType(uint16_t id) const;
-	ItemType* getRawItemType(uint16_t id);
-
-	bool isValidID(uint16_t id) const;
-
-	bool loadFromOtb(const FileName& datafile, wxString& error, wxArrayString& warnings);
-	bool loadFromGameXml(const FileName& datafile, wxString& error, wxArrayString& warnings);
-	bool loadItemFromGameXml(pugi::xml_node itemNode, uint16_t id);
-	bool loadMetaItem(pugi::xml_node node);
-
-	typedef std::vector<ItemType*> ItemMap;
-	typedef std::map<std::string, ItemType*> ItemNameMap;
-
-	// Version information
-	uint32_t MajorVersion;
-	uint32_t MinorVersion;
-	uint32_t BuildNumber;
-
-protected:
-	bool loadFromOtbVer1(BinaryNode* itemNode, wxString& error, wxArrayString& warnings);
-	bool loadFromOtbVer2(BinaryNode* itemNode, wxString& error, wxArrayString& warnings);
-	bool loadFromOtbVer3(BinaryNode* itemNode, wxString& error, wxArrayString& warnings);
-
-protected:
-	ItemType *internalGet(uint16_t id){
-		ItemType *type = nullptr;
-		if(id < items.size()){
-			type = items[id];
-		}
-		return type;
-	}
-
-	const ItemType *internalGet(uint16_t id) const {
-		const ItemType *type = nullptr;
-		if(id < items.size()){
-			type = items[id];
-		}
-		return type;
-	}
-
-	void internalSet(uint16_t id, ItemType *type){
-		constexpr size_t MIN_CAPACITY = 256;
-		constexpr size_t MAX_CAPACITY = UINT16_MAX + 1;
-		if((id + 1) > items.size()){
-			// NOTE(fusion): The behaviour of `vector::resize` depends on the
-			// implementation, but we can make sure it grows exponentially by
-			// calling `vector::reserve` before resizing.
-			size_t capacity = items.capacity();
-			if((id + 1) > capacity){
-				if(capacity < MIN_CAPACITY) capacity = MIN_CAPACITY;
-				while((id + 1) > capacity)  capacity += capacity / 2;
-				if(capacity > MAX_CAPACITY) capacity = MAX_CAPACITY;
-				ASSERT((id + 1) <= capacity);
-				items.reserve(capacity);
-			}
-			items.resize(id + 1, nullptr);
-		}
-		items[id] = type;
-	}
-
-	ItemMap items;
-
-	// Count of GameSprite types
-	uint16_t item_count;
-	uint16_t effect_count;
-	uint16_t monster_count;
-	uint16_t distance_count;
-
-	uint16_t minClientID;
-	uint16_t maxClientID;
-	uint16_t maxItemId;
-
-	ItemType dummy;
-
-	friend class GameSprite;
-	friend class Item;
-};
-
-extern ItemDatabase g_items;
+int GetFlagByName(const char *name);
+int GetTypeAttributeByName(const char *name);
+int GetInstanceAttributeByName(const char *name);
+const char *GetFlagName(int flag);
+const char *GetTypeAttributeName(int attr);
+const char *GetInstanceAttributeName(int attr);
+bool ItemTypeExists(uint16_t typeId);
+int GetMaxItemTypeId(void);
+const ItemType &GetItemType(uint16_t typeId);
+ItemType *GetMutableItemType(uint16_t typeId);
+bool LoadItemTypes(const char *filename, wxString &outError, wxArrayString &outWarnings);
 
 #endif

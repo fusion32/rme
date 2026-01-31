@@ -30,12 +30,12 @@
 #include "table_brush.h"
 #include "wall_brush.h"
 
-Item* Item::Create(uint16_t id, uint16_t subtype /*= 0xFFFF*/)
+Item* Item::Create(uint16_t typeId, uint16_t subtype /*= 0xFFFF*/)
 {
 	if(id == 0) return nullptr;
 
-	const ItemType& type = g_items.getItemType(id);
-	if(type.id == 0) {
+	const ItemType &type = GetItemType(typeId);
+	if(type.typeId == 0) {
 		return newd Item(id, subtype);
 	}
 
@@ -48,9 +48,9 @@ Item* Item::Create(uint16_t id, uint16_t subtype /*= 0xFFFF*/)
 	} else if(type.isDoor()) {
 		return new Door(id);
 	} else if(subtype == 0xFFFF) {
-		if(type.isFluidContainer()) {
+		if(type.getFlag(LIQUIDCONTAINER)) {
 			return new Item(id, LIQUID_NONE);
-		} else if(type.isSplash()) {
+		} else if(type.getFlag(LIQUIDPOOL)) {
 			return new Item(id, LIQUID_WATER);
 		} else if(type.charges > 0) {
 			return new Item(id, type.charges);
@@ -59,22 +59,6 @@ Item* Item::Create(uint16_t id, uint16_t subtype /*= 0xFFFF*/)
 		}
 	}
 	return new Item(id, subtype);
-}
-
-Item::Item(unsigned short _type, unsigned short _count) :
-	id(_type),
-	subtype(1),
-	selected(false),
-	frame(0)
-{
-	if(hasSubtype()) {
-		subtype = _count;
-	}
-}
-
-Item::~Item()
-{
-	////
 }
 
 Item* Item::deepCopy() const
@@ -160,12 +144,10 @@ void Item::setSubtype(uint16_t _subtype)
 
 bool Item::hasSubtype() const
 {
-	const ItemType& type = g_items.getItemType(id);
-	return (type.isFluidContainer()
-		|| type.stackable
-		|| type.charges != 0
-		|| type.isSplash()
-		|| isCharged());
+	const ItemType &type = GetItemType(id);
+	return type.getFlag(LIQUIDCONTAINER)
+		|| type.getFlag(LIQUIDPOOL)
+		|| type.getFlag(CUMULATIVE);
 }
 
 uint16_t Item::getSubtype() const
@@ -173,138 +155,59 @@ uint16_t Item::getSubtype() const
 	return hasSubtype() ? subtype : 0;
 }
 
-bool Item::hasProperty(enum ITEMPROPERTY prop) const
+bool Item::getFlag(ObjectFlag flag) const
 {
-	const ItemType& type = g_items.getItemType(id);
-	switch(prop) {
-		case BLOCKSOLID:
-			if(type.unpassable)
-				return true;
-			break;
+	return getItemType().getFlag(flag);
+}
 
-		case MOVEABLE:
-			if(type.moveable && getUniqueID() == 0)
-				return true;
-			break;
-/*
-		case HASHEIGHT:
-			if(it.height != 0 )
-				return true;
-			break;
-*/
-		case BLOCKPROJECTILE:
-			if(type.blockMissiles)
-				return true;
-			break;
+int Item::getAttribute(ObjectTypeAttribute attr) const
+{
+	return getItemType().getAttribute(attr);
+}
 
-		case BLOCKPATHFIND:
-			if(type.blockPathfinder)
-				return true;
-			break;
-
-		case HOOK_SOUTH:
-			if(type.hookSouth)
-				return true;
-			break;
-
-		case HOOK_EAST:
-			if(type.hookEast)
-				return true;
-			break;
-
-		case BLOCKINGANDNOTMOVEABLE:
-			if(type.unpassable && (!type.moveable || getUniqueID() != 0))
-				return true;
-			break;
-
-		default:
-			return false;
+int Item::getAttribute(ObjectInstanceAttribute attr) const
+{
+	int attrOffset = getItemType().getAttributeOffset(attr);
+	if(attrOffset == -1){
+		std::cout << "Object type " << typeId << " is missing flag "
+				<< " for instance attribute " << attr << std::endl;
+		return 0;
 	}
-	return false;
+
+	if(attrOffset < 0 || attrOffset >= NARRAY(attributes)){
+		std::cout << "Object type " << typeId
+				<< " has invalid instance attribute offset "
+				<< attrOffset << std::endl;
+		return 0;
+	}
+
+	return attributes[attrOffset];
 }
 
 wxPoint Item::getDrawOffset() const
 {
-	const ItemType& type = g_items.getItemType(id);
+	const ItemType &type = GetItemType(id);
 	if(type.sprite) {
 		return type.sprite->getDrawOffset();
 	}
 	return wxPoint(0, 0);
 }
 
-uint16_t Item::getGroundSpeed() const
-{
-	const auto& type = g_items.getItemType(id);
-	if(type.sprite) {
-		return type.sprite->ground_speed;
-	}
-	return 0;
-}
-
-bool Item::hasLight() const
-{
-	const ItemType& type = g_items.getItemType(id);
-	if(type.sprite) {
-		return type.sprite->hasLight();
-	}
-	return false;
-}
-
 SpriteLight Item::getLight() const
 {
-	const ItemType& type = g_items.getItemType(id);
-	if(type.sprite) {
-		return type.sprite->getLight();
-	}
-	return SpriteLight{0, 0};
+	return SpriteLight{
+		(uint8_t)getAttribute(BRIGHTNESS),
+		(uint8_t)getAttribute(LIGHTCOLOR),
+	};
 }
 
 double Item::getWeight() const
 {
-	const ItemType& type = g_items.getItemType(id);
-	if(type.stackable) {
-		return type.weight * std::max(1, (int)subtype);
+	double weight = getAttribute(WEIGHT);
+	if(getFlag(CUMULATIVE) && getAttribute(AMOUNT) > 0){
+		weight *= getAttribute(AMOUNT);
 	}
-	return type.weight;
-}
-
-void Item::setUniqueID(unsigned short n)
-{
-	setAttribute("uid", n);
-}
-
-void Item::setActionID(unsigned short n)
-{
-	setAttribute("aid", n);
-}
-
-void Item::setText(const std::string& str)
-{
-	setAttribute("text", str);
-}
-
-void Item::setDescription(const std::string& str)
-{
-	setAttribute("desc", str);
-}
-
-double Item::getWeight()
-{
-	const ItemType& type = g_items.getItemType(id);
-	if(type.isStackable()) {
-		return type.weight * subtype;
-	}
-	return type.weight;
-}
-
-bool Item::canHoldText() const
-{
-	return isReadable() || canWriteText();
-}
-
-bool Item::canHoldDescription() const
-{
-	return g_items.getItemType(id).allowDistRead;
+	return weight * 0.01;
 }
 
 uint8_t Item::getMiniMapColor() const
@@ -408,14 +311,13 @@ BorderType Item::getBorderAlignment() const
 	return type.border_alignment;
 }
 
-void Item::animate()
-{
-	const ItemType& type = g_items.getItemType(id);
-	GameSprite* sprite = type.sprite;
-	if(!sprite || !sprite->animator)
-		return;
-
-	frame = sprite->animator->getFrame();
+void Item::getFrame(){
+	int frame = 0;
+	GameSprite *sprite = getItemType().sprite;
+	if(sprite && sprite->animator){
+		frame = sprite->animator->getFrame();
+	}
+	return frame;
 }
 
 // ============================================================================

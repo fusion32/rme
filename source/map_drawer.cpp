@@ -547,7 +547,7 @@ void MapDrawer::DrawGrid()
 {
 	glDisable(GL_TEXTURE_2D);
 	glColor4ub(255, 255, 255, 128);
-	glBegin(GL_LINES); 
+	glBegin(GL_LINES);
 
 	for(int y = start_y; y < end_y; ++y) {
 		int py = y * rme::TileSize - view_scroll_y;
@@ -1074,8 +1074,8 @@ void MapDrawer::DrawBrush()
 
 void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Tile* tile, const Item* item, bool ephemeral, int red, int green, int blue, int alpha)
 {
-	const ItemType& type = g_items.getItemType(item->getID());
-	if(type.id == 0) {
+	const ItemType &type = GetItemType(item->getID());
+	if(type.typeId == 0) {
 		glDisable(GL_TEXTURE_2D);
 		glBlitSquare(draw_x, draw_y, *wxRED);
 		glEnable(GL_TEXTURE_2D);
@@ -1089,21 +1089,23 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Tile* tile, const Item*
 	}
 
 	// Ugly hacks. :)
-	if(type.id == 459 && !options.ingame) {
+	if(type.typeId == 459 && !options.ingame) {
 		glDisable(GL_TEXTURE_2D);
 		glBlitSquare(draw_x, draw_y, red, green, 0, alpha/3*2);
 		glEnable(GL_TEXTURE_2D);
 		return;
-	} else if(type.id == 460 && !options.ingame) {
+	} else if(type.typeId == 460 && !options.ingame) {
 		glDisable(GL_TEXTURE_2D);
 		glBlitSquare(draw_x, draw_y, red, 0, 0, alpha/3*2);
 		glEnable(GL_TEXTURE_2D);
 		return;
 	}
 
-	if(type.isMetaItem())
-		return;
-	if(!ephemeral && type.pickupable && !options.show_items)
+	// TODO(fusion): What the f*** is a meta item anyways?
+	//if(type.isMetaItem())
+	//	return;
+
+	if(!ephemeral && type.getFlag(TAKE) && !options.show_items)
 		return;
 
 	GameSprite* sprite = type.sprite;
@@ -1125,15 +1127,15 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Tile* tile, const Item*
 	int pattern_y = 0;
 	int pattern_z = pos.z % sprite->pattern_z;
 
-	if(type.isSplash() || type.isFluidContainer()) {
+	if(type.getFlag(LIQUIDPOOL) || type.getFlag(LIQUIDCONTAINER)) {
 		subtype = item->getSubtype();
-	} else if(type.isHangable) {
-		if(tile->hasProperty(HOOK_SOUTH)) {
+	} else if(type.getFlag(HANG)) {
+		if(tile->getFlag(HOOKSOUTH)) {
 			pattern_x = 1;
-		} else if(tile->hasProperty(HOOK_EAST)) {
+		} else if(tile->getFlag(HOOKEAST)) {
 			pattern_x = 2;
 		}
-	} else if(type.stackable && sprite->pattern_x == 4 && sprite->pattern_y == 2) {
+	} else if(type.getFlag(CUMULATIVE) && sprite->pattern_x == 4 && sprite->pattern_y == 2) {
 		int count = item->getSubtype();
 		if(count <= 0) {
 			pattern_x = 0;
@@ -1159,11 +1161,10 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Tile* tile, const Item*
 		pattern_y = pos.y % sprite->pattern_y;
 	}
 
-	if(!ephemeral && options.transparent_items &&
-			(!type.isGroundTile() || sprite->width > 1 || sprite->height > 1) &&
-			!type.isSplash() &&
-			(!type.isBorder || sprite->width > 1 || sprite->height > 1)
-	  )
+	if(!ephemeral && options.transparent_items
+			&& !type.getFlag(LIQUIDPOOL)
+			&& (!type.getFlag(BANK) || sprite->width > 1 || sprite->height > 1)
+			&& (!type.getFlag(CLIP) || sprite->width > 1 || sprite->height > 1))
 	{
 		alpha /= 2;
 	}
@@ -1184,14 +1185,14 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Tile* tile, const Item*
 		}
 	}
 
-	if(options.show_hooks && (type.hookSouth || type.hookEast))
+	if(options.show_hooks && (type.getFlag(HOOKSOUTH) || type.getFlag(HOOKEAST)))
 		DrawHookIndicator(draw_x, draw_y, type);
 }
 
 void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Position& pos, const Item* item, bool ephemeral, int red, int green, int blue, int alpha)
 {
-	const ItemType& type = g_items.getItemType(item->getID());
-	if(type.id == 0)
+	const ItemType &type = GetItemType(item->getID());
+	if(type.typeId == 0)
 		return;
 
 	if(!options.ingame && !ephemeral && item->isSelected()) {
@@ -1200,21 +1201,22 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Position& pos, const It
 		green /= 2;
 	}
 
-	if(type.id == 459 && !options.ingame) { // Ugly hack yes?
+	if(type.typeId == 459 && !options.ingame) { // Ugly hack yes?
 		glDisable(GL_TEXTURE_2D);
 		glBlitSquare(draw_x, draw_y, red, green, 0, alpha/3*2);
 		glEnable(GL_TEXTURE_2D);
 		return;
-	} else if(type.id == 460 && !options.ingame) { // Ugly hack yes?
+	} else if(type.typeId == 460 && !options.ingame) { // Ugly hack yes?
 		glDisable(GL_TEXTURE_2D);
 		glBlitSquare(draw_x, draw_y, red, 0, 0, alpha/3*2);
 		glEnable(GL_TEXTURE_2D);
 		return;
 	}
 
-	if(type.isMetaItem())
-		return;
-	if(!ephemeral && type.pickupable && options.show_items)
+	//if(type.isMetaItem())
+	//	return;
+
+	if(!ephemeral && type.getFlag(TAKE) && options.show_items)
 		return;
 
 	GameSprite* sprite = type.sprite;
@@ -1234,9 +1236,9 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Position& pos, const It
 	int pattern_y = 0;
 	int pattern_z = pos.z % sprite->pattern_z;
 
-	if(type.isSplash() || type.isFluidContainer()) {
+	if(type.getFlag(LIQUIDPOOL) || type.getFlag(LIQUIDCONTAINER)) {
 		subtype = item->getSubtype();
-	} else if(type.stackable && sprite->pattern_x == 4 && sprite->pattern_y == 2) {
+	} else if(type.getFlag(CUMULATIVE) && sprite->pattern_x == 4 && sprite->pattern_y == 2) {
 		int count = item->getSubtype();
 		if(count <= 0) {
 			pattern_x = 0;
@@ -1262,11 +1264,10 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Position& pos, const It
 		pattern_y = pos.y % sprite->pattern_y;
 	}
 
-	if(!ephemeral && options.transparent_items &&
-			(!type.isGroundTile() || sprite->width > 1 || sprite->height > 1) &&
-			!type.isSplash() &&
-			(!type.isBorder || sprite->width > 1 || sprite->height > 1)
-	  )
+	if(!ephemeral && options.transparent_items
+			&& !type.getFlag(LIQUIDPOOL)
+			&& (!type.getFlag(BANK) || sprite->width > 1 || sprite->height > 1)
+			&& (!type.getFlag(CLIP) || sprite->width > 1 || sprite->height > 1))
 	{
 		alpha /= 2;
 	}
@@ -1287,14 +1288,14 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Position& pos, const It
 		}
 	}
 
-	if(options.show_hooks && (type.hookSouth || type.hookEast) && zoom <= 3.0)
+	if(options.show_hooks && (type.getFlag(HOOKSOUTH) || type.getFlag(HOOKEAST)) && zoom <= 3.0)
 		DrawHookIndicator(draw_x, draw_y, type);
 }
 
 void MapDrawer::BlitSpriteType(int screenx, int screeny, uint32_t spriteid, int red, int green, int blue, int alpha)
 {
-	const ItemType& type = g_items.getItemType(spriteid);
-	if(type.id == 0)
+	const ItemType &type = GetItemType(spriteid);
+	if(type.typeId == 0)
 		return;
 
 	GameSprite* sprite = type.sprite;
@@ -1336,7 +1337,7 @@ void MapDrawer::BlitSpriteType(int screenx, int screeny, GameSprite* sprite, int
 void MapDrawer::BlitCreature(int screenx, int screeny, const Outfit& outfit, Direction dir, int red, int green, int blue, int alpha)
 {
 	if(outfit.lookItem != 0) {
-		const ItemType& type = g_items.getItemType(outfit.lookItem);
+		const ItemType& type = GetItemType(outfit.lookItem);
 		BlitSpriteType(screenx, screeny, type.sprite, red, green, blue, alpha);
 	} else {
 		GameSprite* sprite = g_gui.gfx.getCreatureSprite(outfit.lookType);
@@ -1644,13 +1645,15 @@ void MapDrawer::DrawTileIndicators(TileLocation* location)
 			blue = 0x00;
 		}
 		for(const Item* item : tile->items) {
-			const ItemType& type = g_items.getItemType(item->getID());
-			if((type.pickupable && options.show_pickupables) || (type.moveable && options.show_moveables)) {
-				if(type.pickupable && options.show_pickupables && type.moveable && options.show_moveables)
+			const ItemType& type = GetItemType(item->getID());
+			bool pickupable = type.getFlag(TAKE);
+			bool moveable   = !type.getFlag(UNMOVE);
+			if((pickupable && options.show_pickupables) || (moveable && options.show_moveables)) {
+				if(pickupable && options.show_pickupables && moveable && options.show_moveables)
 					DrawIndicator(x, y, EDITOR_SPRITE_PICKUPABLE_MOVEABLE_ITEM, red, green, blue);
-				else if(type.pickupable && options.show_pickupables)
+				else if(pickupable && options.show_pickupables)
 					DrawIndicator(x, y, EDITOR_SPRITE_PICKUPABLE_ITEM, red, green, blue);
-				else if(type.moveable && options.show_moveables)
+				else if(moveable && options.show_moveables)
 					DrawIndicator(x, y, EDITOR_SPRITE_MOVEABLE_ITEM, red, green, blue);
 			}
 		}
@@ -1844,7 +1847,7 @@ void MapDrawer::AddLight(TileLocation* location)
 	auto& position = location->getPosition();
 
 	if(tile->ground) {
-		if (tile->ground->hasLight()) {
+		if (tile->ground->getFlag(LIGHT)) {
 			light_drawer->addLight(position.x, position.y, tile->ground->getLight());
 		}
 	}
@@ -1852,7 +1855,7 @@ void MapDrawer::AddLight(TileLocation* location)
 	bool hidden = options.hide_items_when_zoomed && zoom > 10.f;
 	if(!hidden && !tile->items.empty()) {
 		for(auto item : tile->items) {
-			if(item->hasLight()) {
+			if(item->getFlag(LIGHT)) {
 				light_drawer->addLight(position.x, position.y, item->getLight());
 			}
 		}

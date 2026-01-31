@@ -219,7 +219,7 @@ bool Materials::unserializeMaterials(const FileName& filename, pugi::xml_node no
 				warnings.push_back("Error while loading file \"" + includeName.GetFullName() + "\": " + subError);
 			}
 		} else if(childName == "metaitem") {
-			g_items.loadMetaItem(childNode);
+			//g_items.loadMetaItem(childNode);
 		} else if(childName == "border") {
 			g_brushes.unserializeBorder(childNode, warnings);
 			if(warning.size()) {
@@ -259,13 +259,13 @@ void Materials::createOtherTileset()
 	}
 
 	// There should really be an iterator to do this
-	for(int32_t id = 0; id <= g_items.getMaxID(); ++id) {
-		ItemType* type = g_items.getRawItemType(id);
+	for(int typeId = 0; typeId <= GetMaxItemTypeId(); ++typeId) {
+		ItemType* type = GetMutableItemType(typeId);
 		if(!type) {
 			continue;
 		}
 
-		if(!type->isMetaItem()) {
+		//if(!type->isMetaItem()) {
 			Brush* brush;
 			if(type->in_other_tileset) {
 				others->getCategory(TILESET_RAW)->brushlist.push_back(type->raw_brush);
@@ -282,7 +282,7 @@ void Materials::createOtherTileset()
 			brush->flagAsVisible();
 			others->getCategory(TILESET_RAW)->brushlist.push_back(type->raw_brush);
 			type->in_other_tileset = true;
-		}
+		//}
 	}
 
 	for(CreatureMap::iterator iter = g_creatures.begin(); iter != g_creatures.end(); ++iter) {
@@ -334,8 +334,8 @@ bool Materials::unserializeTileset(pugi::xml_node node, wxArrayString& warnings)
 
 bool Materials::isInTileset(Item* item, std::string tilesetName) const
 {
-	const ItemType& type = g_items.getItemType(item->getID());
-	return type.id != 0 && (
+	const ItemType &type = GetItemType(item->getID());
+	return type.typeId != 0 && (
 		isInTileset(type.brush, tilesetName) ||
 		isInTileset(type.doodad_brush, tilesetName) ||
 		isInTileset(type.raw_brush, tilesetName));

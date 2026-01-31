@@ -79,7 +79,7 @@ public:
 	int getZ() const noexcept { return location->getZ(); }
 
 	uint16_t getGroundSpeed() const noexcept;
-	
+
 public: //Functions
 	// Absorb the other tile into this tile
 	void merge(Tile* other);
@@ -108,7 +108,7 @@ public: //Functions
 		}
 	}
 
-	bool hasProperty(enum ITEMPROPERTY prop) const;
+	bool getFlag(ObjectFlag flag) const;
 
 	int getIndexOf(Item* item) const;
 	Item* getTopItem() const; // Returns the topmost item, or nullptr if the tile is empty

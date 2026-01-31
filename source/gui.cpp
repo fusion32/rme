@@ -337,17 +337,6 @@ bool GUI::LoadDataFiles(wxString& error, wxArrayString& warnings)
 	FileName client_path = getLoadedVersion()->getClientPath();
 	FileName extension_path = GetExtensionsDirectory();
 
-	FileName exec_directory;
-	try
-	{
-		exec_directory = dynamic_cast<wxStandardPaths&>(wxStandardPaths::Get()).GetExecutablePath();
-	}
-	catch(std::bad_cast&)
-	{
-		error = "Couldn't establish working directory...";
-		return false;
-	}
-
 	g_gui.gfx.client_version = getLoadedVersion();
 
 	if(!g_gui.gfx.loadOTFI(client_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR), error, warnings)) {
@@ -378,21 +367,16 @@ bool GUI::LoadDataFiles(wxString& error, wxArrayString& warnings)
 		return false;
 	}
 
-	g_gui.SetLoadDone(20, "Loading items.otb file...");
-	if(!g_items.loadFromOtb(wxString(data_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + "items.otb"), error, warnings)) {
+	g_gui.SetLoadDone(25, "Loading objects.srv file...");
+	if(!LoadItemTypes(data_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + "objects.srv", error, warnings)){
 		error = "Couldn't load items.otb: " + error;
 		g_gui.DestroyLoadBar();
 		UnloadVersion();
 		return false;
 	}
 
-	g_gui.SetLoadDone(30, "Loading items.xml ...");
-	if(!g_items.loadFromGameXml(wxString(data_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + "items.xml"), error, warnings)) {
-		warnings.push_back("Couldn't load items.xml: " + error);
-	}
-
 	g_gui.SetLoadDone(45, "Loading creatures.xml ...");
-	if(!g_creatures.loadFromXML(wxString(data_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + "creatures.xml"), true, error, warnings)) {
+	if(!g_creatures.loadFromXML(data_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + "creatures.xml", true, error, warnings)) {
 		warnings.push_back("Couldn't load creatures.xml: " + error);
 	}
 
@@ -406,7 +390,7 @@ bool GUI::LoadDataFiles(wxString& error, wxArrayString& warnings)
 	}
 
 	g_gui.SetLoadDone(50, "Loading materials.xml ...");
-	if(!g_materials.loadMaterials(wxString(data_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + "materials.xml"), error, warnings)) {
+	if(!g_materials.loadMaterials(data_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + "materials.xml", error, warnings)) {
 		warnings.push_back("Couldn't load materials.xml: " + error);
 	}
 

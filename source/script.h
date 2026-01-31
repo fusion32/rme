@@ -17,64 +17,117 @@ enum ScriptTokenKind {
 	TOKEN_SPECIAL,
 };
 
-struct Script {
-	struct Token {
-		ScriptTokenKind kind;
-		union {
-			char string[4000];
-			uint8_t bytes[4000];
-			int number;
-			char special;
-			struct {
-				int x;
-				int y;
-				int z;
-			} coord;
-		};
+struct ScriptToken {
+	ScriptTokenKind kind;
+	union {
+		char string[4000];
+		uint8_t bytes[4000];
+		int number;
+		int special;
+		struct {
+			int x;
+			int y;
+			int z;
+		} coord;
 	};
-
-	struct Source {
-		std::string name;
-		int line;
-		std::ifstream file;
-	};
-
-	std::vector<Source> stack;
-	Token token;
 };
 
-void ScriptError(Script *script, const char *text);
-void ScriptNextToken(Script *script);
-int ScriptGetNumber(Script *script);
-int ScriptReadNumber(Script *script);
-const char *ScriptGetIdentifier(Script *script);
-const char *ScriptReadIdentifier(Script *script);
-const char *ScriptGetString(Script *script);
-const char *ScriptReadString(Script *script);
-const uint8_t *ScriptGetBytes(Script *script);
-const uint8_t *ScriptReadBytes(Script *script);
-Position ScriptGetPosition(Script *script);
-Position ScriptReadPosition(Script *script);
-char ScriptGetSpecial(Script *script);
-char ScriptReadSpecial(Script *script);
-void ScriptReadSymbol(Script *script, char symbol);
-bool ScriptEOF(Script *script);
-const char *ScriptError(Script *script);
-Script ScriptOpen(const char *name);
+struct ScriptSource {
+	std::string name;
+	int line;
+	std::ifstream file;
+};
+
+struct Script {
+	std::vector<ScriptSource>	stack;
+	ScriptToken					token;
+
+	Script(const char *filename) { push(filename); }
+	void error(const char *text);
+	ScriptSource *push(const char *filename);
+	ScriptSource *pop(void);
+	bool parseOptionalSymbol(int symbol);
+	bool parseSymbol(int symbol);
+	bool parseNumber(int *dest, bool allowSign);
+	bool parseIdentifier(char *dest, int destCapacity);
+	bool parseString(char *dest, int destCapacity);
+	void nextToken(void);
+
+	const char *getError(void);
+	int getNumber(void);
+	const char *getIdentifier(void);
+	const char *getString(void);
+	const uint8_t *getBytes(void);
+	Position getPosition(void);
+	int getSpecial(void);
+
+	bool eof(void) const {
+		return token.kind == TOKEN_EOF
+			|| token.kind == TOKEN_ERROR;
+	}
+
+	int readNumber(void) {
+		bool negative = false;
+		if(token.kind == TOKEN_SPECIAL && token.special == '-'){
+			negative = true;
+			nextToken();
+		}
+
+		int number = getNumber();
+		if(negative){
+			number = -number;
+		}
+
+		return number;
+	}
+
+	const char *readIdentifier(void) {
+		nextToken();
+		return getIdentifier();
+	}
+
+	const char *readString(void) {
+		nextToken();
+		return getString();
+	}
+
+	const uint8_t *readBytes(void) {
+		nextToken();
+		return getBytes();
+	}
+
+	Position readPosition(void) {
+		nextToken();
+		return getPosition();
+	}
+
+	int readSpecial(void) {
+		nextToken();
+		return getSpecial();
+	}
+
+	void readSymbol(char symbol) {
+		if(readSpecial() != symbol){
+			error("symbol mismatch");
+		}
+	}
+};
 
 // Script Writer
 //==============================================================================
 struct ScriptWriter {
 	std::ofstream file;
+
+	bool begin(const char *filename);
+	bool end(void);
+
+	void writeLn(void);
+	void writeText(const char *text);
+	void writeNumber(int number);
+	void writeString(const char *string);
+	void writeBytes(const uint8_t *bytes, int count);
+	void writePosition(Position pos);
 };
 
-void ScriptWriteLn(ScriptWriter *script);
-void ScriptWriteText(ScriptWriter *script, const char *text);
-void ScriptWriteNumber(ScriptWriter *script, int number);
-void ScriptWriteString(ScriptWriter *script, const char *string);
-void ScriptWriteBytes(ScriptWriter *script, const uint8_t *bytes, int count);
-void ScriptWritePosition(ScriptWriter *script, Position pos);
-bool ScriptOk(ScriptWriter *script);
-ScriptWriter ScriptSave(const char *name);
 
 #endif //RME_SCRIPT_H_
