@@ -47,7 +47,6 @@ public:
 	ReplaceItemsButton(wxWindow* parent);
 	~ReplaceItemsButton() { }
 
-	ItemGroup_t GetGroup() const;
 	uint16_t GetItemId() const { return m_id; }
 	void SetItemId(uint16_t id);
 

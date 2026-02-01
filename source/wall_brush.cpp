@@ -102,7 +102,7 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 						break;
 					}
 
-					ItemType* type = g_items.getRawItemType(id);
+					ItemType *type = GetMutableItemType(id);
 					if(!type) {
 						warnings.push_back("There is no itemtype with id " + std::to_string(id));
 						return false;
@@ -147,7 +147,7 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 						}
 					}
 
-					ItemType* type = g_items.getRawItemType(id);
+					ItemType* type = GetMutableItemType(id);
 					if(!type) {
 						warnings.push_back("There is no itemtype with id " + std::to_string(id));
 						return false;
@@ -346,9 +346,9 @@ bool hasMatchingWallBrushAtTile(BaseMap* map, WallBrush* wall_brush, uint32_t x,
 		if(item->isWall()) {
 			WallBrush* wb = item->getWallBrush();
 			if(wb == wall_brush) {
-				return !g_items.getItemType(item->getID()).wall_hate_me;
+				return !GetItemType(item->getID()).wall_hate_me;
 			} else if(wall_brush->friendOf(wb) || wb->friendOf(wall_brush)) {
-				return !g_items.getItemType(item->getID()).wall_hate_me;
+				return !GetItemType(item->getID()).wall_hate_me;
 			}
 		}
 	}
@@ -688,8 +688,8 @@ void WallDecorationBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 					WallBrush::DoorType& dt = *door_iter;
 					if(dt.type == doortype) {
 						ASSERT(dt.id);
-						const ItemType& type = g_items.getItemType(dt.id);
-						ASSERT(it.id != 0);
+						const ItemType &type = GetItemType(dt.id);
+						ASSERT(type.typeId != 0);
 
 						if(type.isOpen == open) {
 							id = dt.id;

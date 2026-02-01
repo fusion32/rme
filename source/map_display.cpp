@@ -407,14 +407,14 @@ void MapCanvas::UpdatePositionStatus(int x, int y)
 			ss << " \"" << wxstr(tile->creature->getName()) << "\" spawntime: " << tile->creature->getSpawnTime();
 		} else if(Item* item = tile->getTopItem()) {
 			ss << "Item \"" << wxstr(item->getName()) << "\"";
-			ss << " id:" << item->getID();
-			ss << " cid:" << item->getClientID();
-			if(item->getUniqueID()) ss << " uid:" << item->getUniqueID();
-			if(item->getActionID()) ss << " aid:" << item->getActionID();
-			if(item->hasWeight()) {
-				wxString s;
-				s.Printf("%.2f", item->getWeight());
-				ss << " weight: " << s;
+			ss << " typeId:" << item->getID();
+			// TODO(fusion): Relevant srv flags/attributes instead?
+			if(item->getFlag(TAKE)){
+				int weight = getAttribute(WEIGHT);
+				if(getFlag(CUMULATIVE) && getAttribute(AMOUNT) > 0){
+					weight *= getAttribute(AMOUNT);
+				}
+				ss << " weight: " << (weight / 100) << "." << (weight % 100) << "oz";
 			}
 		} else {
 			ss << "Nothing";
@@ -1974,7 +1974,9 @@ void MapCanvas::OnRotateItem(wxCommandEvent& WXUNUSED(event))
 	Action* action = editor.createAction(ACTION_ROTATE_ITEM);
 	Tile* new_tile = tile->deepCopy(editor.getMap());
 	Item* new_item = new_tile->getSelectedItems().front();
-	new_item->doRotate();
+	if(new_item->getFlag(ROTATE)){
+		new_item->transform(new_item->getAttribute(ROTATETARGET));
+	}
 	action->addChange(new Change(new_tile));
 
  	editor.addAction(action);

@@ -32,7 +32,6 @@
 
 #include "materials.h"
 #include "map.h"
-#include "complexitem.h"
 #include "creature.h"
 
 #include <wx/snglinst.h>

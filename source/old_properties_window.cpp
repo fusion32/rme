@@ -15,13 +15,13 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
+#include "items.h"
 #include "main.h"
 
 #include <wx/grid.h>
 
 #include "tile.h"
 #include "item.h"
-#include "complexitem.h"
 #include "town.h"
 #include "house.h"
 #include "map.h"
@@ -167,19 +167,18 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 		// Splash types
 		splash_type_field = newd wxChoice(this, wxID_ANY);
 		if(edit_item->isFluidContainer()) {
-			splash_type_field->Append(wxstr(Item::LiquidID2Name(LIQUID_NONE)), newd int32_t(LIQUID_NONE));
+			splash_type_field->Append(wxstr(GetLiquidName(LIQUID_NONE)), newd int32_t(LIQUID_NONE));
 		}
 
-		for(SplashType splashType = LIQUID_FIRST; splashType != LIQUID_LAST; ++splashType) {
-			splash_type_field->Append(wxstr(Item::LiquidID2Name(splashType)), newd int32_t(splashType));
+		for(int liquidType = LIQUID_FIRST; liquidType <= LIQUID_LAST; liquidType += 1) {
+			splash_type_field->Append(wxstr(GetLiquidName(liquidType)), newd int32_t(liquidType));
 		}
 
-		if(item->getSubtype()) {
-			const std::string& what = Item::LiquidID2Name(item->getSubtype());
-			if(what == "Unknown") {
-				splash_type_field->Append(wxstr(Item::LiquidID2Name(LIQUID_NONE)), newd int32_t(LIQUID_NONE));
-			}
-			splash_type_field->SetStringSelection(wxstr(what));
+		if(item->getFlag(LIQUIDPOOL) || item->getFlag(LIQUIDCONTAINER)){
+			int liquidType = item->getFlag(LIQUIDPOOL)
+					? item->getAttribute(POOLLIQUIDTYPE)
+					: item->getAttribute(CONTAINERLIQUIDTYPE);
+			splash_type_field->SetStringSelection(wxstr(GetLiquidName(liquidType)));
 		} else {
 			splash_type_field->SetSelection(0);
 		}
@@ -314,24 +313,24 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 	}
 
 	// Others attributes
-	const ItemType& type = g_items.getItemType(edit_item->getID());
+	const ItemType &type = GetItemType(edit_item->getID());
 	wxStaticBoxSizer* others_sizer = newd wxStaticBoxSizer(wxVERTICAL, this, "Others");
 	wxFlexGridSizer* others_subsizer = newd wxFlexGridSizer(2, 5, 10);
 	others_subsizer->AddGrowableCol(1);
 	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, "Stackable"));
-	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.stackable)));
+	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.getFlag(CUMULATIVE))));
 	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, "Movable"));
-	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.moveable)));
+	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(!type.getFlag(UNMOVE)));
 	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, "Pickupable"));
-	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.pickupable)));
+	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.getFlag(TAKE))));
 	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, "Hangable"));
-	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.isHangable)));
+	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.getFlag(HANG))));
 	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, "Block Missiles"));
-	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.blockMissiles)));
+	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.getFlag(UNTHROW))));
 	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, "Block Pathfinder"));
-	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.blockPathfinder)));
+	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.getFlag(UNPASS))));
 	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, "Has Elevation"));
-	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.hasElevation)));
+	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.getFlag(HEIGHT))));
 	others_sizer->Add(others_subsizer, wxSizerFlags(1).Expand());
 	topsizer->Add(others_sizer, wxSizerFlags(0).Expand().Border(wxLEFT | wxRIGHT | wxBOTTOM, 20));
 
@@ -593,7 +592,7 @@ void OldPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 		if(aid_changed) {
 			edit_item->setActionID(new_aid);
 		}
-		
+
 	} else if(edit_creature) {
 		int new_spawntime = count_field->GetValue();
 		edit_creature->setSpawnTime(new_spawntime);

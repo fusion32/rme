@@ -35,7 +35,6 @@
 #include "sprites.h"
 
 #include "item.h"
-#include "complexitem.h"
 #include "creatures.h"
 #include "creature.h"
 #include "map.h"

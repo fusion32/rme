@@ -24,7 +24,6 @@
 #include "items.h"
 #include "map.h"
 #include "item.h"
-#include "complexitem.h"
 #include "raw_brush.h"
 
 #include "palette_window.h"
@@ -812,9 +811,11 @@ void FindBrushDialog::OnClickOKInternal()
 				// Did we not find a matching brush?
 				if(!result_brush) {
 					// Then let's search the RAWs
-					for(int id = 0; id <= g_items.getMaxID(); ++id) {
-						const ItemType& type = g_items.getItemType(id);
-						if(type.id == 0)
+					for(int typeId = GetMinItemTypeId();
+							typeId <= GetMaxItemTypeId();
+							typeId += 1){
+						const ItemType &type = GetItemType(typeId);
+						if(type.typeId == 0)
 							continue;
 
 						RAWBrush* raw_brush = type.raw_brush;
@@ -867,9 +868,11 @@ void FindBrushDialog::RefreshContentsInternal()
 			item_list->AddBrush(const_cast<Brush*>(brush));
 		}
 
-		for(int id = 0; id <= g_items.getMaxID(); ++id) {
-			const ItemType& type = g_items.getItemType(id);
-			if(type.id == 0)
+		for(int typeId = GetMinItemTypeId();
+				typeId <= GetMaxItemTypeId();
+				typeId += 1){
+			const ItemType &type = GetItemType(typeId);
+			if(type.typeId == 0)
 				continue;
 
 			RAWBrush* raw_brush = type.raw_brush;

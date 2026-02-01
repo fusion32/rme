@@ -38,14 +38,12 @@ RAWBrush::~RAWBrush()
 
 int RAWBrush::getLookID() const
 {
-	if(itemtype)
-		return itemtype->typeId;
-	return 0;
+	return (itemtype ? itemtype->typeId : 0);
 }
 
 uint16_t RAWBrush::getItemID() const
 {
-	return itemtype->typeId;
+	return (itemtype ? itemtype->typeId : 0);
 }
 
 std::string RAWBrush::getName() const

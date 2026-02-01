@@ -20,37 +20,6 @@
 
 #include "items.h"
 
-enum LiquidType {
-	LIQUID_NONE = 0,
-	LIQUID_WATER = 1,
-	LIQUID_BLOOD = 2,
-	LIQUID_BEER = 3,
-	LIQUID_SLIME = 4,
-	LIQUID_LEMONADE = 5,
-	LIQUID_MILK = 6,
-	LIQUID_MANAFLUID = 7,
-	LIQUID_INK = 8,
-	LIQUID_WATER2 = 9,
-	LIQUID_LIFEFLUID = 10,
-	LIQUID_OIL = 11,
-	LIQUID_SLIME2 = 12,
-	LIQUID_URINE = 13,
-	LIQUID_COCONUT_MILK = 14,
-	LIQUID_WINE = 15,
-	LIQUID_MUD = 19,
-	LIQUID_FRUIT_JUICE = 21,
-	LIQUID_LAVA = 26,
-	LIQUID_RUM = 27,
-	LIQUID_SWAMP = 28,
-	LIQUID_TEA = 35,
-	LIQUID_MEAD = 43,
-
-	LIQUID_FIRST = LIQUID_WATER,
-	LIQUID_LAST = LIQUID_MEAD
-};
-
-IMPLEMENT_INCREMENT_OP(LiquidType)
-
 class Creature;
 class Border;
 class Tile;
@@ -63,19 +32,18 @@ struct SpriteLight;
 
 class Item {
 public:
-	//Factory member to create item of right type based on type
-	static Item* Create(uint16_t id, uint16_t subtype = 0xFFFF);
-	static Item* Create(pugi::xml_node);
-	static Item* Create_OTBM(const IOMap& maphandle, BinaryNode* stream);
+	//Item *container = NULL; //unused
+	Item *next = NULL;
+	Item *content = NULL;
+	int typeId = 0;
+	bool selected = false;
+	int attributes[4] = {};
 
-public:
-	~Item();
+	Item(int typeId_, int value = 0);
+	~Item(void);
 
-	Item* deepCopy() const;
-
-	// Static conversions
-	static std::string LiquidID2Name(uint16_t id);
-	static uint16_t LiquidName2ID(std::string id);
+	void transform(int newTypeId, int value = 0);
+	Item *deepCopy(void) const;
 
 	uint16_t getID() const { return typeId; }
 	bool isValidID() const { return ItemTypeExists(typeId); }
@@ -85,15 +53,19 @@ public:
 	bool getFlag(ObjectFlag flag) const;
 	int getAttribute(ObjectTypeAttribute attr) const;
 	int getAttribute(ObjectInstanceAttribute attr) const;
+	int getStackPriority(void) const;
+	void setAttribute(ObjectInstanceAttribute attr, int value);
+	int countItems(void) const;
 
-	int getCount() const;
-	double getWeight() const;
+	int getFrame() const;
+	uint8_t getMiniMapColor() const;
+	wxPoint getDrawOffset() const;
+	SpriteLight getLight() const;
 
-	void doRotate() {
-		if(getFlag(ROTATE)) {
-			setID(getAttribute(ROTATETARGET));
-		}
-	}
+	// Wall alignment (vertical, horizontal, pole, corner)
+	BorderType getWallAlignment() const;
+	// Border aligment (south, west etc.)
+	BorderType getBorderAlignment() const;
 
 	Brush* getBrush() const { return getItemType().brush; }
 	GroundBrush* getGroundBrush() const;
@@ -108,47 +80,17 @@ public:
 	uint32_t getBorderGroup() const { return getItemType().border_group; }
 	bool isOptionalBorder() const { return getItemType().isOptionalBorder; }
 	bool isWall() const { return getItemType().isWall; }
-	bool isDoor() const { return getItemType().isDoor(); }
 	bool isOpen() const { return getItemType().isOpen; }
 	bool isBrushDoor() const { return getItemType().isBrushDoor; }
 	bool isTable() const { return getItemType().isTable; }
 	bool isCarpet() const { return getItemType().isCarpet; }
 
-	// Wall alignment (vertical, horizontal, pole, corner)
-	BorderType getWallAlignment() const;
-	// Border aligment (south, west etc.)
-	BorderType getBorderAlignment() const;
-
-	// Drawing related
-	int getFrame() const;
-	uint8_t getMiniMapColor() const;
-	wxPoint getDrawOffset() const;
-	SpriteLight getLight() const;
-
-	// Selection
 	bool isSelected() const { return selected; }
 	void select() {selected = true; }
 	void deselect() {selected = false; }
-	void toggleSelection() {selected =! selected; }
-
-protected:
-	//Item *container; //unused
-	Item *next;
-	Item *content;
-	int typeId;
-	bool selected;
-	int attributes[4];
-
-	// TODO(fusion): We still need some way to relate integers with strings for
-	// TEXTSTRING and EDITOR attributes. We could use a running index and a hash
-	// table or use something similar to what the game server does. The simplest
-	// would be a hash table, idk.
-	// static int stringAttributeCounter = 0;
-	// static std::unordered_map<int, std::string> stringAttributes;
+	void toggleSelection() {selected = !selected; }
 };
 
-typedef std::vector<Item*> ItemVector;
-
-Item* transformItem(Item* old_item, uint16_t new_id, Tile* parent = nullptr);
+Item* CreateItem(int typeId_, int value = 0);
 
 #endif

@@ -20,7 +20,6 @@
 #include "house_brush.h"
 #include "house.h"
 #include "map.h"
-#include "complexitem.h"
 
 //=============================================================================
 // House Brush

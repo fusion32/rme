@@ -201,6 +201,45 @@ enum ObjectInstanceAttribute {
 	NUM_INSTANCE_ATTRIBUTES	= 18,
 };
 
+enum {
+	STACK_PRIORITY_BANK		= 0,
+	STACK_PRIORITY_CLIP		= 1,
+	STACK_PRIORITY_BOTTOM	= 2,
+	STACK_PRIORITY_TOP		= 3,
+	STACK_PRIORITY_CREATURE	= 4,
+	STACK_PRIORITY_LOW		= 5,
+};
+
+enum LiquidColor {
+	LIQUID_COLORLESS	= 0,
+	LIQUID_BLUE			= 1,
+	LIQUID_RED			= 2,
+	LIQUID_BROWN		= 3,
+	LIQUID_GREEN		= 4,
+	LIQUID_YELLOW		= 5,
+	LIQUID_WHITE		= 6,
+	LIQUID_PURPLE		= 7,
+};
+
+enum LiquidType {
+	LIQUID_NONE			= 0,
+	LIQUID_WATER		= 1,
+	LIQUID_WINE			= 2,
+	LIQUID_BEER			= 3,
+	LIQUID_MUD			= 4,
+	LIQUID_BLOOD		= 5,
+	LIQUID_SLIME		= 6,
+	LIQUID_OIL			= 7,
+	LIQUID_URINE		= 8,
+	LIQUID_MILK			= 9,
+	LIQUID_MANA			= 10,
+	LIQUID_LIFE			= 11,
+	LIQUID_LEMONADE		= 12,
+
+	LIQUID_FIRST		= LIQUID_WATER,
+	LIQUID_LAST			= LIQUID_LEMONADE,
+};
+
 class ItemType {
 public:
 	ItemType(void);
@@ -241,6 +280,7 @@ public:
 	bool getFlag(ObjectFlag flag) const;
 	int getAttribute(ObjectTypeAttribute attr) const;
 	int getAttributeOffset(ObjectInstanceAttribute attr) const;
+	int getStackPriority(void) const;
 };
 
 int GetFlagByName(const char *name);
@@ -249,7 +289,10 @@ int GetInstanceAttributeByName(const char *name);
 const char *GetFlagName(int flag);
 const char *GetTypeAttributeName(int attr);
 const char *GetInstanceAttributeName(int attr);
+const char *GetLiquidName(int liquidType);
+int GetLiquidColor(int liquidType);
 bool ItemTypeExists(uint16_t typeId);
+int GetMinItemTypeId(void);
 int GetMaxItemTypeId(void);
 const ItemType &GetItemType(uint16_t typeId);
 ItemType *GetMutableItemType(uint16_t typeId);

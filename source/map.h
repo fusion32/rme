@@ -23,7 +23,6 @@
 #include "town.h"
 #include "house.h"
 #include "spawn.h"
-#include "complexitem.h"
 #include "waypoints.h"
 #include "templates.h"
 

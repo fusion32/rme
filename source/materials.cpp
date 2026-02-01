@@ -258,8 +258,9 @@ void Materials::createOtherTileset()
 		tilesets["NPCs"] = npc_tileset;
 	}
 
-	// There should really be an iterator to do this
-	for(int typeId = 0; typeId <= GetMaxItemTypeId(); ++typeId) {
+	for(int typeId = GetMinItemTypeId();
+			typeId <= GetMaxItemTypeId();
+			typeId += 1) {
 		ItemType* type = GetMutableItemType(typeId);
 		if(!type) {
 			continue;

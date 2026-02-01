@@ -1620,31 +1620,24 @@ void MainMenuBar::OnMapStatistics(wxCommandEvent& WXUNUSED(event))
 
 		tile_count += 1;
 
+		// TODO(fusion): Relevant srv flags/attributes instead?
 		bool is_detailed = false;
-#define ANALYZE_ITEM(_item) {\
-	item_count += 1; \
-	if(!(_item)->isGroundTile() && !(_item)->isBorder()) { \
-		is_detailed = true; \
-		const ItemType& it = g_items.getItemType((_item)->getID()); \
-		if(it.moveable) { \
-			loose_item_count += 1; \
-		} \
-		if(it.isDepot()) { \
-			depot_count += 1; \
-		} \
-		if((_item)->getActionID() > 0) { \
-			action_item_count += 1; \
-		} \
-		if((_item)->getUniqueID() > 0) { \
-			unique_item_count += 1; \
-		} \
-		if(Container* c = dynamic_cast<Container*>((_item))) { \
-			if(c->getVector().size()) { \
-				container_count += 1; \
-			} \
-		} \
-	} \
-}
+#define ANALYZE_ITEM(_item)												\
+		do {															\
+			item_count += 1;											\
+			if(!(_item)->getFlag(BANK) && !(_item)->getFlag(CLIP)) {	\
+				is_detailed = true;										\
+				if(!it.getFlag(UNMOVE)) {								\
+					loose_item_count += 1;								\
+				}														\
+				if(it.getFlag(CONTAINER) || it.getFlag(CHEST)){			\
+					if((_item)->content != NULL) {						\
+						container_count += 1;							\
+					}													\
+				}														\
+			}															\
+		} while(false)
+
 		if(tile->ground) {
 			ANALYZE_ITEM(tile->ground);
 		}

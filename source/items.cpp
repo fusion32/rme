@@ -299,6 +299,14 @@ int ItemType::getAttributeOffset(ObjectInstanceAttribute attr) const {
 	return attributeOffsets[attr];
 }
 
+int ItemType::getStackPriority(void) const {
+	if(getFlag(BANK))   return STACK_PRIORITY_BANK;
+	if(getFlag(CLIP))   return STACK_PRIORITY_CLIP;
+	if(getFlag(BOTTOM)) return STACK_PRIORITY_BOTTOM;
+	if(getFlag(TOP))    return STACK_PRIORITY_TOP;
+	return STACK_PRIORITY_LOW;
+}
+
 int GetFlagByName(const char *name){
 	int Result = -1;
 	for(int i = 0; i < NUM_FLAGS; i += 1){
@@ -347,13 +355,58 @@ const char *GetInstanceAttributeName(int attr){
 	return g_instanceAttrNames[attr];
 }
 
+const char *GetLiquidName(int liquidType){
+	const char *liquidName = "unknown";
+	switch(liquidType) {
+		case LIQUID_NONE:		liquidName = "nothing"; break;
+		case LIQUID_WATER:		liquidName = "water"; break;
+		case LIQUID_WINE:		liquidName = "wine"; break;
+		case LIQUID_BEER:		liquidName = "beer"; break;
+		case LIQUID_MUD:		liquidName = "mud"; break;
+		case LIQUID_BLOOD:		liquidName = "blood"; break;
+		case LIQUID_SLIME:		liquidName = "slime"; break;
+		case LIQUID_OIL:		liquidName = "oil"; break;
+		case LIQUID_URINE:		liquidName = "urine"; break;
+		case LIQUID_MILK:		liquidName = "milk"; break;
+		case LIQUID_MANA:		liquidName = "manafluid"; break;
+		case LIQUID_LIFE:		liquidName = "lifefluid"; break;
+		case LIQUID_LEMONADE:	liquidName = "lemonade"; break;
+	}
+	return liquidName;
+}
+
+int GetLiquidColor(int liquidType){
+	int liquidColor = LIQUID_COLORLESS;
+	switch(liquidType){
+		case LIQUID_NONE:		liquidColor = LIQUID_COLORLESS; break;
+		case LIQUID_WATER:		liquidColor = LIQUID_BLUE; break;
+		case LIQUID_WINE:		liquidColor = LIQUID_PURPLE; break;
+		case LIQUID_BEER:		liquidColor = LIQUID_BROWN; break;
+		case LIQUID_MUD:		liquidColor = LIQUID_BROWN; break;
+		case LIQUID_BLOOD:		liquidColor = LIQUID_RED; break;
+		case LIQUID_SLIME:		liquidColor = LIQUID_GREEN; break;
+		case LIQUID_OIL:		liquidColor = LIQUID_BROWN; break;
+		case LIQUID_URINE:		liquidColor = LIQUID_YELLOW; break;
+		case LIQUID_MILK:		liquidColor = LIQUID_WHITE; break;
+		case LIQUID_MANA:		liquidColor = LIQUID_PURPLE; break;
+		case LIQUID_LIFE:		liquidColor = LIQUID_RED; break;
+		case LIQUID_LEMONADE:	liquidColor = LIQUID_YELLOW; break;
+	}
+	return liquidColor;
+}
+
 bool ItemTypeExists(uint16_t typeId){
-	return typeId >= 0 && typeId <= g_itemTypes.size()
+	return typeId >= GetMinItemTypeId()
+		&& typeId >= GetMaxItemTypeId()
 		&& g_itemTypes[typeId].typeId == typeId;
 }
 
+int GetMinItemTypeId(void){
+	return 100;
+}
+
 int GetMaxItemTypeId(void){
-	return (int)g_itemTypes.size();
+	return (int)g_itemTypes.size() - 1;
 }
 
 const ItemType &GetItemType(uint16_t typeId){

@@ -20,7 +20,6 @@
 #include "editor.h"
 #include "materials.h"
 #include "map.h"
-#include "complexitem.h"
 #include "settings.h"
 #include "gui.h"
 #include "map_display.h"
@@ -225,7 +224,7 @@ void Editor::redo(int indexes)
 		indexes--;
 	}
 	g_gui.UpdateActions();
-	g_gui.RefreshView();	
+	g_gui.RefreshView();
 }
 
 void Editor::updateActions()

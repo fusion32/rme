@@ -33,16 +33,6 @@ ReplaceItemsButton::ReplaceItemsButton(wxWindow* parent) :
 	////
 }
 
-ItemGroup_t ReplaceItemsButton::GetGroup() const
-{
-	if(m_id != 0) {
-		const ItemType& it = g_items.getItemType(m_id);
-		if(it.id != 0)
-			return it.group;
-	}
-	return ITEM_GROUP_NONE;
-}
-
 void ReplaceItemsButton::SetItemId(uint16_t id)
 {
 	if(m_id == id)
@@ -51,9 +41,9 @@ void ReplaceItemsButton::SetItemId(uint16_t id)
 	m_id = id;
 
 	if(m_id != 0) {
-		const ItemType& it = g_items.getItemType(m_id);
-		if(it.id != 0) {
-			SetSprite(it.clientID);
+		const ItemType &it = GetItemType(m_id);
+		if(it.typeId != 0) {
+			SetSprite(it.typeId);
 			return;
 		}
 	}
@@ -123,11 +113,9 @@ void ReplaceItemsListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t index)
 {
 	ASSERT(index < m_items.size());
 
-	const ReplacingItem& item = m_items.at(index);
-	const ItemType& type1 = g_items.getItemType(item.replaceId);
-	Sprite* sprite1 = g_gui.gfx.getSprite(type1.clientID);
-	const ItemType& type2 = g_items.getItemType(item.withId);
-	Sprite* sprite2 = g_gui.gfx.getSprite(type2.clientID);
+	const ReplacingItem &item = m_items.at(index);
+	Sprite *sprite1 = g_gui.gfx.getSprite(item.replaceId);
+	Sprite *sprite2 = g_gui.gfx.getSprite(item.withId);
 
 	if(sprite1 && sprite2) {
 		int x = rect.GetX();

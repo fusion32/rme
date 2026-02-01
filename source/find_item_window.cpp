@@ -54,7 +54,7 @@ FindItemDialog::FindItemDialog(wxWindow* parent, const wxString& title, bool onl
 	options_box_sizer->Add(options_radio_box, 0, wxALL | wxEXPAND, 5);
 
 	wxStaticBoxSizer* server_id_box_sizer = newd wxStaticBoxSizer(newd wxStaticBox(this, wxID_ANY, "Server ID"), wxVERTICAL);
-	server_id_spin = newd wxSpinCtrl(server_id_box_sizer->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, g_items.getMinID(), g_items.getMaxID(), g_items.getMinID());
+	server_id_spin = newd wxSpinCtrl(server_id_box_sizer->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, GetMinItemTypeId(), GetMaxItemTypeId(), GetMinItemTypeId());
 	server_id_box_sizer->Add(server_id_spin, 0, wxALL | wxEXPAND, 5);
 	options_box_sizer->Add(server_id_box_sizer, 1, wxALL | wxEXPAND, 5);
 
@@ -284,54 +284,29 @@ void FindItemDialog::RefreshContentsInternal()
 	bool found_search_results = false;
 
 	if(selection == SearchMode::ServerIDs) {
-		uint16_t serverID = (uint16_t)server_id_spin->GetValue();
-		for(int id = g_items.getMinID(); id <= g_items.getMaxID(); ++id) {
-			const ItemType& item = g_items.getItemType(id);
-			if(item.id != serverID)
-				continue;
-
-			RAWBrush* raw_brush = item.raw_brush;
-			if(!raw_brush)
-				continue;
-
-			if(only_pickupables && !item.pickupable)
-				continue;
-
+		int typeId = server_id_spin->GetValue();
+		const ItemType &type = GetItemType(typeId);
+		if(type.typeId != 0 && type.raw_brush
+				&& (!only_pickupables || item.getFlag(TAKE))){
 			found_search_results = true;
-			items_list->AddBrush(raw_brush);
-		}
-	}
-	else if(selection == SearchMode::ClientIDs) {
-		uint16_t clientID = static_cast<uint16_t>(client_id_spin->GetValue());
-		for(int id = g_items.getMinID(); id <= g_items.getMaxID(); ++id) {
-			const ItemType& item = g_items.getItemType(id);
-			if(item.id == 0 || item.clientID != clientID)
-				continue;
-
-			RAWBrush* raw_brush = item.raw_brush;
-			if(!raw_brush)
-				continue;
-
-			if(only_pickupables && !item.pickupable)
-				continue;
-
-			found_search_results = true;
-			items_list->AddBrush(raw_brush);
+			items_list->AddBrush(type.raw_brush);
 		}
 	}
 	else if(selection == SearchMode::Names) {
 		std::string search_string = as_lower_str(nstr(name_text_input->GetValue()));
 		if(search_string.size() >= 2) {
-			for(int id = g_items.getMinID(); id <= g_items.getMaxID(); ++id) {
-				const ItemType& item = g_items.getItemType(id);
-				if(item.id == 0)
+			for(int typeId = GetMinItemTypeId();
+					typeId <= GetMaxItemTypeId();
+					typeId += 1){
+				const ItemType &type = GetItemType(typeId);
+				if(type.typeId == 0)
 					continue;
 
-				RAWBrush* raw_brush = item.raw_brush;
+				RAWBrush* raw_brush = type.raw_brush;
 				if(!raw_brush)
 					continue;
 
-				if(only_pickupables && !item.pickupable)
+				if(only_pickupables && !type.getFlag(TAKE))
 					continue;
 
 				if(as_lower_str(raw_brush->getName()).find(search_string) == std::string::npos)
@@ -343,28 +318,27 @@ void FindItemDialog::RefreshContentsInternal()
 		}
 	}
 	else if(selection == SearchMode::Types) {
-		for(int id = g_items.getMinID(); id <= g_items.getMaxID(); ++id) {
-			const ItemType& item = g_items.getItemType(id);
-			if(item.id == 0)
+		for(int typeId = GetMinItemTypeId();
+				typeId <= GetMaxItemTypeId();
+				typeId += 1){
+			const ItemType &type = GetItemType(typeId);
+			if(type.typeId == 0)
 				continue;
 
-			RAWBrush* raw_brush = item.raw_brush;
+
+			RAWBrush* raw_brush = type.raw_brush;
 			if(!raw_brush)
 				continue;
 
-			if(only_pickupables && !item.pickupable)
+			if(only_pickupables && !type.getFlag(TAKE))
 				continue;
 
 			SearchItemType selection = (SearchItemType)types_radio_box->GetSelection();
-			if((selection == SearchItemType::Depot && !item.isDepot()) ||
-				(selection == SearchItemType::Mailbox && !item.isMailbox()) ||
-				(selection == SearchItemType::TrashHolder && !item.isTrashHolder()) ||
-				(selection == SearchItemType::Container && !item.isContainer()) ||
-				(selection == SearchItemType::Door && !item.isDoor()) ||
-				(selection == SearchItemType::MagicField && !item.isMagicField()) ||
-				(selection == SearchItemType::Teleport && !item.isTeleport()) ||
-				(selection == SearchItemType::Bed && !item.isBed()) ||
-				(selection == SearchItemType::Key && !item.isKey())) {
+			if((selection == SearchItemType::Container && !type.getFlag(CONTAINER) && !type.getFlag(CHEST)) ||
+				(selection == SearchItemType::MagicField && !type.getFlag(MAGICFIELD)) ||
+				(selection == SearchItemType::Teleport && !type.getFlag(TELEPORTABSOLUTE) && !type.getFlag(TELEPORTRELATIVE)) ||
+				(selection == SearchItemType::Bed && !type.getFlag(BED)) ||
+				(selection == SearchItemType::Key && !type.getFlag(KEY))) {
 				continue;
 			}
 
@@ -390,30 +364,30 @@ void FindItemDialog::RefreshContentsInternal()
 			floor_change->GetValue());
 
 		if(has_selected) {
-			for(int id = g_items.getMinID(); id <= g_items.getMaxID(); ++id) {
-				const ItemType& item = g_items.getItemType(id);
-				if(item.id == 0)
+			for(int typeId = GetMinItemTypeId();
+					typeId <= GetMaxItemTypeId();
+					typeId += 1){
+				const ItemType &type = GetItemType(typeId);
+				if(type.typeId == 0)
 					continue;
 
 				RAWBrush* raw_brush = item.raw_brush;
 				if(!raw_brush)
 					continue;
 
-				if((unpassable->GetValue() && !item.unpassable) ||
-					(unmovable->GetValue() && item.moveable) ||
-					(block_missiles->GetValue() && !item.blockMissiles) ||
-					(block_pathfinder->GetValue() && !item.blockPathfinder) ||
-					(readable->GetValue() && !item.canReadText) ||
-					(writeable->GetValue() && !item.canWriteText) ||
-					(pickupable->GetValue() && !item.pickupable) ||
-					(stackable->GetValue() && !item.stackable) ||
-					(rotatable->GetValue() && !item.rotable) ||
-					(hangable->GetValue() && !item.isHangable) ||
-					(hook_east->GetValue() && !item.hookEast) ||
-					(hook_south->GetValue() && !item.hookSouth) ||
-					(has_elevation->GetValue() && !item.hasElevation) ||
-					(ignore_look->GetValue() && !item.ignoreLook) ||
-					(floor_change->GetValue() && !item.isFloorChange())) {
+				if((unpassable->GetValue() && !type.getFlag(UNPASS)) ||
+					(unmovable->GetValue() && !type.getFlag(UNMOVE)) ||
+					(block_missiles->GetValue() && !type.getFlag(UNTHROW)) ||
+					(block_pathfinder->GetValue() && !type.getFlag(UNPASS)) ||
+					(readable->GetValue() && !type.getFlag(TEXT)) ||
+					(writeable->GetValue() && !type.getFlag(WRITE) && !type.getFlag(WRITEONCE)) ||
+					(pickupable->GetValue() && !type.getFlag(TAKE)) ||
+					(stackable->GetValue() && !type.getFlag(CUMULATIVE)) ||
+					(rotatable->GetValue() && !type.getFlag(ROTATE)) ||
+					(hangable->GetValue() && !type.getFlag(HANG)) ||
+					(hook_east->GetValue() && !type.getFlag(HOOKEAST)) ||
+					(hook_south->GetValue() && !type.getFlag(HOOKSOUTH)) ||
+					(has_elevation->GetValue() && !type.getFlag(HEIGHT))){
 					continue;
 				}
 

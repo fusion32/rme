@@ -23,7 +23,6 @@
 #include "properties_window.h"
 #include "find_item_window.h"
 #include "gui.h"
-#include "complexitem.h"
 #include "map.h"
 
 // ============================================================================

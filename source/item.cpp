@@ -15,13 +15,13 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
+#include "items.h"
 #include "main.h"
 
 #include "brush.h"
 #include "graphics.h"
 #include "gui.h"
 #include "tile.h"
-#include "complexitem.h"
 #include "iomap.h"
 #include "item.h"
 
@@ -30,129 +30,208 @@
 #include "table_brush.h"
 #include "wall_brush.h"
 
-Item* Item::Create(uint16_t typeId, uint16_t subtype /*= 0xFFFF*/)
-{
-	if(id == 0) return nullptr;
+// String Attributes
+//==============================================================================
+// NOTE(fusion): Definitely not the most performant approach but string pointers
+// should be stable as long as they're not deleted.
+// NOTE(fusion): Definitely not the best approach overall
+static std::vector<const char*> g_stringAttributes;
 
-	const ItemType &type = GetItemType(typeId);
-	if(type.typeId == 0) {
-		return newd Item(id, subtype);
+static int AddStringAttribute(const char *text){
+	if(text == NULL || strlen(text) == 0){
+		return 0;
 	}
 
-	if(type.isDepot()) {
-		return new Depot(id);
-	} else if(type.isContainer()) {
-		return new Container(id);
-	} else if(type.isTeleport()) {
-		return new Teleport(id);
-	} else if(type.isDoor()) {
-		return new Door(id);
-	} else if(subtype == 0xFFFF) {
-		if(type.getFlag(LIQUIDCONTAINER)) {
-			return new Item(id, LIQUID_NONE);
-		} else if(type.getFlag(LIQUIDPOOL)) {
-			return new Item(id, LIQUID_WATER);
-		} else if(type.charges > 0) {
-			return new Item(id, type.charges);
-		} else {
-			return new Item(id, 1);
+	int numStrings = (int)g_stringAttributes.size();
+	int insertIndex = 0;
+	while(insertIndex < numStrings){
+		if(g_stringAttributes[insertIndex] == NULL){
+			break;
 		}
-	}
-	return new Item(id, subtype);
-}
-
-Item* Item::deepCopy() const
-{
-	Item* copy = Create(id, subtype);
-	if(copy) {
-		copy->selected = selected;
-		if(attributes)
-			copy->attributes = newd ItemAttributeMap(*attributes);
-	}
-	return copy;
-}
-
-Item* transformItem(Item* old_item, uint16_t new_id, Tile* parent)
-{
-	if(old_item == nullptr)
-		return nullptr;
-
-	old_item->setID(new_id);
-	// Through the magic of deepCopy, this will now be a pointer to an item of the correct type.
-	Item* new_item = old_item->deepCopy();
-	if(parent) {
-		// Find the old item and remove it from the tile, insert this one instead!
-		if(old_item == parent->ground) {
-			delete old_item;
-			parent->ground = new_item;
-			return new_item;
-		}
-
-		std::queue<Container*> containers;
-		for(ItemVector::iterator item_iter = parent->items.begin(); item_iter != parent->items.end(); ++item_iter) {
-			if(*item_iter == old_item) {
-				delete old_item;
-				item_iter = parent->items.erase(item_iter);
-				parent->items.insert(item_iter, new_item);
-				return new_item;
-			}
-
-			Container* c = dynamic_cast<Container*>(*item_iter);
-			if(c)
-				containers.push(c);
-		}
-
-		while(containers.size() != 0) {
-			Container* container = containers.front();
-			ItemVector& v = container->getVector();
-			for(ItemVector::iterator item_iter = v.begin(); item_iter != v.end(); ++item_iter) {
-				Item* i = *item_iter;
-				Container* c = dynamic_cast<Container*>(i);
-				if(c)
-					containers.push(c);
-
-				if(i == old_item) {
-					// Found it!
-					item_iter = v.erase(item_iter);
-					v.insert(item_iter, new_item);
-					return new_item;
-				}
-			}
-			containers.pop();
-		}
+		insertIndex += 1;
 	}
 
-	delete new_item;
-	return nullptr;
+	if(insertIndex >= numStrings){
+		g_stringAttributes.push_back(NULL);
+	}
+
+	g_stringAttributes[insertIndex] = strdup(text);
+	return 1 + insertIndex;
 }
 
-uint32_t Item::memsize() const
-{
-	uint32_t mem = sizeof(*this);
-	return mem;
+static const char *GetStringAttribute(int number){
+	int numStrings = (int)g_stringAttributes.size();
+	int readIndex = number - 1;
+	if(readIndex < 0 || readIndex >= numStrings){
+		std::cout << "GetStringAttribute: Invalid string number." << std::endl;
+		return NULL;
+	}
+
+	return g_stringAttributes[readIndex];
 }
 
-void Item::setID(uint16_t new_id)
-{
-	id = new_id;
+static int DupStringAttribute(int number){
+	return AddStringAttribute(GetStringAttribute(number));
 }
 
-void Item::setSubtype(uint16_t _subtype)
-{
-	subtype = _subtype;
+static void DeleteStringAttribute(int number){
+	int numStrings = (int)g_stringAttributes.size();
+	int deleteIndex = number - 1;
+	if(deleteIndex < 0 || deleteIndex >= numStrings){
+		std::cout << "DeleteStringAttribute: Invalid string number." << std::endl;
+		return;
+	}
+
+	if(g_stringAttributes[deleteIndex]){
+		free(g_stringAttributes[deleteIndex]);
+		g_stringAttributes[deleteIndex] = NULL;
+	}
 }
 
-bool Item::hasSubtype() const
-{
-	const ItemType &type = GetItemType(id);
-	return type.getFlag(LIQUIDCONTAINER)
-		|| type.getFlag(LIQUIDPOOL)
-		|| type.getFlag(CUMULATIVE);
+#if 0
+// TODO(fusion): Probably uneeded?
+static void ClearStringAttributes(void){
+	for(const char *s: g_stringAttributes){
+		free(s);
+	}
+	g_stringAttributes.clear();
+}
+#endif
+
+// Item
+//==============================================================================
+Item::Item(int typeId_, int value /*= 0*/) : typeId(typeId_) {
+	const ItemType &type = getItemType();
+	if(type.getFlag(CUMULATIVE)){
+		setAttribute(AMOUNT, value);
+	}else if(type.getFlag(LIQUIDPOOL)){
+		setAttribute(POOLLIQUIDTYPE, value);
+	}else if(type.getFlag(LIQUIDCONTAINER)){
+		setAttribute(CONTAINERLIQUIDTYPE, value);
+	}else if(type.getFlag(KEY)){
+		setAttribute(KEYNUMBER, value);
+	}else if(type.getFlag(RUNE)){
+		setAttribute(CHARGES, value);
+	}
 }
 
-uint16_t Item::getSubtype() const
-{
-	return hasSubtype() ? subtype : 0;
+Item::~Item(void) {
+	ASSERT(next == NULL);
+	if(getFlag(CONTAINER) || getFlag(CHEST)){
+		while(Item *inner = content){
+			content = inner->next;
+			inner->next = NULL;
+			delete inner;
+		}
+	}else{
+		ASSERT(content == NULL);
+	}
+
+	if(getFlag(TEXT)){
+		DeleteStringAttribute(getAttribute(TEXTSTRING));
+		DeleteStringAttribute(getAttribute(EDITOR));
+	}
+}
+
+void Item::transform(int newTypeId, int value /*= 0*/){
+	if(typeId == newTypeId){
+		return;
+	}
+
+	const ItemType &oldType = GetItemType(typeId);
+	const ItemType &newType = GetItemType(newTypeId);
+	if(oldType.getStackPriority() != newType.getStackPriority()){
+		// TODO(fusion): We might want to allow the stack priority to change but
+		// it would also require us to update its order in the tile.
+		return;
+	}
+
+	if(oldType.getFlag(CONTAINER)){
+		int count = countItems();
+		int capacity = (newType.getFlag(CONTAINER) ? newType.getAttribute(CAPACITY) : 0);
+		while(count > capacity){
+			Item *inner = content;
+			content = inner->next;
+			delete inner;
+			count -= 1;
+		}
+	}
+
+	// TODO(fusion): I'm trying to mimic the game servers' ChangeObject function
+	// here but it actually raised a concern. What happens to non-zero attributes
+	// after the item is transformed? This is because different item types will
+	// have different attribute offsets which can be a problem.
+
+	int amount = 0;
+	if(oldType.getFlag(CUMULATIVE)){
+		amount = getAttribute(AMOUNT);
+	}
+
+	if(oldType.getFlag(TEXT) && !newType.getFlag(TEXT)){
+		DeleteStringAttribute(getAttribute(TEXTSTRING));
+		setAttribute(TEXTSTRING, 0);
+		DeleteStringAttribute(getAttribute(EDITOR));
+		setAttribute(EDITOR, 0);
+	}
+
+	typeId = newTypeId;
+
+	if(newType.getFlag(CUMULATIVE)){
+		if(amount <= 0){
+			amount = 1;
+		}
+		setAttribute(AMOUNT, amount);
+	}
+
+	if(newType.getFlag(RUNE)){
+		if(getAttribute(CHARGES) == 0){
+			setAttribute(CHARGES, 1);
+		}
+	}
+
+	if(newType.getFlag(LIQUIDPOOL)){
+		if(getAttribute(POOLLIQUIDTYPE) == 0){
+			setAttribute(POOLLIQUIDTYPE, LIQUID_WATER);
+		}
+	}
+
+	if(newType.getFlag(WEAROUT)){
+		if(getAttribute(REMAININGUSES) == 0){
+			setAttribute(REMAININGUSES, newType.getAttribute(TOTALUSES));
+		}
+	}
+}
+
+Item *Item::deepCopy(void) const {
+	Item *result = newd Item(typeId);
+	result->selected = selected;
+	for(int i = 0; i < NARRAY(attributes); i += 1){
+		result->attributes[i] = attributes[i];
+	}
+
+	if(getFlag(CONTAINER) || getFlag(CHEST)){
+		Item **tail = &result->content;
+		for(Item *inner = content; inner != NULL; inner = inner->next){
+			*tail = inner->deepCopy();
+			tail = &(*tail)->next;
+		}
+	}
+
+	if(getFlag(TEXT)){
+		int textString = getAttribute(TEXTSTRING);
+		if(textString != 0){
+			textString = DupStringAttribute(textString);
+			result->setAttribute(EDITOR, textString);
+		}
+
+		int editor = getAttribute(EDITOR);
+		if(editor != 0){
+			editor = DupStringAttribute(editor);
+			result->setAttribute(EDITOR, editor);
+		}
+	}
+
+	return result;
 }
 
 bool Item::getFlag(ObjectFlag flag) const
@@ -169,13 +248,14 @@ int Item::getAttribute(ObjectInstanceAttribute attr) const
 {
 	int attrOffset = getItemType().getAttributeOffset(attr);
 	if(attrOffset == -1){
-		std::cout << "Object type " << typeId << " is missing flag "
-				<< " for instance attribute " << attr << std::endl;
+		std::cout << "Item::getAttribute: Object type " << typeId
+				<< " is missing flag for instance attribute "
+				<< attr << std::endl;
 		return 0;
 	}
 
 	if(attrOffset < 0 || attrOffset >= NARRAY(attributes)){
-		std::cout << "Object type " << typeId
+		std::cout << "Item::getAttribute: Object type " << typeId
 				<< " has invalid instance attribute offset "
 				<< attrOffset << std::endl;
 		return 0;
@@ -184,9 +264,68 @@ int Item::getAttribute(ObjectInstanceAttribute attr) const
 	return attributes[attrOffset];
 }
 
+int Item::getStackPriority(void) const {
+	return getItemType().getStackPriority();
+}
+
+void Item::setAttribute(ObjectInstanceAttribute attr, int value){
+	int attrOffset = getItemType().getAttributeOffset(attr);
+	if(attrOffset == -1){
+		std::cout << "Item::setAttribute: Object type " << typeId
+				<< " is missing flag for instance attribute "
+				<< attr << std::endl;
+		return;
+	}
+
+	if(attrOffset < 0 || attrOffset >= NARRAY(attributes)){
+		std::cout << "Item::setAttribute: Object type " << typeId
+				<< " has invalid instance attribute offset "
+				<< attrOffset << std::endl;
+		return;
+	}
+
+	if(value == 0){
+		if(attr == AMOUNT || attr == POOLLIQUIDTYPE || attr == CHARGES){
+			value = 1;
+		}else if(attr == REMAININGUSES){
+			value = getItemType().getAttribute(TOTALUSES);
+		}
+	}
+
+	attributes[attrOffset] = value;
+}
+
+int Item::countItems(void) const {
+	int result = 0;
+	if(getFlag(CONTAINER)){
+		for(Item *inner = content; inner != NULL; inner = inner->next){
+			result += 1;
+		}
+	}
+	return result;
+}
+
+int Item::getFrame(void) const {
+	int frame = 0;
+	if(GameSprite *sprite = getItemType().sprite){
+		if(sprite->animator){
+			frame = sprite->animator->getFrame();
+		}
+	}
+	return frame;
+}
+
+uint8_t Item::getMiniMapColor() const
+{
+	if(GameSprite* sprite = getItemType().sprite) {
+		return sprite->getMiniMapColor();
+	}
+	return 0;
+}
+
 wxPoint Item::getDrawOffset() const
 {
-	const ItemType &type = GetItemType(id);
+	const ItemType &type = getItemType();
 	if(type.sprite) {
 		return type.sprite->getDrawOffset();
 	}
@@ -201,54 +340,40 @@ SpriteLight Item::getLight() const
 	};
 }
 
-double Item::getWeight() const
+BorderType Item::getWallAlignment() const
 {
-	double weight = getAttribute(WEIGHT);
-	if(getFlag(CUMULATIVE) && getAttribute(AMOUNT) > 0){
-		weight *= getAttribute(AMOUNT);
+	const ItemType &type = getItemType();
+	if(!type.isWall) {
+		return BORDER_NONE;
 	}
-	return weight * 0.01;
+	return type.border_alignment;
 }
 
-uint8_t Item::getMiniMapColor() const
+BorderType Item::getBorderAlignment() const
 {
-	GameSprite* sprite = g_items.getItemType(id).sprite;
-	if(sprite) {
-		return sprite->getMiniMapColor();
-	}
-	return 0;
+	return getItemType().border_alignment;
 }
 
 GroundBrush* Item::getGroundBrush() const
 {
-	const ItemType& type = g_items.getItemType(id);
-	if(type.isGroundTile() && type.brush && type.brush->isGround()) {
+	const ItemType &type = getItemType();
+	if(type.getFlag(BANK) && type.brush && type.brush->isGround()) {
 		return type.brush->asGround();
 	}
 	return nullptr;
 }
 
-TableBrush* Item::getTableBrush() const
+WallBrush* Item::getWallBrush() const
 {
-	const ItemType& type = g_items.getItemType(id);
-	if(type.isTable && type.brush && type.brush->isTable()) {
-		return type.brush->asTable();
-	}
-	return nullptr;
-}
-
-CarpetBrush* Item::getCarpetBrush() const
-{
-	const ItemType& type = g_items.getItemType(id);
-	if(type.isCarpet && type.brush && type.brush->isCarpet()) {
-		return type.brush->asCarpet();
-	}
+	const ItemType &type = getItemType();
+	if(type.isWall && type.brush && type.brush->isWall())
+		return type.brush->asWall();
 	return nullptr;
 }
 
 DoorBrush* Item::getDoorBrush() const
 {
-	const ItemType& type = g_items.getItemType(id);
+	const ItemType &type = getItemType();
 	if(!type.isWall || !type.isBrushDoor || !type.brush || !type.brush->isWall()) {
 		return nullptr;
 	}
@@ -288,116 +413,21 @@ DoorBrush* Item::getDoorBrush() const
 	return door_brush;
 }
 
-WallBrush* Item::getWallBrush() const
+TableBrush* Item::getTableBrush() const
 {
-	const ItemType& type = g_items.getItemType(id);
-	if(type.isWall && type.brush && type.brush->isWall())
-		return type.brush->asWall();
+	const ItemType &type = getItemType();
+	if(type.isTable && type.brush && type.brush->isTable()) {
+		return type.brush->asTable();
+	}
 	return nullptr;
 }
 
-BorderType Item::getWallAlignment() const
+CarpetBrush* Item::getCarpetBrush() const
 {
-	const ItemType& type = g_items.getItemType(id);
-	if(!type.isWall) {
-		return BORDER_NONE;
+	const ItemType &type = getItemType();
+	if(type.isCarpet && type.brush && type.brush->isCarpet()) {
+		return type.brush->asCarpet();
 	}
-	return type.border_alignment;
+	return nullptr;
 }
-
-BorderType Item::getBorderAlignment() const
-{
-	const ItemType& type = g_items.getItemType(id);
-	return type.border_alignment;
-}
-
-void Item::getFrame(){
-	int frame = 0;
-	GameSprite *sprite = getItemType().sprite;
-	if(sprite && sprite->animator){
-		frame = sprite->animator->getFrame();
-	}
-	return frame;
-}
-
-// ============================================================================
-// Static conversions
-
-std::string Item::LiquidID2Name(uint16_t id)
-{
-	switch(id) {
-		case LIQUID_NONE: return "None";
-		case LIQUID_WATER: return "Water";
-		case LIQUID_BLOOD: return "Blood";
-		case LIQUID_BEER: return "Beer";
-		case LIQUID_SLIME: return "Slime";
-		case LIQUID_LEMONADE: return "Lemonade";
-		case LIQUID_MILK: return "Milk";
-		case LIQUID_MANAFLUID: return "Manafluid";
-		case LIQUID_WATER2: return "Water";
-		case LIQUID_LIFEFLUID: return "Lifefluid";
-		case LIQUID_OIL: return "Oil";
-		case LIQUID_SLIME2: return "Slime";
-		case LIQUID_URINE: return "Urine";
-		case LIQUID_COCONUT_MILK: return "Coconut Milk";
-		case LIQUID_WINE: return "Wine";
-		case LIQUID_MUD: return "Mud";
-		case LIQUID_FRUIT_JUICE: return "Fruit Juice";
-		case LIQUID_LAVA: return "Lava";
-		case LIQUID_RUM: return "Rum";
-		case LIQUID_SWAMP: return "Swamp";
-		case LIQUID_INK: return "Ink";
-		case LIQUID_TEA: return "Tea";
-		case LIQUID_MEAD: return "Mead";
-		default: return "Unknown";
-	}
-}
-
-uint16_t Item::LiquidName2ID(std::string liquid)
-{
-	to_lower_str(liquid);
-	if(liquid == "none") return LIQUID_NONE;
-	if(liquid == "water") return LIQUID_WATER;
-	if(liquid == "blood") return LIQUID_BLOOD;
-	if(liquid == "beer") return LIQUID_BEER;
-	if(liquid == "slime") return LIQUID_SLIME;
-	if(liquid == "lemonade") return LIQUID_LEMONADE;
-	if(liquid == "milk") return LIQUID_MILK;
-	if(liquid == "manafluid") return LIQUID_MANAFLUID;
-	if(liquid == "lifefluid") return LIQUID_LIFEFLUID;
-	if(liquid == "oil") return LIQUID_OIL;
-	if(liquid == "urine") return LIQUID_URINE;
-	if(liquid == "coconut milk") return LIQUID_COCONUT_MILK;
-	if(liquid == "wine") return LIQUID_WINE;
-	if(liquid == "mud") return LIQUID_MUD;
-	if(liquid == "fruit juice") return LIQUID_FRUIT_JUICE;
-	if(liquid == "lava") return LIQUID_LAVA;
-	if(liquid == "rum") return LIQUID_RUM;
-	if(liquid == "swamp") return LIQUID_SWAMP;
-	if(liquid == "ink") return LIQUID_INK;
-	if(liquid == "tea") return LIQUID_TEA;
-	if(liquid == "mead") return LIQUID_MEAD;
-	return LIQUID_NONE;
-}
-
-// ============================================================================
-// XML Saving & loading
-
-Item* Item::Create(pugi::xml_node xml)
-{
-	pugi::xml_attribute attribute;
-
-	uint16_t id = 0;
-	if((attribute = xml.attribute("id"))) {
-		id = attribute.as_ushort();
-	}
-
-	uint16_t count = 1;
-	if((attribute = xml.attribute("count")) || (attribute = xml.attribute("subtype"))) {
-		count = attribute.as_ushort();
-	}
-
-	return Create(id, count);
-}
-
 

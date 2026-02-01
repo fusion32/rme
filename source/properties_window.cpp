@@ -20,7 +20,6 @@
 #include "properties_window.h"
 
 #include "gui_ids.h"
-#include "complexitem.h"
 #include "container_properties_window.h"
 
 #include <wx/grid.h>
