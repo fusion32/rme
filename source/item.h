@@ -23,10 +23,6 @@
 class Creature;
 class Border;
 class Tile;
-class Container;
-class Depot;
-class Teleport;
-class Door;
 
 struct SpriteLight;
 

@@ -20,7 +20,6 @@
 
 #include "common_windows.h"
 
-class Container;
 class ContainerItemButton;
 
 // Right-click popup menu

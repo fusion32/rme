@@ -245,7 +245,7 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 
 void WallBrush::undraw(BaseMap* map, Tile* tile)
 {
-	tile->cleanWalls(this);
+	tile->removeWalls(this);
 }
 
 void WallBrush::draw(BaseMap* map, Tile* tile, void* parameter)
@@ -299,7 +299,7 @@ void WallBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 		}
 	}
 
-	tile->cleanWalls(this);
+	tile->removeWalls(this);
 
 	// Just find a valid item and place it, the bordering algorithm will change it to the proper shape.
 	uint16_t id = 0;
@@ -332,7 +332,7 @@ void WallBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 		}
 	}
 
-	tile->addWallItem(Item::Create(id));
+	tile->addItem(Item::Create(id));
 }
 
 bool hasMatchingWallBrushAtTile(BaseMap* map, WallBrush* wall_brush, uint32_t x, uint32_t y, uint32_t z)
@@ -587,9 +587,9 @@ void WallBrush::doWalls(BaseMap* map, Tile* tile)
 			}
 		}
 	}
-	tile->cleanWalls();
+	tile->removeWalls();
 	for(ItemVector::const_iterator it = items_to_add.begin(); it != items_to_add.end(); ++it) {
-		tile->addWallItem(*it);
+		tile->addItem(*it);
 	}
 }
 
@@ -649,7 +649,7 @@ void WallDecorationBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 
 	ItemVector::iterator iter = tile->items.begin();
 
-	tile->cleanWalls(this);
+	tile->removeWalls(this);
 	while(iter != tile->items.end()) {
 		Item* item = *iter;
 		if(item->isBorder()) {

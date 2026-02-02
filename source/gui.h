@@ -406,10 +406,9 @@ public:
 	DoorBrush* quest_door_brush;
 	DoorBrush* hatch_door_brush;
 	DoorBrush* window_door_brush;
-	FlagBrush* pz_brush;
-	FlagBrush* rook_brush;
+	FlagBrush* refresh_brush;
 	FlagBrush* nolog_brush;
-	FlagBrush* pvp_brush;
+	FlagBrush* pz_brush;
 
 protected:
 

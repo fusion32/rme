@@ -2,10 +2,6 @@ cmake_minimum_required(VERSION 3.30)
 
 project(rme)
 
-if(NOT CMAKE_BUILD_TYPE)
-	set(CMAKE_BUILD_TYPE RelWithDebInfo)
-endif()
-
 find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenGL REQUIRED)
@@ -30,6 +26,7 @@ add_executable(${PROJECT_NAME} ${rme_H} ${rme_SRC})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
+target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:__DEBUG__>)
 
 include_directories(
     ${LibArchive_INCLUDE_DIRS}

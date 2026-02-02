@@ -31,7 +31,7 @@
 class BrowseTileListBox : public wxVListBox
 {
 public:
-	BrowseTileListBox(wxWindow* parent, wxWindowID id, Tile* tile);
+	BrowseTileListBox(wxWindow* parent, wxWindowID id, Tile* tile_);
 	~BrowseTileListBox();
 
 	void OnDrawItem(wxDC& dc, const wxRect& rect, size_t index) const;
@@ -40,17 +40,13 @@ public:
 	void RemoveSelected();
 
 protected:
-	void UpdateItems();
-
-	typedef std::map<int, Item*> ItemsMap;
-	ItemsMap items;
-	Tile* edit_tile;
+	Tile *tile;
 };
 
-BrowseTileListBox::BrowseTileListBox(wxWindow* parent, wxWindowID id, Tile* tile) :
-wxVListBox(parent, id, wxDefaultPosition, wxSize(200, 180), wxLB_MULTIPLE), edit_tile(tile)
+BrowseTileListBox::BrowseTileListBox(wxWindow* parent, wxWindowID id, Tile* tile_) :
+	wxVListBox(parent, id, wxDefaultPosition, wxSize(200, 180), wxLB_MULTIPLE), tile(tile_)
 {
-	UpdateItems();
+	SetItemCount(tile->countItems());
 }
 
 BrowseTileListBox::~BrowseTileListBox()
@@ -60,10 +56,12 @@ BrowseTileListBox::~BrowseTileListBox()
 
 void BrowseTileListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const
 {
-	ItemsMap::const_iterator item_iterator = items.find(int(n));
-	Item* item = item_iterator->second;
+	Item *item = tile->getItemAt((int)n);
+	if(!item){
+		return;
+	}
 
-	Sprite* sprite = g_gui.gfx.getSprite(item->getClientID());
+	Sprite* sprite = g_gui.gfx.getSprite(item->getID());
 	if(sprite)
 		sprite->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetWidth(), rect.GetHeight());
 
@@ -93,7 +91,7 @@ Item* BrowseTileListBox::GetSelectedItem()
 	if(GetItemCount() == 0 || GetSelectedCount() == 0)
 		return nullptr;
 
-	return edit_tile->getTopSelectedItem();
+	return tile->getTopSelectedItem();
 }
 
 void BrowseTileListBox::RemoveSelected()
@@ -101,32 +99,16 @@ void BrowseTileListBox::RemoveSelected()
 	if(GetItemCount() == 0 || GetSelectedCount() == 0) return;
 
 	Clear();
-	items.clear();
 
-	// Delete the items from the tile
-	ItemVector tile_selection = edit_tile->popSelectedItems(true);
-	for(ItemVector::iterator iit = tile_selection.begin(); iit != tile_selection.end(); ++iit) {
-		delete *iit;
+	Item *items = tile->popSelectedItems(true);
+	while(Item *it = items){
+		items = it->next;
+		it->next = NULL;
+		delete it;
 	}
 
-	UpdateItems();
+	SetItemCount(tile->countItems());
 	Refresh();
-}
-
-void BrowseTileListBox::UpdateItems()
-{
-	int n = 0;
-	for(ItemVector::reverse_iterator it = edit_tile->items.rbegin(); it != edit_tile->items.rend(); ++it) {
-		items[n] = (*it);
-		++n;
-	}
-
-	if(edit_tile->ground) {
-		items[n] = edit_tile->ground;
-		++n;
-	}
-
-	SetItemCount(n);
 }
 
 // ============================================================================
@@ -162,10 +144,9 @@ wxDialog(parent, wxID_ANY, "Browse Field", position, wxSize(600, 400), wxCAPTION
 	infoSizer->AddSpacer(5);
 	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "Position:  " + pos), wxSizerFlags(0).Left());
 	infoSizer->Add(item_count_txt = newd wxStaticText(this, wxID_ANY, "Item count:  " + i2ws(item_list->GetItemCount())), wxSizerFlags(0).Left());
-	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "Protection zone:  " + b2yn(tile->isPZ())), wxSizerFlags(0).Left());
-	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "No PvP:  " + b2yn(tile->getMapFlags() & TILESTATE_NOPVP)), wxSizerFlags(0).Left());
-	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "No logout:  " + b2yn(tile->getMapFlags() & TILESTATE_NOLOGOUT)), wxSizerFlags(0).Left());
-	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "PvP zone:  " + b2yn(tile->getMapFlags() & TILESTATE_PVPZONE)), wxSizerFlags(0).Left());
+	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "Refresh:  " + b2yn(tile->getTileFlag(TILE_FLAG_REFRESH))), wxSizerFlags(0).Left());
+	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "No logout:  " + b2yn(tile->getTileFlag(TILE_FLAG_NOLOGOUT))), wxSizerFlags(0).Left());
+	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "Protection zone:  " + b2yn(tile->getTileFlag(TILE_FLAG_PROTECTIONZONE))), wxSizerFlags(0).Left());
 	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "House:  " + b2yn(tile->isHouseTile())), wxSizerFlags(0).Left());
 
 	sizer->Add(infoSizer, wxSizerFlags(0).Left().DoubleBorder());

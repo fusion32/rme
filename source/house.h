@@ -22,7 +22,6 @@
 
 class Map;
 class Tile;
-class Door;
 
 class Houses;
 

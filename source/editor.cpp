@@ -721,14 +721,17 @@ bool Editor::importMap(FileName filename, int import_x_offset, int import_y_offs
 			import_tile->setLocation(location);
 		}
 
+#if 0
+		// TODO(fusion): Unpack and pack absolute position.
 		if(offset != Position(0,0,0)) {
-			for(ItemVector::iterator iter = import_tile->items.begin(); iter != import_tile->items.end(); ++iter) {
-				Item* item = *iter;
-				if(Teleport* teleport = dynamic_cast<Teleport*>(item)) {
-					teleport->setDestination(teleport->getDestination() + offset);
+			for(Item *item = import_tile->items; item != NULL; item = item->next){
+				if(item->getFlag(TELEPORTABSOLUTE)){
+					Position pos = UnpackAbsPosition(item->getAttribute(ABSTELEPORTDESTINATION));
+					item->setAttribute(ABSTELEPORTDESTINATION, PackAbsPosition(pos + offset));
 				}
 			}
 		}
+#endif
 
 		Tile* old_tile = map.getTile(new_pos);
 		if(old_tile) {
@@ -979,10 +982,7 @@ void Editor::moveSelection(const Position& offset)
 		Tile* new_tile = tile->deepCopy(map);
 		Tile* storage_tile = map.allocator(tile->getLocation());
 
-		ItemVector selected_items = new_tile->popSelectedItems();
-		for(Item* item : selected_items) {
-			storage_tile->addItem(item);
-		}
+		storage_tile->addItems(new_tile->popSelectedItems());
 
 		if(new_tile->spawn && new_tile->spawn->isSelected()) {
 			storage_tile->spawn = new_tile->spawn;
@@ -994,11 +994,11 @@ void Editor::moveSelection(const Position& offset)
 			new_tile->creature = nullptr;
 		}
 
-		if(storage_tile->ground) {
+		if(storage_tile->getFlag(BANK)){
 			storage_tile->house_id = new_tile->house_id;
+			storage_tile->flags = new_tile->flags;
 			new_tile->house_id = 0;
-			storage_tile->setMapFlags(new_tile->getMapFlags());
-			new_tile->setMapFlags(TILESTATE_NONE);
+			new_tile->flags = 0;
 			borderize = true;
 		}
 
@@ -1040,8 +1040,10 @@ void Editor::moveSelection(const Position& offset)
 			new_tile->wallize(&map);
 			new_tile->tableize(&map);
 			new_tile->carpetize(&map);
-			if(tile->ground && tile->ground->isSelected()) {
-				new_tile->selectGround();
+			if(Item *ground = new_tile->getFirstItem(BANK)){
+				if(ground->isSelected()){
+					new_tile->selectGround();
+				}
 			}
 			action->addChange(new Change(new_tile));
 		}
@@ -1062,7 +1064,7 @@ void Editor::moveSelection(const Position& offset)
 		Tile* old_dest_tile = location->get();
 		Tile* new_dest_tile = nullptr;
 
-		if(!tile->ground || g_settings.getInteger(Config::MERGE_MOVE)) {
+		if(!tile->getFlag(BANK) || g_settings.getInteger(Config::MERGE_MOVE)) {
 			// Move items
 			if(old_dest_tile) {
 				new_dest_tile = old_dest_tile->deepCopy(map);
@@ -1109,10 +1111,10 @@ void Editor::moveSelection(const Position& offset)
 
 		// Create borders
 		for(const Tile* tile : borderize_tiles) {
-			if(!tile || !tile->ground) {
+			if(!tile || !tile->getFlag(BANK)){
 				continue;
 			}
-			if(tile->ground->getGroundBrush()) {
+			if(tile->getGroundBrush()) {
 				Tile* new_tile = tile->deepCopy(map);
 				if(borderize) {
 					new_tile->borderize(&map);
@@ -1120,8 +1122,10 @@ void Editor::moveSelection(const Position& offset)
 				new_tile->wallize(&map);
 				new_tile->tableize(&map);
 				new_tile->carpetize(&map);
-				if(tile->ground->isSelected()) {
-					new_tile->selectGround();
+				if(Item *ground = new_tile->getFirstItem(BANK)){
+					if(ground->isSelected()){
+						new_tile->selectGround();
+					}
 				}
 				action->addChange(new Change(new_tile));
 			}
@@ -1254,7 +1258,7 @@ void removeDuplicateWalls(Tile* buffer, Tile* tile)
 		if(item) {
 			WallBrush* brush = item->getWallBrush();
 			if(brush) {
-				tile->cleanWalls(brush);
+				tile->removeWalls(brush);
 			}
 		}
 	}
@@ -1525,7 +1529,7 @@ void Editor::drawInternal(const PositionVector& tilestodraw, PositionVector& til
 			if(tile) {
 				Tile* new_tile = tile->deepCopy(map);
 				if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-					new_tile->cleanBorders();
+					new_tile->removeBorders();
 				}
 				if(dodraw)
 					if(brush->isGround() && alt) {
@@ -1662,7 +1666,7 @@ void Editor::drawInternal(const PositionVector& tilestodraw, PositionVector& til
 				Tile* tile = location->get();
 				if(tile) {
 					Tile* new_tile = tile->deepCopy(map);
-					new_tile->cleanWalls(brush->isWall());
+					new_tile->removeWalls(brush->isWall());
 					g_gui.GetCurrentBrush()->draw(draw_map, new_tile);
 					draw_map->setTile(*it, new_tile, true);
 				} else if(dodraw) {
@@ -1689,7 +1693,7 @@ void Editor::drawInternal(const PositionVector& tilestodraw, PositionVector& til
 				if(tile) {
 					Tile* new_tile = tile->deepCopy(map);
 					// Wall cleaning is exempt from automagic
-					new_tile->cleanWalls(brush->isWall());
+					new_tile->removeWalls(brush->isWall());
 					if(dodraw)
 						g_gui.GetCurrentBrush()->draw(&map, new_tile);
 					else
@@ -1735,7 +1739,7 @@ void Editor::drawInternal(const PositionVector& tilestodraw, PositionVector& til
 				Tile* new_tile = tile->deepCopy(map);
 				// Wall cleaning is exempt from automagic
 				if(brush->isWall())
-					new_tile->cleanWalls(brush->asWall());
+					new_tile->removeWalls(brush->asWall());
 				if(dodraw)
 					door_brush->draw(&map, new_tile, &alt);
 				else

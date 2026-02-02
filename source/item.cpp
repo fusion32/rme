@@ -118,10 +118,10 @@ Item::Item(int typeId_, int value /*= 0*/) : typeId(typeId_) {
 Item::~Item(void) {
 	ASSERT(next == NULL);
 	if(getFlag(CONTAINER) || getFlag(CHEST)){
-		while(Item *inner = content){
-			content = inner->next;
-			inner->next = NULL;
-			delete inner;
+		while(Item *it = content){
+			content = it->next;
+			it->next = NULL;
+			delete it;
 		}
 	}else{
 		ASSERT(content == NULL);
@@ -150,9 +150,9 @@ void Item::transform(int newTypeId, int value /*= 0*/){
 		int count = countItems();
 		int capacity = (newType.getFlag(CONTAINER) ? newType.getAttribute(CAPACITY) : 0);
 		while(count > capacity){
-			Item *inner = content;
-			content = inner->next;
-			delete inner;
+			Item *first = content;
+			content = first->next;
+			delete first;
 			count -= 1;
 		}
 	}
@@ -298,7 +298,7 @@ void Item::setAttribute(ObjectInstanceAttribute attr, int value){
 int Item::countItems(void) const {
 	int result = 0;
 	if(getFlag(CONTAINER)){
-		for(Item *inner = content; inner != NULL; inner = inner->next){
+		for(Item *it = content; it != NULL; it = it->next){
 			result += 1;
 		}
 	}

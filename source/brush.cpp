@@ -81,10 +81,9 @@ void Brushes::init()
 	addBrush(g_gui.house_exit_brush = newd HouseExitBrush());
 	addBrush(g_gui.waypoint_brush = newd WaypointBrush());
 
-	addBrush(g_gui.pz_brush = newd FlagBrush(TILESTATE_PROTECTIONZONE));
-	addBrush(g_gui.rook_brush = newd FlagBrush(TILESTATE_NOPVP));
-	addBrush(g_gui.nolog_brush = newd FlagBrush(TILESTATE_NOLOGOUT));
-	addBrush(g_gui.pvp_brush = newd FlagBrush(TILESTATE_PVPZONE));
+	addBrush(g_gui.refresh_brush = newd FlagBrush(TILE_FLAG_REFRESH));
+	addBrush(g_gui.nolog_brush = newd FlagBrush(TILE_FLAG_NOLOGOUT));
+	addBrush(g_gui.pz_brush = newd FlagBrush(TILE_FLAG_PROTECTIONZONE));
 
 	GroundBrush::init();
 	WallBrush::init();
@@ -260,10 +259,9 @@ FlagBrush::~FlagBrush()
 std::string FlagBrush::getName() const
 {
 	switch(flag) {
-		case TILESTATE_PROTECTIONZONE: return "PZ brush (0x01)";
-		case TILESTATE_NOPVP: return "No combat zone brush (0x04)";
-		case TILESTATE_NOLOGOUT: return "No logout zone brush (0x08)";
-		case TILESTATE_PVPZONE: return "PVP Zone brush (0x10)";
+		case TILE_FLAG_REFRESH:        return "Refresh brush (0x04)";
+		case TILE_FLAG_NOLOGOUT:       return "No logout brush (0x04)";
+		case TILE_FLAG_PROTECTIONZONE: return "Protection zone brush (0x04)";
 	}
 	return "Unknown flag brush";
 }
@@ -271,10 +269,9 @@ std::string FlagBrush::getName() const
 int FlagBrush::getLookID() const
 {
 	switch(flag) {
-		case TILESTATE_PROTECTIONZONE: return EDITOR_SPRITE_PZ_TOOL;
-		case TILESTATE_NOPVP: return EDITOR_SPRITE_NOPVP_TOOL;
-		case TILESTATE_NOLOGOUT: return EDITOR_SPRITE_NOLOG_TOOL;
-		case TILESTATE_PVPZONE: return EDITOR_SPRITE_PVPZ_TOOL;
+		//case TILE_FLAG_REFRESH:        return EDITOR_SPRITE_REFRESH_TOOL;
+		case TILE_FLAG_NOLOGOUT:       return EDITOR_SPRITE_NOLOG_TOOL;
+		case TILE_FLAG_PROTECTIONZONE: return EDITOR_SPRITE_PZ_TOOL;
 	}
 	return 0;
 }
@@ -282,18 +279,18 @@ int FlagBrush::getLookID() const
 bool FlagBrush::canDraw(BaseMap* map, const Position& position) const
 {
 	Tile* tile = map->getTile(position);
-	return tile && tile->hasGround();
+	return tile && tile->getFlag(BANK);
 }
 
 void FlagBrush::undraw(BaseMap* map, Tile* tile)
 {
-	tile->unsetMapFlags(flag);
+	tile->clearTileFlag(flag);
 }
 
 void FlagBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 {
-	if(tile->hasGround()) {
-		tile->setMapFlags(flag);
+	if(tile->getFlag(BANK)) {
+		tile->setTileFlag(flag);
 	}
 }
 
@@ -365,7 +362,7 @@ void DoorBrush::switchDoor(Item* item)
 			ASSERT(type.id != 0);
 
 			if(type.isOpen == new_open) {
-				item->setID(dt.id);
+				item->transform(dt.id);
 				return;
 			}
 		}
@@ -432,8 +429,7 @@ bool DoorBrush::canDraw(BaseMap* map, const Position& position) const
 
 void DoorBrush::undraw(BaseMap* map, Tile* tile)
 {
-	for(ItemVector::iterator it = tile->items.begin(); it != tile->items.end(); ++it) {
-		Item* item = *it;
+	for(Item *item = tile->items; item != NULL; item = item->next){
 		if(item->isBrushDoor()) {
 			item->getWallBrush()->draw(map, tile, nullptr);
 			if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
@@ -442,142 +438,92 @@ void DoorBrush::undraw(BaseMap* map, Tile* tile)
 			return;
 		}
 	}
-
 }
 
 void DoorBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 {
-	for(ItemVector::iterator item_iter = tile->items.begin(); item_iter != tile->items.end();) {
-		Item* item = *item_iter;
-		if(!item->isWall()) {
-			++item_iter;
-			continue;
-		}
-		WallBrush* wb = item->getWallBrush();
-		if(!wb) {
-			++item_iter;
-			continue;
-		}
-
-		BorderType wall_alignment = item->getWallAlignment();
-
-		uint16_t discarded_id = 0; // The id of a discarded match
-		bool close_match = false;
-		bool perfect_match = false;
-
-		bool open = false;
-		if(parameter) {
-			open = *reinterpret_cast<bool*>(parameter);
-		}
-
-		if(item->isBrushDoor()) {
-			open = item->isOpen();
-		}
-
-		WallBrush* test_brush = wb;
-		do {
-			for(std::vector<WallBrush::DoorType>::iterator iter = test_brush->door_items[wall_alignment].begin();
-					iter != test_brush->door_items[wall_alignment].end();
-					++iter)
-			{
-				WallBrush::DoorType& dt = *iter;
-				if(dt.type == doortype) {
-					ASSERT(dt.id);
-					const ItemType &type = GetItemType(dt.id);
-					ASSERT(type.id != 0);
-
-					if(type.isOpen == open) {
-						item = transformItem(item, dt.id, tile);
-						perfect_match = true;
-						break;
-					} else if(!close_match) {
-						discarded_id = dt.id;
-						close_match = true;
-					}
-					if(!close_match && discarded_id == 0) {
-						discarded_id = dt.id;
-					}
-				}
-			}
-			test_brush = test_brush->redirect_to;
-			if(perfect_match) {
-				break;
-			}
-		} while(test_brush != wb && test_brush != nullptr);
-
-		// If we've found no perfect match, use a close-to perfect
-		if(!perfect_match && discarded_id) {
-			item = transformItem(item, discarded_id, tile);
-		}
-
-		if(g_settings.getInteger(Config::AUTO_ASSIGN_DOORID) && tile->isHouseTile()) {
-			Map* mmap = dynamic_cast<Map*>(map);
-			Door* door = dynamic_cast<Door*>(item);
-			if(mmap && door) {
-				House* house = mmap->houses.getHouse(tile->getHouseID());
-				ASSERT(house);
-				Map* real_map = dynamic_cast<Map*>(map);
-				if(real_map) {
-					door->setDoorID(house->getEmptyDoorID());
-				}
-			}
-		}
-
-		// We need to consider decorations!
-		while(true) {
-			// Vector has been modified, before we can use the iterator again we need to find the wall item again
-			item_iter = tile->items.begin();
-			while(true) {
-				if(item_iter == tile->items.end()) {
-					return;
-				}
-				if(*item_iter == item) {
-					++item_iter;
-					if(item_iter == tile->items.end()) {
-						return;
-					}
-					break;
-				}
-				++item_iter;
-			}
-			// Now it points to the correct item!
-
-			item = *item_iter;
-			if(item->isWall()) {
-				WallBrush* brush = item->getWallBrush();
-				if(brush && brush->isWallDecoration()) {
-					// We got a decoration!
-					for(std::vector<WallBrush::DoorType>::iterator it = brush->door_items[wall_alignment].begin(); it != brush->door_items[wall_alignment].end(); ++it) {
-						WallBrush::DoorType& dt = (*it);
-						if(dt.type == doortype) {
-							ASSERT(dt.id);
-							const ItemType &type = GetItemType(dt.id);
-							ASSERT(type.id != 0);
-
-							if(type.isOpen == open) {
-								item = transformItem(item, dt.id, tile);
-								perfect_match = true;
-								break;
-							} else if(!close_match) {
-								discarded_id = dt.id;
-								close_match = true;
-							}
-							if(!close_match && discarded_id == 0) {
-								discarded_id = dt.id;
-							}
-						}
-					}
-					// If we've found no perfect match, use a close-to perfect
-					if(!perfect_match && discarded_id) {
-						item = transformItem(item, discarded_id, tile);
-					}
-					continue;
-				}
-			}
+	// TODO(fusion): What the actual f*** is going on here?
+	WallBrush *wb = NULL;
+	Item *item = tile->items;
+	while(item != NULL){
+		if(item->isWall() && (wb = item->getWallBrush())){
 			break;
 		}
-		// If we get this far in the loop we should return
+		item = item->next;
+	}
+
+	if(!wb){
 		return;
+	}
+
+	bool open = parameter && *reinterpret_cast<bool*>(parameter);
+	if(item->isBrushDoor()) {
+		open = item->isOpen();
+	}
+
+	BorderType wall_alignment = item->getWallAlignment();
+	WallBrush* test_brush = wb;
+	uint16_t discarded_id = 0;
+	bool close_match = false;
+	bool perfect_match = false;
+	do {
+		for(const WallBrush::DoorType &dt: test_brush->door_items[wall_alignment]){
+			if(dt.type == doortype) {
+				ASSERT(dt.id);
+				const ItemType &type = GetItemType(dt.id);
+				ASSERT(type.id != 0);
+
+				if(type.isOpen == open) {
+					item->transform(dt.id);
+					perfect_match = true;
+					break;
+				} else if(!close_match) {
+					discarded_id = dt.id;
+					close_match = true;
+				}
+				if(!close_match && discarded_id == 0) {
+					discarded_id = dt.id;
+				}
+			}
+		}
+		test_brush = test_brush->redirect_to;
+		if(perfect_match) {
+			break;
+		}
+	} while(test_brush != wb && test_brush != nullptr);
+
+	// If we've found no perfect match, use a close-to perfect
+	if(!perfect_match && discarded_id) {
+		item->transform(discarded_id);
+	}
+
+	// TODO(fusion): Similar to HouseBrush::draw.
+
+	// We need to consider decorations!
+	while(item->isWall() && (wb = item->getWallBrush()) && wb->isWallDecoration()) {
+		for(const WallBrush::DoorType &dt: wb->door_items[wall_alignment]){
+			if(dt.type == doortype) {
+				ASSERT(dt.id);
+				const ItemType &type = GetItemType(dt.id);
+				ASSERT(type.id != 0);
+
+				if(type.isOpen == open) {
+					item->transform(dt.id);
+					perfect_match = true;
+					break;
+				} else if(!close_match) {
+					discarded_id = dt.id;
+					close_match = true;
+				}
+				if(!close_match && discarded_id == 0) {
+					discarded_id = dt.id;
+				}
+			}
+		}
+		// If we've found no perfect match, use a close-to perfect
+		if(!perfect_match && discarded_id) {
+			item->transform(discarded_id);
+		}
 	}
 }
 
@@ -643,11 +589,11 @@ bool OptionalBorderBrush::canDraw(BaseMap* map, const Position& position) const
 
 void OptionalBorderBrush::undraw(BaseMap* map, Tile* tile)
 {
-	tile->setOptionalBorder(false); // The bordering algorithm will handle this automagicaly
+	//tile->setOptionalBorder(false); // The bordering algorithm will handle this automagicaly
 }
 
 void OptionalBorderBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 {
-	tile->setOptionalBorder(true); // The bordering algorithm will handle this automagicaly
+	//tile->setOptionalBorder(true); // The bordering algorithm will handle this automagicaly
 }
 
