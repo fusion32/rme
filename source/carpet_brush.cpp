@@ -154,119 +154,57 @@ void CarpetBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 
 void CarpetBrush::undraw(BaseMap* map, Tile* tile)
 {
-	auto& items = tile->items;
-	for(auto it = items.begin(); it != items.end(); ) {
-		Item* item = *it;
-		if(item->isCarpet()) {
-			CarpetBrush* carpetBrush = item->getCarpetBrush();
-			if(carpetBrush) {
-				delete item;
-				it = items.erase(it);
-			} else {
-				++it;
-			}
-		} else {
-			++it;
+	tile->removeItems(
+		[](const Item *item){
+			return item->isCarpet() && item->getCarpetBrush() != NULL;
+		});
+}
+
+static bool hasMatchingCarpetBrushAtTile(BaseMap* map, CarpetBrush* carpetBrush, int x, int y, int z) {
+	Tile* tile = map->getTile(x, y, z);
+	if(!tile) return false;
+	for(Item *item = tile->items; item != NULL; item = item->next){
+		if(item->getCarpetBrush() == carpetBrush) {
+			return true;
 		}
 	}
-}
+	return false;
+};
 
 void CarpetBrush::doCarpets(BaseMap* map, Tile* tile)
 {
-	static const auto hasMatchingCarpetBrushAtTile = [](BaseMap* map, CarpetBrush* carpetBrush, uint32_t x, uint32_t y, uint32_t z) -> bool {
-		Tile* tile = map->getTile(x, y, z);
-		if(!tile) {
-			return false;
-		}
-
-		for(Item* item : tile->items) {
-			if(item->getCarpetBrush() == carpetBrush) {
-				return true;
-			}
-		}
-		return false;
-	};
-
 	ASSERT(tile);
-	if(!tile->hasCarpet()) {
-		return;
-	}
-
 	const Position& position = tile->getPosition();
 	uint32_t x = position.x;
 	uint32_t y = position.y;
 	uint32_t z = position.z;
-	/*
-	static const std::pair<int32_t, int32_t> positionOffset[8] = {
-		{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}
-	};
-
-	const auto& offset = positionOffset[i];
-	if(neighbours[i] && hasMatchingCarpetBrushAtTile(map, carpetBrush, x + offset.first, y + offset.second, z)) {
-		//
-	}
-	*/
-	for(Item* item : tile->items) {
-		ASSERT(item);
-
+	for(Item *item = tile->items; item != NULL; item = item->next){
 		CarpetBrush* carpetBrush = item->getCarpetBrush();
 		if(!carpetBrush) {
 			continue;
 		}
 
-		bool neighbours[8] = { false };
-		if(x == 0) {
-			if(y == 0) {
-				neighbours[0] = false;
-				neighbours[1] = false;
-				neighbours[2] = false;
-				neighbours[3] = false;
-				neighbours[4] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x + 1, y,     z);
-				neighbours[5] = false;
-				neighbours[6] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x,     y + 1, z);
-				neighbours[7] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x + 1, y + 1, z);
-			} else {
-				neighbours[0] = false;
-				neighbours[1] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x,     y - 1, z);
-				neighbours[2] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x + 1, y - 1, z);
-				neighbours[3] = false;
-				neighbours[4] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x + 1, y,     z);
-				neighbours[5] = false;
-				neighbours[6] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x,     y + 1, z);
-				neighbours[7] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x + 1, y + 1, z);
-			}
-		} else if(y == 0) {
-			neighbours[0] = false;
-			neighbours[1] = false;
-			neighbours[2] = false;
-			neighbours[3] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x - 1, y,     z);
-			neighbours[4] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x + 1, y,     z);
-			neighbours[5] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x - 1, y + 1, z);
-			neighbours[6] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x,     y + 1, z);
-			neighbours[7] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x + 1, y + 1, z);
-		} else {
-			neighbours[0] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x - 1, y - 1, z);
-			neighbours[1] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x,     y - 1, z);
-			neighbours[2] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x + 1, y - 1, z);
-			neighbours[3] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x - 1, y,     z);
-			neighbours[4] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x + 1, y,     z);
-			neighbours[5] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x - 1, y + 1, z);
-			neighbours[6] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x,     y + 1, z);
-			neighbours[7] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x + 1, y + 1, z);
-		}
+		bool neighbours[8] = {};
+		neighbours[0] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x - 1, y - 1, z);
+		neighbours[1] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x,     y - 1, z);
+		neighbours[2] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x + 1, y - 1, z);
+		neighbours[3] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x - 1, y,     z);
+		neighbours[4] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x + 1, y,     z);
+		neighbours[5] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x - 1, y + 1, z);
+		neighbours[6] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x,     y + 1, z);
+		neighbours[7] = hasMatchingCarpetBrushAtTile(map, carpetBrush, x + 1, y + 1, z);
 
-		uint32_t tileData = 0;
-		for(uint32_t i = 0; i < 8; ++i) {
+		int tileConfig = 0;
+		for(int i = 0; i < 8; ++i) {
 			if(neighbours[i]) {
-				// Same table as this one, calculate what border
-				tileData |= static_cast<uint32_t>(1) << i;
+				tileConfig |= (1 << i);
 			}
 		}
 
 		// border type is always valid.
-		uint16_t id = carpetBrush->getRandomCarpet(static_cast<BorderType>(carpet_types[tileData]));
+		uint16_t id = carpetBrush->getRandomCarpet(static_cast<BorderType>(carpet_types[tileConfig]));
 		if(id != 0) {
-			item->setID(id);
+			item->transform(id);
 		}
 	}
 }

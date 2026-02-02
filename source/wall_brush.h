@@ -47,7 +47,7 @@ public:
 	static void doWalls(BaseMap* map, Tile* tile);
 
 	// If the specified wall item is part of this wall
-	bool hasWall(Item* item);
+	bool hasWall(const Item* item);
 	::DoorType getDoorTypeFromID(uint16_t id);
 
 	virtual bool canSmear() const { return false; }

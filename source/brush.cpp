@@ -359,7 +359,7 @@ void DoorBrush::switchDoor(Item* item)
 		if(dt.type == doortype) {
 			ASSERT(dt.id);
 			const ItemType &type = GetItemType(dt.id);
-			ASSERT(type.id != 0);
+			ASSERT(type.typeId != 0);
 
 			if(type.isOpen == new_open) {
 				item->transform(dt.id);
@@ -405,7 +405,7 @@ bool DoorBrush::canDraw(BaseMap* map, const Position& position) const
 			if(dt.type == doortype) {
 				ASSERT(dt.id);
 				const ItemType &type = GetItemType(dt.id);
-				ASSERT(type.id != 0);
+				ASSERT(type.typeId != 0);
 
 				if(type.isOpen == open) {
 					return true;
@@ -471,7 +471,7 @@ void DoorBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 			if(dt.type == doortype) {
 				ASSERT(dt.id);
 				const ItemType &type = GetItemType(dt.id);
-				ASSERT(type.id != 0);
+				ASSERT(type.typeId != 0);
 
 				if(type.isOpen == open) {
 					item->transform(dt.id);
@@ -505,7 +505,7 @@ void DoorBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 			if(dt.type == doortype) {
 				ASSERT(dt.id);
 				const ItemType &type = GetItemType(dt.id);
-				ASSERT(type.id != 0);
+				ASSERT(type.typeId != 0);
 
 				if(type.isOpen == open) {
 					item->transform(dt.id);

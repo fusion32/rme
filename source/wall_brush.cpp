@@ -15,6 +15,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
+#include "brush_enums.h"
 #include "main.h"
 
 #include "wall_brush.h"
@@ -254,72 +255,70 @@ void WallBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 	bool b = (parameter && *reinterpret_cast<bool*>(parameter));
 	if(b) {
 		// Find a matching wall item on this tile, and shift the id
-		for(Item *item = tile->items; item != NULL; item = item->next){
-			if(item->isWall()) {
-				WallBrush* wb = item->getWallBrush();
-				if(wb == this) {
-					// Ok, shift alignment
-					BorderType alignment = item->getWallAlignment();
-					uint16_t id = 0;
-					WallBrush* try_brush = this;
-					while(true) {
-						if(id != 0) break;
-						if(try_brush == nullptr) return;
+		Item *wall = tile->getFirstItem(
+			[this](const Item *item){
+				return item->getWallBrush() == this;
+			});
 
-						for(int i = alignment + 1; i != alignment; ++i) {
-							if(i == 16) i = 0;
-							const WallNode &wn = try_brush->wall_items[i];
-							if(wn.total_chance <= 0) {
-								continue;
-							}
-							int chance = random(1, wn.total_chance);
-							for(const WallType &wt: wn.items){
-								if(chance <= wt.chance) {
-									id = wt.id;
-									break;
-								}
-							}
-							if(id != 0) {
+		if(wall != NULL){
+			BorderType alignment = wall->getWallAlignment();
+			uint16_t newId = 0;
+			WallBrush* try_brush = this;
+			while(newId == 0 && try_brush != NULL) {
+				for(int i = 0; i < 16; i += 1){
+					const WallNode &wn = try_brush->wall_items[(alignment + i) % 16];
+					if(wn.total_chance > 0){
+						int chance = random(1, wn.total_chance);
+						for(const WallType &wt: wn.items){
+							if(chance <= wt.chance) {
+								newId = wt.id;
 								break;
 							}
 						}
-
-						try_brush = try_brush->redirect_to;
-						if(try_brush == this) {
-							break;
-						}
+					}else if(!wn.items.empty()){
+						newId = wn.items.front().id;
 					}
 
-					if(id != 0) {
-						item->transform(id);
+					if(newId != 0) {
+						break;
 					}
-					return;
+				}
+
+				try_brush = try_brush->redirect_to;
+				if(try_brush == this) {
+					break;
 				}
 			}
+
+			if(newId != 0) {
+				wall->transform(newId);
+			}
+
+			return;
 		}
 	}
 
 	tile->removeWalls(this);
 
 	// Just find a valid item and place it, the bordering algorithm will change it to the proper shape.
-	uint16_t id = 0;
+	uint16_t newId = 0;
 	WallBrush *try_brush = this;
-	while(true) {
-		if(id != 0) break;
-		if(try_brush == nullptr) return;
+	while(newId == 0 && try_brush != NULL) {
 		for(int i = 0; i < 16; ++i) {
 			const WallNode &wn = try_brush->wall_items[i];
-			if(wn.total_chance <= 0) {
-				continue;
-			}
-			int chance = random(1, wn.total_chance);
-			for(const WallType &wt: wn.items){
-				if(chance <= wt.chance) {
-					id = wt.id;
-					break;
+			if(wn.total_chance > 0){
+				int chance = random(1, wn.total_chance);
+				for(const WallType &wt: wn.items){
+					if(chance <= wt.chance) {
+						newId = wt.id;
+						break;
+					}
 				}
+			}else if(!wn.items.empty()){
+				newId = wn.items.front().id;
 			}
-			if(id != 0) {
+
+			if(newId != 0) {
 				break;
 			}
 		}
@@ -330,14 +329,15 @@ void WallBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 		}
 	}
 
-	tile->addItem(Item::Create(id));
+	if(newId != 0){
+		tile->addItem(Item::Create(newId));
+	}
 }
 
-bool hasMatchingWallBrushAtTile(BaseMap* map, WallBrush* wall_brush, uint32_t x, uint32_t y, uint32_t z)
+bool hasMatchingWallBrushAtTile(BaseMap* map, WallBrush* wall_brush, int x, int y, int z)
 {
 	Tile* t = map->getTile(x, y, z);
 	if(!t) return false;
-
 	for(Item *item = t->items; item != NULL; item = item->next){
 		if(item->isWall()) {
 			WallBrush* wb = item->getWallBrush();
@@ -361,249 +361,109 @@ void WallBrush::doWalls(BaseMap* map, Tile* tile)
 	int y = tile->getPosition().y;
 	int z = tile->getPosition().z;
 
-	// Advance the vector to the beginning of the walls
-	ItemVector::iterator it = tile->items.begin();
-	for(; it != tile->items.end() && (*it)->isBorder(); ++it);
+	// TODO(fusion): On a reasonable setting there should be a single wall on a
+	// tile, but it remains to be confirmed whether that is the case. What I know
+	// for a fact is that whatever was here was just unmanageable.
+	Item *wall = tile->getFirstItem(
+		[](const Item *item){
+			WallBrush *wb = item->getWallBrush();
+			return wb && !wb->isWallDecoration();
+		});
 
-	ItemVector items_to_add;
+	if(wall != NULL){
+		WallBrush *wb = wall->getWallBrush();
 
-	while(it != tile->items.end()) {
-		Item* wall = *it;
-		if(!wall->isWall()) {
-			++it;
-			continue;
-		}
-		WallBrush* wall_brush = wall->getWallBrush();
-		// Skip if either the wall has no brush
-		if(!wall_brush) {
-			++it;
-			continue;
-		}
-		// or if it's a decoration brush.
-		if(wall_brush->isWallDecoration()) {
-			items_to_add.push_back(wall);
-			it = tile->items.erase(it);
-			continue;
-		}
-		bool neighbours[4];
+		bool neighbours[4] = {};
+		neighbours[0] = hasMatchingWallBrushAtTile(map, wb, x,     y - 1, z);
+		neighbours[1] = hasMatchingWallBrushAtTile(map, wb, x - 1, y,     z);
+		neighbours[2] = hasMatchingWallBrushAtTile(map, wb, x + 1, y,     z);
+		neighbours[3] = hasMatchingWallBrushAtTile(map, wb, x,     y + 1, z);
 
-		if(x == 0) {
-			if(y == 0) {
-				neighbours[0] = false;
-				neighbours[1] = false;
-				neighbours[2] = hasMatchingWallBrushAtTile(map, wall_brush, x + 1, y, z);
-				neighbours[3] = hasMatchingWallBrushAtTile(map, wall_brush, x,     y + 1, z);
-			} else {
-				neighbours[0] = hasMatchingWallBrushAtTile(map, wall_brush, x,     y - 1, z);
-				neighbours[1] = false;
-				neighbours[2] = hasMatchingWallBrushAtTile(map, wall_brush, x + 1, y, z);
-				neighbours[3] = hasMatchingWallBrushAtTile(map, wall_brush, x,     y + 1, z);
-			}
-		} else if(y == 0) {
-			neighbours[0] = false;
-			neighbours[1] = hasMatchingWallBrushAtTile(map, wall_brush, x - 1, y, z);
-			neighbours[2] = hasMatchingWallBrushAtTile(map, wall_brush, x + 1, y, z);
-			neighbours[3] = hasMatchingWallBrushAtTile(map, wall_brush, x,     y + 1, z);
-		} else {
-			neighbours[0] = hasMatchingWallBrushAtTile(map, wall_brush, x,     y - 1, z);
-			neighbours[1] = hasMatchingWallBrushAtTile(map, wall_brush, x - 1, y, z);
-			neighbours[2] = hasMatchingWallBrushAtTile(map, wall_brush, x + 1, y, z);
-			neighbours[3] = hasMatchingWallBrushAtTile(map, wall_brush, x,     y + 1, z);
-		}
-
-		uint32_t tiledata = 0;
-		for(int i = 0; i < 4; i++) {
+		int tileConfig = 0;
+		for(int i = 0; i < 4; i += 1) {
 			if(neighbours[i]) {
-				// Same wall as this one, calculate what border
-				tiledata |= 1 << i;
+				tileConfig |= (1 << i);
 			}
 		}
 
-		bool exit = false;
-		for(int i = 0; i < 2; ++i) { // Repeat twice
-			if(exit) {
-				break;
+		// TODO(fusion): We still need to figure out why there are two border
+		// type tables.
+		BorderType bt = (BorderType)full_border_types[tileConfig];
+		if(wall->getWallAlignment() != bt && wall->getWallAlignment() != WALL_UNTOUCHABLE){
+			uint16_t newId = 0;
+			WallBrush *curBrush = wb;
+			while(newId == 0 && curBrush != NULL){
+				WallNode &wn = curBrush->wall_items[int(bt)];
+				if(wn.total_chance > 0){
+					int chance = random(1, wn.total_chance);
+					for(const WallType &wt: wn.items){
+						if(chance <= wt.chance) {
+							newId = wt.id;
+							break;
+						}
+					}
+				}else if(!wn.items.empty()){
+					newId = wn.items.front().id;
+				}
+
+				curBrush = curBrush->redirect_to;
+				if(curBrush == wb){ // prevent infinite loop
+					break;
+				}
 			}
-			::BorderType bt;
-			if(i == 0) {
-				bt = ::BorderType(full_border_types[tiledata]);
-			} else {
-				bt = ::BorderType(half_border_types[tiledata]);
-			}
 
-			if(wall->getWallAlignment() == WALL_UNTOUCHABLE) {
-				items_to_add.push_back(wall);
-				it = tile->items.erase(it);
-				exit = true;
-			} else if(wall->getWallAlignment() == bt) {
-				// Do nothing, the tile already has a wall like this
-				// However, wall decorations associated with this wall might need to change...
-				items_to_add.push_back(wall);
-				it = tile->items.erase(it);
-				exit = true;
-
-				while(it != tile->items.end()) {
-					// If we have a decoration ontop of us, we need to change it's alignment aswell!
-
-					Item* wall_decoration = *it;
-					ASSERT(wall_decoration);
-					WallBrush* brush = wall_decoration->getWallBrush();
-					if(brush && brush->isWallDecoration()) {
-						// We don't know if we have changed alignment
-						if(wall_decoration->getWallAlignment() == bt) {
-							// Same, no need to change...
-							items_to_add.push_back(wall_decoration);
-							it = tile->items.erase(it);
-							continue;
-						}
-						// Not the same alignment, create newd item with correct alignment
-						uint16_t id = 0;
-						WallNode& wn = brush->wall_items[int(bt)];
-						if(wn.total_chance <= 0) {
-							if(wn.items.size() == 0) {
-								++it;
-								continue;
-							} else {
-								id = wn.items.front().id;
-							}
-						} else {
-							int chance = random(1, wn.total_chance);
-							for(std::vector<WallType>::const_iterator witer = wn.items.begin();
-									witer != wn.items.end();
-									++witer)
-							{
-								if(chance <= witer->chance) {
-									id = witer->id;
-									break;
-								}
-							}
-						}
-						if(id != 0) {
-							Item* new_wall = Item::Create(id);
-							if(wall_decoration->isSelected()) {
-								new_wall->select();
-							}
-							items_to_add.push_back(new_wall);
-						}
-						++it;
-					} else {
-						break;
-					}
-				}
-			} else {
-				// Randomize a newd wall of the proper alignment
-				uint16_t id = 0;
-				WallBrush* try_brush = wall_brush;
-
-				while(true) {
-					if(try_brush == nullptr) break;
-					if(id != 0) break;
-
-					WallNode& wn = try_brush->wall_items[int(bt)];
-					if(wn.total_chance <= 0) {
-						if(wn.items.size() == 0) {
-							try_brush = try_brush->redirect_to;
-							if(try_brush == wall_brush) break; // To prevent infinite loop
-							continue;
-						} else {
-							id = wn.items.front().id;
-						}
-					} else {
-						int chance = random(1, wn.total_chance);
-						for(std::vector<WallType>::const_iterator node_iter = wn.items.begin();
-								node_iter != wn.items.end();
-								++node_iter) {
-							if(chance <= node_iter->chance) {
-								id = node_iter->id;
-								break;
-							}
-						}
-					}
-					// Propagate down the chain
-					try_brush = try_brush->redirect_to;
-					if(try_brush == wall_brush) break; // To prevent infinite loop
-				}
-				if(try_brush == nullptr && id == 0) {
-					if(i == 1) {
-						++it;
-					}
-					continue;
-				} else {
-					// If there is such an item, add it to the tile
-					Item* new_wall = Item::Create(id);
-					if(wall->isSelected()) {
-						new_wall->select();
-					}
-					items_to_add.push_back(new_wall);
-					exit = true;
-					++it;
-				}
-
-				// Increment and check for end
-				while(it != tile->items.end()) {
-					// If we have a decoration ontop of us, we need to change it's alignment aswell!
-					Item* wall_decoration = *it;
-					WallBrush* brush = wall_decoration->getWallBrush();
-					if(brush && brush->isWallDecoration()) {
-						// We know we have changed alignment, so no need to check for it again.
-						uint16_t id = 0;
-						WallNode& wn = brush->wall_items[int(bt)];
-						if(wn.total_chance <= 0) {
-							if(wn.items.size() == 0) {
-								++it;
-								continue;
-							} else {
-								id = wn.items.front().id;
-							}
-						} else {
-							int chance = random(1, wn.total_chance);
-							for(std::vector<WallType>::const_iterator node_iter = wn.items.begin();
-									node_iter != wn.items.end();
-									++node_iter)
-							{
-								if(chance <= node_iter->chance) {
-									id = node_iter->id;
-									break;
-								}
-							}
-						}
-						if(id != 0) {
-							Item* new_wall = Item::Create(id);
-							if(wall_decoration->isSelected()) {
-								new_wall->select();
-							}
-							items_to_add.push_back(new_wall);
-						}
-						++it;
-					} else {
-						++it;
-						break;
-					}
-				}
+			if(newId != 0){
+				wall->transform(newId);
 			}
 		}
-	}
-	tile->removeWalls();
-	for(ItemVector::const_iterator it = items_to_add.begin(); it != items_to_add.end(); ++it) {
-		tile->addItem(*it);
+
+		// NOTE(fusion): The original function would check for decoration alignment
+		// regardless of whether the wall alignment has changed or not so I'm keeping
+		// that behaviour here.
+		for(Item *decor = tile->items; decor != NULL; decor = decor->next){
+			WallBrush *decorBrush = decor->getWallBrush();
+			if(!decorBrush || !decorBrush->isWallDecoration()){
+				continue;
+			}
+
+			if(decor->getWallAlignment() == bt || decor->getWallAlignment() == WALL_UNTOUCHABLE){
+				continue;
+			}
+
+			uint16_t newId = 0;
+			WallNode &wn = decorBrush->wall_items[int(bt)];
+			if(wn.total_chance > 0){
+				int chance = random(1, wn.total_chance);
+				for(const WallType &wt: wn.items){
+					if(chance <= wt.chance){
+						newId = wt.id;
+						break;
+					}
+				}
+			}else if(!wn.items.empty()){
+				newId = wn.items.front().id;
+			}
+
+			if(newId != 0){
+				decor->transform(newId);
+			}
+		}
 	}
 }
 
-bool WallBrush::hasWall(Item* item)
+bool WallBrush::hasWall(const Item* item)
 {
 	ASSERT(item->isWall());
 	::BorderType bt = item->getWallAlignment();
-
 	WallBrush* test_wall = this;
-
 	while(test_wall != nullptr) {
-		for(std::vector<WallType>::const_iterator it = test_wall->wall_items[int(bt)].items.begin(); it != test_wall->wall_items[int(bt)].items.end(); ++it) {
-			if(it->id == item->getID()) {
+		for(const WallType &wt: test_wall->wall_items[int(bt)].items){
+			if(wt.id == item->getID()) {
 				return true;
 			}
 		}
-		for(std::vector<DoorType>::const_iterator it = test_wall->door_items[int(bt)].begin(); it != test_wall->door_items[int(bt)].end(); ++it) {
-			if(it->id == item->getID()) {
+		for(const DoorType &dt: test_wall->door_items[int(bt)]){
+			if(dt.id == item->getID()) {
 				return true;
 			}
 		}
@@ -617,9 +477,9 @@ bool WallBrush::hasWall(Item* item)
 ::DoorType WallBrush::getDoorTypeFromID(uint16_t id)
 {
 	for(int index = 0; index < 16; ++index) {
-		for(std::vector<DoorType>::const_iterator iter = door_items[index].begin(); iter != door_items[index].end(); ++iter) {
-			if(iter->id == id) {
-				return iter->type;
+		for(const DoorType &dt: door_items[index]){
+			if(dt.id == id) {
+				return dt.type;
 			}
 		}
 	}
@@ -642,95 +502,49 @@ WallDecorationBrush::~WallDecorationBrush()
 void WallDecorationBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 {
 	ASSERT(tile);
-	ItemVector::iterator iter = tile->items.begin();
-
 	tile->removeWalls(this);
 
-	// TODO(fusion): What the actual f***?
-	while(iter != tile->items.end()) {
-		Item* item = *iter;
-		if(item->isBorder()) {
-			++iter;
+	for(Item *wall = tile->items; wall != NULL; wall = wall->next){
+		WallBrush *wb = wall->getWallBrush();
+		if(wb && wb->isWallDecoration()){
 			continue;
 		}
 
-		if(item->isWall()) {
-			// Now we found something interesting.
+		int newId = 0;
+		BorderType bt = wall->getWallAlignment();
 
-			// Is it just a decoration, like what we're trying to add?
-			WallBrush* brush = item->getWallBrush();
-			if(brush && brush->isWallDecoration()) {
-				// It is, discard and advance!
-				++iter;
-				continue;
-			}
-
-			// We first need to figure out the alignment of this item (wall)
-			BorderType wall_alignment = item->getWallAlignment();
-
-			// Now we need to figure out if we got an item that mights suffice to place on this tile..
-
-			int id = 0;
-			if(item->isBrushDoor()) {
-				// If it's a door
-				::DoorType doortype = brush->getDoorTypeFromID(item->getID());
-				uint16_t discarded_id = 0;
-				bool close_match = false;
-				bool open = item->isOpen();
-
-				for(std::vector<WallBrush::DoorType>::iterator door_iter = door_items[wall_alignment].begin();
-						door_iter!= door_items[wall_alignment].end();
-						++door_iter)
-				{
-					WallBrush::DoorType& dt = *door_iter;
-					if(dt.type == doortype) {
-						ASSERT(dt.id);
-						const ItemType &type = GetItemType(dt.id);
-						ASSERT(type.typeId != 0);
-
-						if(type.isOpen == open) {
-							id = dt.id;
-							break;
-						} else {
-							discarded_id = dt.id;
-							close_match = true;
-						}
-						if(!close_match && discarded_id == 0) {
-							discarded_id = dt.id;
-						}
-					}
-				}
-				if(id == 0) {
-					id = discarded_id;
-					if(id == 0) {
-						++iter;
-						continue;
-					}
-				}
-			} else {
-				// If it's a normal wall...
-				if(wall_items[wall_alignment].total_chance <= 0) {
-					// No fitting item, exit
-					++iter;
+		if(wall->isBrushDoor()){
+			::DoorType type = wb->getDoorTypeFromID(wall->getID());
+			for(const WallBrush::DoorType &dt: door_items[bt]){
+				if(dt.type != type){
 					continue;
 				}
-				int chance = random(1, wall_items[wall_alignment].total_chance);
-				for(auto it = wall_items[wall_alignment].items.begin(); it != wall_items[wall_alignment].items.end(); ++it) {
-					if(chance <= it->chance) {
-						id = it->id;
-						break;
-					}
+
+				newId = dt.id;
+				if(GetItemType(dt.id).isOpen == wall->isOpen()){
+					break;
 				}
 			}
-			// If we found an invalid id we should've already exited the loop
-			ASSERT(id);
-
-			// Add a matching item above this item.
-			Item* item = Item::Create(id);
-			++iter;
-			iter = tile->items.insert(iter, item);
+		}else if(wall_items[bt].total_chance > 0){
+			int chance = random(1, wall_items[bt].total_chance);
+			for(const WallBrush::WallType &wt: wall_items[bt].items){
+				if(chance <= wt.chance){
+					newId = wt.id;
+					break;
+				}
+			}
+		}else if(!wall_items[bt].items.empty()){
+			newId = wall_items[bt].items.front().id;
 		}
-		++iter;
+
+		// NOTE(fusion): Adding an item to the tile shouldn't be a problem while
+		// looping the item list, because all item pointers should be stable. At
+		// most we're gonna iterate over newly added items and skip over them after
+		// checking that they have a wall decoration brush.
+		if(newId != 0){
+			tile->addItem(Item::Create(newId));
+			break; // there shouldn't be more than a single wall on a tile (?)
+		}
 	}
 }
 

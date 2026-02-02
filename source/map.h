@@ -195,35 +195,16 @@ template <typename RemoveIfType>
 inline int64_t RemoveItemOnMap(Map& map, RemoveIfType& condition, bool selectedOnly) {
 	int64_t done = 0;
 	int64_t removed = 0;
-
 	MapIterator it = map.begin();
 	MapIterator end = map.end();
-
 	while(it != end) {
 		++done;
 		Tile* tile = (*it)->get();
-		if(selectedOnly && !tile->isSelected()) {
-			++it;
-			continue;
-		}
-
-		if(tile->ground) {
-			if(condition(map, tile->ground, removed, done)) {
-				delete tile->ground;
-				tile->ground = nullptr;
-				++removed;
-			}
-		}
-
-		for(auto iit = tile->items.begin(); iit != tile->items.end();) {
-			Item* item = *iit;
-			if(condition(map, item, removed, done)) {
-				iit = tile->items.erase(iit);
-				delete item;
-				++removed;
-			}
-			else
-				++iit;
+		if(!selectedOnly || tile->isSelected()){
+			tile->removeItems(
+				[&condition, &map, &removed, &done](const Item *item){
+					return condition(map, item, removed, done);
+				});
 		}
 		++it;
 	}

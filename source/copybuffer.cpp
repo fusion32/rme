@@ -265,7 +265,7 @@ void CopyBuffer::paste(Editor& editor, const Position& toPosition)
 
 	if(g_settings.getInteger(Config::USE_AUTOMAGIC) && g_settings.getInteger(Config::BORDERIZE_PASTE)) {
 		action = editor.createAction(batchAction);
-		TileList borderize_tiles;
+		std::vector<Tile*> borderize_tiles;
 
 		// Go through all modified (selected) tiles (might be slow)
 		for(MapIterator it = tiles->begin(); it != tiles->end(); ++it) {
@@ -286,17 +286,22 @@ void CopyBuffer::paste(Editor& editor, const Position& toPosition)
 			t = map.getTile(pos.x+1, pos.y+1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
 			if(add_me) borderize_tiles.push_back(map.getTile(pos));
 		}
-		// Remove duplicates
-		borderize_tiles.sort();
-		borderize_tiles.unique();
+
+		{ // Remove duplicates
+			std::sort(borderize_tiles.begin(), borderize_tiles.end());
+			auto end = std::unique(borderize_tiles.begin(), borderize_tiles.end());
+			borderize_tiles.erase(end, borderize_tiles.end());
+		}
 
 		for(Tile* tile : borderize_tiles) {
 			if(tile) {
 				Tile* newTile = tile->deepCopy(map);
 				newTile->borderize(&map);
 
-				if(tile->ground && tile->ground->isSelected()) {
-					newTile->selectGround();
+				if(Item *ground = tile->getFirstItem(BANK)){
+					if(ground->isSelected()){
+						newTile->selectGround();
+					}
 				}
 
 				newTile->wallize(&map);

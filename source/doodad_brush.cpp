@@ -19,6 +19,7 @@
 
 #include "doodad_brush.h"
 #include "basemap.h"
+#include "settings.h"
 
 //=============================================================================
 // Doodad brush
@@ -31,9 +32,7 @@ DoodadBrush::DoodadBrush() :
 	on_blocking(false),
 	one_size(false),
 	do_new_borders(false),
-	on_duplicate(false),
-	clear_mapflags(0),
-	clear_statflags(0)
+	on_duplicate(false)
 {
 	////
 }
@@ -209,7 +208,9 @@ bool DoodadBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		if(!do_new_borders) {
 			warnings.push_back("remove_optional_border will not work without redo_borders\n");
 		}
-		clear_statflags |= TILESTATE_OP_BORDER;
+
+		// TODO(fusion): Figure out what this is/was?
+		//clear_statflags |= TILESTATE_OP_BORDER;
 	}
 
 	const std::string& thicknessString = node.attribute("thickness").as_string();
@@ -312,10 +313,6 @@ void DoodadBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 		}
 		roll -= sb.chance;
 	}
-	if(clear_mapflags || clear_statflags) {
-		tile->setMapFlags(tile->getMapFlags() & (~clear_mapflags));
-		tile->setMapFlags(tile->getStatFlags() & (~clear_statflags));
-	}
 }
 
 const std::vector<DoodadBrush::CompositeTile> &DoodadBrush::getComposite(int variation) const
@@ -324,10 +321,10 @@ const std::vector<DoodadBrush::CompositeTile> &DoodadBrush::getComposite(int var
 	if(alternatives.empty())
 		return empty;
 
-	const AlternativeBlock* ab = alternatives[variation % alternatives.size()];
+	const AlternativeBlock* ab_ptr = alternatives[variation % alternatives.size()];
 	ASSERT(ab_ptr);
-	int roll = random(1, ab->composite_chance);
-	for(const CompositeBlock &cb: ab->composite_items){
+	int roll = random(1, ab_ptr->composite_chance);
+	for(const CompositeBlock &cb: ab_ptr->composite_items){
 		if(roll <= cb.chance) {
 			return cb.items;
 		}

@@ -54,20 +54,19 @@ class Sprite
 {
 public:
 	Sprite() {}
+	Sprite(const Sprite&) = delete;
 
+	virtual ~Sprite() {}
 	virtual void DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width = -1, int height = -1) = 0;
 	virtual void unloadDC() = 0;
-
-private:
-	Sprite(const Sprite&);
 };
 
 class EditorSprite : public Sprite
 {
 public:
 	EditorSprite(wxBitmap* b16x16, wxBitmap* b32x32);
-	virtual ~EditorSprite();
 
+	virtual ~EditorSprite();
 	virtual void DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width = -1, int height = -1);
 	virtual void unloadDC();
 

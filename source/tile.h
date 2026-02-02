@@ -21,6 +21,7 @@
 #include "position.h"
 #include "item.h"
 #include "map_region.h"
+#include "wall_brush.h"
 #include <unordered_set>
 
 enum {
@@ -210,6 +211,5 @@ public:
 };
 
 typedef std::unordered_set<Tile*> TileSet;
-typedef std::list<Tile*> TileList;
 
 #endif

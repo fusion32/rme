@@ -77,8 +77,7 @@ TileLocation* BaseMap::getTileL(int x, int y, int z)
 const TileLocation* BaseMap::getTileL(int x, int y, int z) const
 {
 	// Don't create static const maps!
-	BaseMap* self = const_cast<BaseMap*>(this);
-	return self->getTileL(x, y, z);
+	return const_cast<BaseMap*>(this)->getTileL(x, y, z);
 }
 
 TileLocation* BaseMap::getTileL(const Position& pos)

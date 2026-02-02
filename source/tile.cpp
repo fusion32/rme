@@ -252,10 +252,6 @@ void Tile::addItem(Item *item)
 		item->next = *it;
 		*it = item;
 	}
-
-	if(item->isSelected()){
-		statflags |= TILESTATE_SELECTED;
-	}
 }
 
 int Tile::addItems(Item *first)

@@ -18,6 +18,9 @@
 #ifndef RME_MATERIALS_H_
 #define RME_MATERIALS_H_
 
+#include "main.h"
+#include "tileset.h"
+
 class Materials {
 public:
 	Materials();

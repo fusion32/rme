@@ -33,6 +33,7 @@
 #include "doodad_brush.h"
 #include "creature_brush.h"
 #include "spawn_brush.h"
+#include "settings.h"
 
 #include "live_server.h"
 #include "live_client.h"
@@ -935,7 +936,7 @@ void Editor::moveSelection(const Position& offset)
 	// Remove old borders (and create some new?)
 	if(create_borders && selection.size() < static_cast<size_t>(drag_threshold)) {
 		action = actionQueue->createAction(batch_action);
-		TileList borderize_tiles;
+		std::vector<Tile*> borderize_tiles;
 		// Go through all modified (selected) tiles (might be slow)
 		for(const Tile* tile : storage) {
 			const Position& pos = tile->getPosition();
@@ -952,9 +953,11 @@ void Editor::moveSelection(const Position& offset)
 			t = map.getTile(pos.x+1, pos.y+1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); }
 		}
 
-		// Remove duplicates
-		borderize_tiles.sort();
-		borderize_tiles.unique();
+		{ // Remove duplicates
+			std::sort(borderize_tiles.begin(), borderize_tiles.end());
+			auto end = std::unique(borderize_tiles.begin(), borderize_tiles.end());
+			borderize_tiles.erase(end, borderize_tiles.end());
+		}
 
 		// Create borders
 		for(const Tile* tile : borderize_tiles) {
@@ -1009,7 +1012,7 @@ void Editor::moveSelection(const Position& offset)
 
 	if(create_borders && selection.size() < static_cast<size_t>(drag_threshold)) {
 		action = actionQueue->createAction(batch_action);
-		TileList borderize_tiles;
+		std::vector<Tile*> borderize_tiles;
 		// Go through all modified (selected) tiles (might be slow)
 		for(Tile* tile : selection) {
 			bool add_me = false; // If this tile is touched
@@ -1030,9 +1033,11 @@ void Editor::moveSelection(const Position& offset)
 			}
 		}
 
-		// Remove duplicates
-		borderize_tiles.sort();
-		borderize_tiles.unique();
+		{ // Remove duplicates
+			std::sort(borderize_tiles.begin(), borderize_tiles.end());
+			auto end = std::unique(borderize_tiles.begin(), borderize_tiles.end());
+			borderize_tiles.erase(end, borderize_tiles.end());
+		}
 
 		// Create borders
 		for(const Tile* tile : borderize_tiles) {

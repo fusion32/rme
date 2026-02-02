@@ -257,8 +257,9 @@ void GUI::discoverDataDirectory(const wxString& existentFile)
 		wxLogError(wxString() + "Could not find data directory.\n");
 }
 
-bool GUI::LoadVersion(ClientVersionID version, wxString& error, wxArrayString& warnings, bool force)
+bool GUI::LoadVersion(wxString& error, wxArrayString& warnings, bool force)
 {
+#if 0
 	if(ClientVersion::get(version) == nullptr) {
 		error = "Unsupported client version! (8)";
 		return false;
@@ -295,6 +296,9 @@ bool GUI::LoadVersion(ClientVersionID version, wxString& error, wxArrayString& w
 		return ret;
 	}
 	return true;
+#else
+	return false;
+#endif
 }
 
 void GUI::EnableHotkeys()

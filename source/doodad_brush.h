@@ -84,8 +84,6 @@ protected:
 	bool one_size;
 	bool do_new_borders;
 	bool on_duplicate;
-	uint16_t clear_mapflags;
-	uint16_t clear_statflags;
 
 	struct SingleBlock {
 		int chance;

@@ -412,6 +412,7 @@ void LiveClient::parseClientAccepted(NetworkMessage& message)
 
 void LiveClient::parseChangeClientVersion(NetworkMessage& message)
 {
+#if 0
 	ClientVersionID clientVersion = static_cast<ClientVersionID>(message.read<uint32_t>());
 	if(!g_gui.CloseAllEditors()) {
 		close();
@@ -423,6 +424,9 @@ void LiveClient::parseChangeClientVersion(NetworkMessage& message)
 	g_gui.LoadVersion(clientVersion, error, warnings);
 
 	sendReady();
+#else
+	close();
+#endif
 }
 
 void LiveClient::parseServerTalk(NetworkMessage& message)
