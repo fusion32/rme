@@ -538,3 +538,7 @@ bool LoadItemTypes(const char *filename, wxString &outError, wxArrayString &outW
 	return true;
 }
 
+void ClearItemTypes(void){
+	g_itemTypes.clear();
+}
+

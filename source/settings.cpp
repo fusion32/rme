@@ -19,7 +19,6 @@
 
 #include "settings.h"
 #include "gui_ids.h"
-#include "client_version.h"
 
 #include <wx/confbase.h>
 #include <wx/config.h>
@@ -254,7 +253,6 @@ void Settings::IO(IOMode mode)
 	Int(DEFAULT_SPAWNTIME, 60);
 	Int(MAX_SPAWN_RADIUS, 30);
 	Int(CURRENT_SPAWN_RADIUS, 5);
-	Int(DEFAULT_CLIENT_VERSION, CLIENT_VERSION_NONE);
 	Int(RAW_LIKE_SIMONE, 1);
 	Int(ONLY_ONE_INSTANCE, 1);
 	Int(USE_OTGZ, 1);

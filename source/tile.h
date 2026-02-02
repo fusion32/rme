@@ -67,12 +67,10 @@ public:
 	void deselect();
 	void selectGround();
 	void deselectGround();
-	Item *popSelectedItems(bool ignoreTileSelected = false);
-	Item *getTopSelectedItem();
-	std::vector<Item*> getSelectedItems();
+	Item *popSelectedItems();
 
 	void addItem(Item *item);
-	void addItems(Item *first);
+	int addItems(Item *first);
 	int getIndexOf(Item *item) const;
 	Item* getItemAt(int index) const;
 	Item* getTopItem() const;
@@ -96,8 +94,23 @@ public:
 		return NULL;
 	}
 
+	template<typename Pred>
+	Item *getLastItem(Pred &&predicate){
+		Item *result = NULL;
+		for(Item *it = items; it != NULL; it = it->next){
+			if(predicate(it)){
+				result = it;
+			}
+		}
+		return result;
+	}
+
 	Item *getFirstItem(ObjectFlag flag){
 		return getFirstItem([flag](const Item *item) { return item->getFlag(flag); });
+	}
+
+	Item *getLastItem(ObjectFlag flag){
+		return getLastItem([flag](const Item *item) { return item->getFlag(flag); });
 	}
 
 	Item *getWall(void){
@@ -112,8 +125,16 @@ public:
 		return getFirstItem([](const Item *item) { return item->isCarpet(); });
 	}
 
+	Item *getFirstSelectedItem(void){
+		return getFirstItem([](const Item *item) { return item->isSelected(); });
+	}
+
+	Item *getLastSelectedItem(void){
+		return getLastItem([](const Item *item) { return item->isSelected(); });
+	}
+
 	bool isSelected(void){
-		return getFirstItem([](const Item *item) { return item->isSelected(); }) != NULL;
+		return getFirstSelectedItem() != NULL;
 	}
 
 	// TODO(fusion): Not exactly sure when we want to NOT delete removed items here.
@@ -188,7 +209,6 @@ public:
 	bool hasHouseExit(uint32_t houseId) const;
 };
 
-typedef std::vector<Tile*> TileVector;
 typedef std::unordered_set<Tile*> TileSet;
 typedef std::list<Tile*> TileList;
 

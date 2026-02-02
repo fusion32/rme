@@ -312,20 +312,6 @@ bool GUI::AreHotkeysEnabled() const
 	return hotkeys_enabled;
 }
 
-ClientVersionID GUI::GetCurrentVersionID() const
-{
-	if(loaded_version != CLIENT_VERSION_NONE) {
-		return getLoadedVersion()->getID();
-	}
-	return CLIENT_VERSION_NONE;
-}
-
-const ClientVersion& GUI::GetCurrentVersion() const
-{
-	assert(loaded_version);
-	return *getLoadedVersion();
-}
-
 void GUI::CycleTab(bool forward)
 {
 	tabbook->CycleTab(forward);
@@ -333,22 +319,16 @@ void GUI::CycleTab(bool forward)
 
 bool GUI::LoadDataFiles(wxString& error, wxArrayString& warnings)
 {
-	FileName data_path = getLoadedVersion()->getDataPath();
-	FileName client_path = getLoadedVersion()->getClientPath();
-	FileName extension_path = GetExtensionsDirectory();
+	// TODO(fusion): We want to move all this loading to when the map is loaded.
+	// This should also involve making the editor load a single map at a time,
+	// with all the loaded assets being related to it. And I'm still not sure
+	// what every asset here means, so we might still want to cull/merge some
+	// of them as well. Maybe have a single `editor.xml` that can be placed in
+	// the root directory of the project and loaded along with srv and sec files.
 
-	g_gui.gfx.client_version = getLoadedVersion();
+	g_gui.CreateLoadBar("Loading assets...");
 
-	if(!g_gui.gfx.loadOTFI(client_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR), error, warnings)) {
-		error = "Couldn't load otfi file: " + error;
-		g_gui.DestroyLoadBar();
-		UnloadVersion();
-		return false;
-	}
-
-	g_gui.CreateLoadBar("Loading asset files");
-	g_gui.SetLoadDone(0, "Loading metadata file...");
-
+	g_gui.SetLoadDone(0, "Loading DAT file...");
 	wxFileName metadata_path = g_gui.gfx.getMetadataFileName();
 	if(!g_gui.gfx.loadSpriteMetadata(metadata_path, error, warnings)) {
 		error = "Couldn't load metadata: " + error;
@@ -357,8 +337,7 @@ bool GUI::LoadDataFiles(wxString& error, wxArrayString& warnings)
 		return false;
 	}
 
-	g_gui.SetLoadDone(10, "Loading sprites file...");
-
+	g_gui.SetLoadDone(10, "Loading SPR file...");
 	wxFileName sprites_path = g_gui.gfx.getSpritesFileName();
 	if(!g_gui.gfx.loadSpriteData(sprites_path.GetFullPath(), error, warnings)) {
 		error = "Couldn't load sprites: " + error;
@@ -380,23 +359,9 @@ bool GUI::LoadDataFiles(wxString& error, wxArrayString& warnings)
 		warnings.push_back("Couldn't load creatures.xml: " + error);
 	}
 
-	g_gui.SetLoadDone(45, "Loading user creatures.xml ...");
-	{
-		FileName cdb = getLoadedVersion()->getLocalDataPath();
-		cdb.SetFullName("creatures.xml");
-		wxString nerr;
-		wxArrayString nwarn;
-		g_creatures.loadFromXML(cdb, false, nerr, nwarn);
-	}
-
 	g_gui.SetLoadDone(50, "Loading materials.xml ...");
 	if(!g_materials.loadMaterials(data_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + "materials.xml", error, warnings)) {
 		warnings.push_back("Couldn't load materials.xml: " + error);
-	}
-
-	g_gui.SetLoadDone(70, "Loading extensions...");
-	if(!g_materials.loadExtensions(extension_path, error, warnings)) {
-		//warnings.push_back("Couldn't load extensions: " + error);
 	}
 
 	g_gui.SetLoadDone(70, "Finishing...");
@@ -430,13 +395,8 @@ void GUI::UnloadVersion()
 		//g_gui.UnloadVersion();
 		g_materials.clear();
 		g_brushes.clear();
-		g_items.clear();
+		ClearItemTypes();
 		gfx.clear();
-
-		FileName cdb = getLoadedVersion()->getLocalDataPath();
-		cdb.SetFullName("creatures.xml");
-		g_creatures.saveToXML(cdb);
-		g_creatures.clear();
 
 		loaded_version = CLIENT_VERSION_NONE;
 	}
@@ -762,127 +722,115 @@ void GUI::NewMapView()
 
 void GUI::LoadPerspective()
 {
-	if(!IsVersionLoaded()) {
-		if(g_settings.getInteger(Config::WINDOW_MAXIMIZED)) {
-			root->Maximize();
-		} else {
-			root->SetSize(wxSize(
-				g_settings.getInteger(Config::WINDOW_WIDTH),
-				g_settings.getInteger(Config::WINDOW_HEIGHT)
-			));
-		}
-	} else {
-		std::string tmp;
-		std::string layout = g_settings.getString(Config::PALETTE_LAYOUT);
+	std::string tmp;
+	std::string layout = g_settings.getString(Config::PALETTE_LAYOUT);
 
-		std::vector<std::string> palette_list;
-		for(char c : layout) {
-			if(c == '|') {
-				palette_list.push_back(tmp);
-				tmp.clear();
-			} else {
-				tmp.push_back(c);
-			}
-		}
-
-		if(!tmp.empty()) {
+	std::vector<std::string> palette_list;
+	for(char c : layout) {
+		if(c == '|') {
 			palette_list.push_back(tmp);
+			tmp.clear();
+		} else {
+			tmp.push_back(c);
 		}
-
-		for(const std::string& name : palette_list) {
-			PaletteWindow* palette = CreatePalette();
-
-			wxAuiPaneInfo& info = aui_manager->GetPane(palette);
-			aui_manager->LoadPaneInfo(wxstr(name), info);
-
-			if(info.IsFloatable()) {
-				bool offscreen = true;
-				for(uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
-					wxDisplay display(index);
-					wxRect rect = display.GetClientArea();
-					if(rect.Contains(info.floating_pos)) {
-						offscreen = false;
-						break;
-					}
-				}
-
-				if(offscreen) {
-					info.Dock();
-				}
-			}
-		}
-
-		if(g_settings.getInteger(Config::MINIMAP_VISIBLE)) {
-			if(!minimap) {
-				wxAuiPaneInfo info;
-
-				const wxString& data = wxstr(g_settings.getString(Config::MINIMAP_LAYOUT));
-				aui_manager->LoadPaneInfo(data, info);
-
-				minimap = newd MinimapWindow(root);
-				aui_manager->AddPane(minimap, info);
-			} else {
-				wxAuiPaneInfo& info = aui_manager->GetPane(minimap);
-
-				const wxString& data = wxstr(g_settings.getString(Config::MINIMAP_LAYOUT));
-				aui_manager->LoadPaneInfo(data, info);
-			}
-
-			wxAuiPaneInfo& info = aui_manager->GetPane(minimap);
-			if(info.IsFloatable()) {
-				bool offscreen = true;
-				for(uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
-					wxDisplay display(index);
-					wxRect rect = display.GetClientArea();
-					if(rect.Contains(info.floating_pos)) {
-						offscreen = false;
-						break;
-					}
-				}
-
-				if(offscreen) {
-					info.Dock();
-				}
-			}
-		}
-
-		if(g_settings.getInteger(Config::ACTIONS_HISTORY_VISIBLE)) {
-			if(!actions_history_window) {
-				wxAuiPaneInfo info;
-
-				const wxString& data = wxstr(g_settings.getString(Config::ACTIONS_HISTORY_LAYOUT));
-				aui_manager->LoadPaneInfo(data, info);
-
-				actions_history_window = new ActionsHistoryWindow(root);
-				aui_manager->AddPane(actions_history_window, info);
-			} else {
-				wxAuiPaneInfo& info = aui_manager->GetPane(actions_history_window);
-				const wxString& data = wxstr(g_settings.getString(Config::ACTIONS_HISTORY_LAYOUT));
-				aui_manager->LoadPaneInfo(data, info);
-			}
-
-			wxAuiPaneInfo& info = aui_manager->GetPane(actions_history_window);
-			if(info.IsFloatable()) {
-				bool offscreen = true;
-				for(uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
-					wxDisplay display(index);
-					wxRect rect = display.GetClientArea();
-					if(rect.Contains(info.floating_pos)) {
-						offscreen = false;
-						break;
-					}
-				}
-
-				if(offscreen) {
-					info.Dock();
-				}
-			}
-		}
-
-		aui_manager->Update();
-		root->UpdateMenubar();
 	}
 
+	if(!tmp.empty()) {
+		palette_list.push_back(tmp);
+	}
+
+	for(const std::string& name : palette_list) {
+		PaletteWindow* palette = CreatePalette();
+
+		wxAuiPaneInfo& info = aui_manager->GetPane(palette);
+		aui_manager->LoadPaneInfo(wxstr(name), info);
+
+		if(info.IsFloatable()) {
+			bool offscreen = true;
+			for(uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
+				wxDisplay display(index);
+				wxRect rect = display.GetClientArea();
+				if(rect.Contains(info.floating_pos)) {
+					offscreen = false;
+					break;
+				}
+			}
+
+			if(offscreen) {
+				info.Dock();
+			}
+		}
+	}
+
+	if(g_settings.getInteger(Config::MINIMAP_VISIBLE)) {
+		if(!minimap) {
+			wxAuiPaneInfo info;
+
+			const wxString& data = wxstr(g_settings.getString(Config::MINIMAP_LAYOUT));
+			aui_manager->LoadPaneInfo(data, info);
+
+			minimap = newd MinimapWindow(root);
+			aui_manager->AddPane(minimap, info);
+		} else {
+			wxAuiPaneInfo& info = aui_manager->GetPane(minimap);
+
+			const wxString& data = wxstr(g_settings.getString(Config::MINIMAP_LAYOUT));
+			aui_manager->LoadPaneInfo(data, info);
+		}
+
+		wxAuiPaneInfo& info = aui_manager->GetPane(minimap);
+		if(info.IsFloatable()) {
+			bool offscreen = true;
+			for(uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
+				wxDisplay display(index);
+				wxRect rect = display.GetClientArea();
+				if(rect.Contains(info.floating_pos)) {
+					offscreen = false;
+					break;
+				}
+			}
+
+			if(offscreen) {
+				info.Dock();
+			}
+		}
+	}
+
+	if(g_settings.getInteger(Config::ACTIONS_HISTORY_VISIBLE)) {
+		if(!actions_history_window) {
+			wxAuiPaneInfo info;
+
+			const wxString& data = wxstr(g_settings.getString(Config::ACTIONS_HISTORY_LAYOUT));
+			aui_manager->LoadPaneInfo(data, info);
+
+			actions_history_window = new ActionsHistoryWindow(root);
+			aui_manager->AddPane(actions_history_window, info);
+		} else {
+			wxAuiPaneInfo& info = aui_manager->GetPane(actions_history_window);
+			const wxString& data = wxstr(g_settings.getString(Config::ACTIONS_HISTORY_LAYOUT));
+			aui_manager->LoadPaneInfo(data, info);
+		}
+
+		wxAuiPaneInfo& info = aui_manager->GetPane(actions_history_window);
+		if(info.IsFloatable()) {
+			bool offscreen = true;
+			for(uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
+				wxDisplay display(index);
+				wxRect rect = display.GetClientArea();
+				if(rect.Contains(info.floating_pos)) {
+					offscreen = false;
+					break;
+				}
+			}
+
+			if(offscreen) {
+				info.Dock();
+			}
+		}
+	}
+
+	aui_manager->Update();
+	root->UpdateMenubar();
 	root->GetAuiToolBar()->LoadPerspective();
 }
 
@@ -1872,12 +1820,12 @@ void GUI::FillDoodadPreviewBuffer()
 				bool fail = false;
 				if(random(brush->getTotalChance(GetBrushVariation())) <= brush->getCompositeChance(GetBrushVariation())) {
 					// Composite
-					const CompositeTileList& composites = brush->getComposite(GetBrushVariation());
+					const auto &composites = brush->getComposite(GetBrushVariation());
 
 					// Figure out if the placement is valid
-					for(const auto &composite : composites) {
-						Position pos = center_pos + composite.first + Position(xpos, ypos, 0);
-						if(Tile* tile = doodad_buffer_map->getTile(pos)) {
+					for(const auto &composite: composites) {
+						Position pos = center_pos + composite.offset + Position(xpos, ypos, 0);
+						if(Tile *tile = doodad_buffer_map->getTile(pos)) {
 							if(!tile->empty()) {
 								fail = true;
 								break;
@@ -1890,17 +1838,16 @@ void GUI::FillDoodadPreviewBuffer()
 					}
 
 					// Transfer items to the stack
-					for(const auto &composite : composites) {
-						Position pos = center_pos + composite.first + Position(xpos, ypos, 0);
-						const ItemVector& items = composite.second;
+					for(const auto &composite: composites) {
+						Position pos = center_pos + composite.offset + Position(xpos, ypos, 0);
 						Tile* tile = doodad_buffer_map->getTile(pos);
-
 						if(!tile)
 							tile = doodad_buffer_map->allocator(doodad_buffer_map->createTileL(pos));
 
-						for(auto item : items) {
+						for(const Item *item = composite.first; item != NULL; item = item->next){
 							tile->addItem(item->deepCopy());
 						}
+
 						doodad_buffer_map->setTile(tile->getPosition(), tile);
 					}
 					exit = true;
@@ -1931,21 +1878,17 @@ void GUI::FillDoodadPreviewBuffer()
 	} else {
 		if(brush->hasCompositeObjects(GetBrushVariation()) &&
 				random(brush->getTotalChance(GetBrushVariation())) <= brush->getCompositeChance(GetBrushVariation())) {
-			// Composite
-			const CompositeTileList& composites = brush->getComposite(GetBrushVariation());
-
 			// All placement is valid...
-
 			// Transfer items to the buffer
-			for(const auto &composite : composites) {
-				Position pos = center_pos + composite.first;
-				const ItemVector& items = composite.second;
+			for(const auto &composite : brush->getComposite(GetBrushVariation())) {
+				Position pos = center_pos + composite.offset;
 				Tile* tile = doodad_buffer_map->allocator(doodad_buffer_map->createTileL(pos));
 				//std::cout << pos << " = " << center_pos << " + " << buffer_tile->getPosition() << std::endl;
 
-				for(auto item : items) {
+				for(const Item *item = composite.first; item != NULL; item = item->next){
 					tile->addItem(item->deepCopy());
 				}
+
 				doodad_buffer_map->setTile(tile->getPosition(), tile);
 			}
 		} else if(brush->hasSingleObjects(GetBrushVariation())) {

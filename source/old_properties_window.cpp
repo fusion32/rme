@@ -468,74 +468,34 @@ void OldPropertiesWindow::OnFocusChange(wxFocusEvent& event)
 void OldPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 {
 	if(edit_item) {
-		int new_uid = (unique_id_field ? unique_id_field->GetValue() : 0);
-		int new_aid = (action_id_field ? action_id_field->GetValue() : 0);
-		bool uid_changed = false;
-		bool aid_changed = false;
-
-		if(!edit_item->getDepot()) {
-			uid_changed = new_uid != edit_item->getUniqueID();
-			aid_changed = new_aid != edit_item->getActionID();
-
-			if(uid_changed) {
-				if(new_uid != 0 && (new_uid < rme::MinUniqueId || new_uid > rme::MaxUniqueId)) {
-					wxString message = "Unique ID must be between %d and %d.";
-					g_gui.PopupDialog(this, "Error", wxString::Format(message, rme::MinUniqueId, rme::MaxUniqueId), wxOK);
-					return;
-				}
-				if(g_gui.GetCurrentMap().hasUniqueId(new_uid)) {
-					g_gui.PopupDialog(this, "Error", "Unique ID must be unique, this UID is already taken.", wxOK);
-					return;
-				}
-			}
-
-			if(aid_changed) {
-				if(new_aid != 0 && (new_aid < rme::MinActionId || new_aid > rme::MaxActionId)) {
-					wxString message = "Action ID must be between %d and %d.";
-					g_gui.PopupDialog(this, "Error", wxString::Format(message, rme::MinActionId, rme::MaxActionId), wxOK);
-					return;
-				}
-			}
-		}
-
-		if(edit_item->canHoldText() || edit_item->canHoldDescription()) {
-			// Book
+		if(edit_item->getFlag(WRITE) || edit_item->getFlag(WRITEONCE)){
 			std::string text = nstr(text_field->GetValue());
-			if(text.length() >= 0xFFFF) {
-				g_gui.PopupDialog(this, "Error", "Text is longer than 65535 characters, this is not supported by OpenTibia. Reduce the length of the text.", wxOK);
-				return;
-			}
-			if(edit_item->canHoldText() && text.length() > edit_item->getMaxWriteLength()) {
+			int maxLength = edit_item->getFlag(WRITE)
+					? edit_item->getAttribute(MAXLENGTH)
+					: edit_item->getAttribute(MAXLENGTHONCE);
+			if((int)text.length() >= maxLength){
 				int ret = g_gui.PopupDialog(this, "Error", "Text is longer than the maximum supported length of this book type, do you still want to change it?", wxYES | wxNO);
 				if(ret != wxID_YES) {
 					return;
 				}
 			}
 			edit_item->setText(text);
-		} else if(edit_item->isSplash() || edit_item->isFluidContainer()) {
-			// Splash
-			int* new_type = reinterpret_cast<int*>(splash_type_field->GetClientData(splash_type_field->GetSelection()));
+		} else if(edit_item->getFlag(LIQUIDPOOL) || edit_item->getFlag(LIQUIDCONTAINER)){
+			int *new_type = reinterpret_cast<int*>(splash_type_field->GetClientData(splash_type_field->GetSelection()));
 			if(new_type) {
-				edit_item->setSubtype(*new_type);
+				if(edit_item->getFlag(LIQUIDPOOL)){
+					edit_item->setAttribute(POOLLIQUIDTYPE, *new_type);
+				}else{
+					edit_item->setAttribute(CONTAINERLIQUIDTYPE, *new_type);
+				}
 			}
-			// Clean up client data
-		} else if(Depot* depot = edit_item->getDepot()) {
-			// Depot
-			int* new_depotid = reinterpret_cast<int*>(depot_id_field->GetClientData(depot_id_field->GetSelection()));
-			depot->setDepotID(*new_depotid);
 		} else {
 			// Normal item
-			Door* door = edit_item->getDoor();
-			Teleport* teleport = edit_item->getTeleport();
-
 			int new_count = count_field? count_field->GetValue() : 1;
+
 			std::string new_desc;
-			if(edit_item->canHoldDescription() && description_field) {
-				description_field->GetValue();
-			}
-			uint8_t new_door_id = 0;
-			if(door) {
-				new_door_id = door_id_field->GetValue();
+			if(edit_item->getFlag(TEXT) && description_field) {
+				new_desc = description_field->GetValue();
 			}
 
 			/*
@@ -547,52 +507,31 @@ void OldPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 			}
 			*/
 
-			if(door && g_settings.getInteger(Config::WARN_FOR_DUPLICATE_ID)) {
-				if(edit_tile && edit_tile->isHouseTile()) {
-					const House* house = edit_map->houses.getHouse(edit_tile->getHouseID());
-					if(house) {
-						Position pos = house->getDoorPositionByID(new_door_id);
-						if(pos.isValid() && pos != edit_tile->getPosition()) {
-							int ret = g_gui.PopupDialog(this, "Warning", "This doorid conflicts with another one in this house, are you sure you want to continue?", wxYES | wxNO);
-							if(ret == wxID_NO) {
-								return;
-							}
-						}
-					}
-				}
-			}
-
-			if(teleport) {
-				Position destination = destination_field->GetPosition();
-				if(!edit_map->getTile(destination) || edit_map->getTile(destination)->isBlocking()) {
+			if(edit_item->getFlag(TELEPORTABSOLUTE)) {
+				Position dest = destination_field->GetPosition();
+				Tile *destTile = edit_map->getTile(dest);
+				if(!destTile || destTile->getFlag(UNPASS)){
 					int ret = g_gui.PopupDialog(this, "Warning", "This teleport leads nowhere, or to an invalid location. Do you want to change the destination?", wxYES | wxNO);
 					if(ret == wxID_YES) {
 						return;
 					}
 				}
-				teleport->setDestination(destination);
+				edit_item->setAttribute(ABSTELEPORTDESTINATION, PackAbsCoordinate(dest));
 			}
 
 			// Done validating, set the values.
 			if(edit_item->canHoldDescription()) {
 				edit_item->setText(new_desc);
 			}
-			if(edit_item->isStackable() || edit_item->isCharged()) {
-				edit_item->setSubtype(new_count);
+
+			if(edit_item->getFlag(CUMULATIVE)){
+				edit_item->setAttribute(AMOUNT, new_count);
+			}else if(edit_item->getFlag(RUNE)){
+				edit_item->setAttribute(CHARGES, new_count);
+			}else if(edit_item->getFlag(WEAROUT)){
+				edit_item->setAttribute(REMAININGUSES, new_count);
 			}
-			if(door) {
-				door->setDoorID(new_door_id);
-			}
 		}
-
-		if(uid_changed) {
-			edit_item->setUniqueID(new_uid);
-		}
-
-		if(aid_changed) {
-			edit_item->setActionID(new_aid);
-		}
-
 	} else if(edit_creature) {
 		int new_spawntime = count_field->GetValue();
 		edit_creature->setSpawnTime(new_spawntime);

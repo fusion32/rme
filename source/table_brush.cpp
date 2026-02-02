@@ -116,20 +116,10 @@ bool TableBrush::canDraw(BaseMap* map, const Position& position) const
 
 void TableBrush::undraw(BaseMap* map, Tile* t)
 {
-	ItemVector::iterator it = t->items.begin();
-	while(it != t->items.end()) {
-		if((*it)->isTable()) {
-			TableBrush* tb = (*it)->getTableBrush();
-			if(tb == this) {
-				delete *it;
-				it = t->items.erase(it);
-			} else {
-				++it;
-			}
-		} else {
-			++it;
-		}
-	}
+	t->removeItems(
+		[this](const Item *item){
+			return item->isTable() && item->getTableBrush() == this;
+		});
 }
 
 void TableBrush::draw(BaseMap* map, Tile* tile, void* parameter)
@@ -162,10 +152,8 @@ bool hasMatchingTableBrushAtTile(BaseMap* map, TableBrush* table_brush, uint32_t
 	Tile* t = map->getTile(x, y, z);
 	if(!t) return false;
 
-	ItemVector::const_iterator it = t->items.begin();
-	for(; it != t->items.end(); ++it) {
-		TableBrush* tb = (*it)->getTableBrush();
-		if(tb == table_brush) {
+	for(const Item *item = t->items; item != NULL; item = item->next){
+		if(item->getTableBrush() == table_brush){
 			return true;
 		}
 	}

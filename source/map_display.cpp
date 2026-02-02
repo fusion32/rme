@@ -15,6 +15,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
+#include "items.h"
 #include "main.h"
 
 #include <sstream>
@@ -77,8 +78,7 @@ BEGIN_EVENT_TABLE(MapCanvas, wxGLCanvas)
 	EVT_MENU(MAP_POPUP_MENU_PASTE, MapCanvas::OnPaste)
 	EVT_MENU(MAP_POPUP_MENU_DELETE, MapCanvas::OnDelete)
 	//----
-	EVT_MENU(MAP_POPUP_MENU_COPY_SERVER_ID, MapCanvas::OnCopyServerId)
-	EVT_MENU(MAP_POPUP_MENU_COPY_CLIENT_ID, MapCanvas::OnCopyClientId)
+	EVT_MENU(MAP_POPUP_MENU_COPY_TYPE_ID, MapCanvas::OnCopyTypeId)
 	EVT_MENU(MAP_POPUP_MENU_COPY_NAME, MapCanvas::OnCopyName)
 	// ----
 	EVT_MENU(MAP_POPUP_MENU_ROTATE, MapCanvas::OnRotateItem)
@@ -1866,40 +1866,16 @@ void MapCanvas::OnCopyPosition(wxCommandEvent& WXUNUSED(event))
 	}
 }
 
-void MapCanvas::OnCopyServerId(wxCommandEvent& WXUNUSED(event))
+void MapCanvas::OnCopyTypeId(wxCommandEvent& WXUNUSED(event))
 {
 	ASSERT(editor.getSelection().size() == 1);
 
 	if(wxTheClipboard->Open()) {
 		Tile* tile = editor.getSelection().getSelectedTile();
-		ItemVector selected_items = tile->getSelectedItems();
-		ASSERT(selected_items.size() == 1);
-
-		const Item* item = selected_items.front();
-
+		const Item *item = tile->getFirstSelectedItem();
 		wxTextDataObject* obj = new wxTextDataObject();
 		obj->SetText(i2ws(item->getID()));
 		wxTheClipboard->SetData(obj);
-
-		wxTheClipboard->Close();
-	}
-}
-
-void MapCanvas::OnCopyClientId(wxCommandEvent& WXUNUSED(event))
-{
-	ASSERT(editor.getSelection().size() == 1);
-
-	if(wxTheClipboard->Open()) {
-		Tile* tile = editor.getSelection().getSelectedTile();
-		ItemVector selected_items = tile->getSelectedItems();
-		ASSERT(selected_items.size() == 1);
-
-		const Item* item = selected_items.front();
-
-		wxTextDataObject* obj = new wxTextDataObject();
-		obj->SetText(i2ws(item->getClientID()));
-		wxTheClipboard->SetData(obj);
-
 		wxTheClipboard->Close();
 	}
 }
@@ -1910,15 +1886,10 @@ void MapCanvas::OnCopyName(wxCommandEvent& WXUNUSED(event))
 
 	if(wxTheClipboard->Open()) {
 		Tile* tile = editor.getSelection().getSelectedTile();
-		ItemVector selected_items = tile->getSelectedItems();
-		ASSERT(selected_items.size() == 1);
-
-		const Item* item = selected_items.front();
-
+		const Item *item = tile->getFirstSelectedItem();
 		wxTextDataObject* obj = new wxTextDataObject();
 		obj->SetText(wxstr(item->getName()));
 		wxTheClipboard->SetData(obj);
-
 		wxTheClipboard->Close();
 	}
 }
@@ -1960,23 +1931,17 @@ void MapCanvas::OnRotateItem(wxCommandEvent& WXUNUSED(event))
 		return;
 	}
 
-	Tile* tile = selection.getSelectedTile();
-	ItemVector items = tile->getSelectedItems();
-	if(items.empty()) {
-		return;
-	}
-
-	Item* item = items.front();
-	if(!item || !item->isRoteable()) {
+	Tile *tile = selection.getSelectedTile();
+	Item *item = tile->getFirstSelectedItem();
+	if(!item || !item->getFlag(ROTATE)) {
 		return;
 	}
 
 	Action* action = editor.createAction(ACTION_ROTATE_ITEM);
 	Tile* new_tile = tile->deepCopy(editor.getMap());
-	Item* new_item = new_tile->getSelectedItems().front();
-	if(new_item->getFlag(ROTATE)){
-		new_item->transform(new_item->getAttribute(ROTATETARGET));
-	}
+	Item* new_item = new_tile->getFirstSelectedItem();
+	ASSERT(new_item->getID() == item->getID());
+	new_item->transform(new_item->getAttribute(ROTATETARGET));
 	action->addChange(new Change(new_tile));
 
  	editor.addAction(action);
@@ -1986,43 +1951,32 @@ void MapCanvas::OnRotateItem(wxCommandEvent& WXUNUSED(event))
 
 void MapCanvas::OnGotoDestination(wxCommandEvent& WXUNUSED(event))
 {
-	Tile* tile = editor.getSelection().getSelectedTile();
-	ItemVector selected_items = tile->getSelectedItems();
-	ASSERT(selected_items.size() > 0);
-	Teleport* teleport = dynamic_cast<Teleport*>(selected_items.front());
-	if(teleport) {
-		Position pos = teleport->getDestination();
-		g_gui.SetScreenCenterPosition(pos);
+	Tile *tile = editor.getSelection().getSelectedTile();
+	Item *item = tile->getFirstSelectedItem();
+	if(item && item->getFlag(TELEPORTABSOLUTE)){
+		Position teleportDest = UnpackAbsCoordinate(item->getAttribute(ABSTELEPORTDESTINATION));
+		g_gui.SetScreenCenterPosition(teleportDest);
 	}
 }
 
 void MapCanvas::OnCopyDestination(wxCommandEvent& WXUNUSED(event))
 {
-	Tile* tile = editor.getSelection().getSelectedTile();
-	ItemVector selected_items = tile->getSelectedItems();
-	ASSERT(selected_items.size() > 0);
-
-	Teleport* teleport = dynamic_cast<Teleport*>(selected_items.front());
-	if(teleport) {
-		const Position& destination = teleport->getDestination();
+	Tile *tile = editor.getSelection().getSelectedTile();
+	Item *item = tile->getFirstSelectedItem();
+	if(item && item->getFlag(TELEPORTABSOLUTE)){
+		Position teleportDest = UnpackAbsCoordinate(item->getAttribute(ABSTELEPORTDESTINATION));
 		int format = g_settings.getInteger(Config::COPY_POSITION_FORMAT);
-		posToClipboard(destination.x, destination.y, destination.z, format);
+		posToClipboard(teleportDest.x, teleportDest.y, teleportDest.z, format);
+
 	}
 }
 
 void MapCanvas::OnSwitchDoor(wxCommandEvent& WXUNUSED(event))
 {
-	Tile* tile = editor.getSelection().getSelectedTile();
-
-	Action* action = editor.createAction(ACTION_SWITCHDOOR);
-
-	Tile* new_tile = tile->deepCopy(editor.getMap());
-
-	ItemVector selected_items = new_tile->getSelectedItems();
-	ASSERT(selected_items.size() > 0);
-
-	DoorBrush::switchDoor(selected_items.front());
-
+	Tile *tile = editor.getSelection().getSelectedTile();
+	Action *action = editor.createAction(ACTION_SWITCHDOOR);
+	Tile *new_tile = tile->deepCopy(editor.getMap());
+	DoorBrush::switchDoor(new_tile->getFirstSelectedItem());
 	action->addChange(newd Change(new_tile));
 
 	editor.addAction(action);
@@ -2035,7 +1989,7 @@ void MapCanvas::OnSelectRAWBrush(wxCommandEvent& WXUNUSED(event))
 	if(editor.getSelection().size() != 1) return;
 	Tile* tile = editor.getSelection().getSelectedTile();
 	if(!tile) return;
-	Item* item = tile->getTopSelectedItem();
+	Item* item = tile->getLastSelectedItem();
 
 	if(item && item->getRAWBrush())
 		g_gui.SelectBrush(item->getRAWBrush(), TILESET_RAW);
@@ -2057,7 +2011,7 @@ void MapCanvas::OnSelectDoodadBrush(wxCommandEvent& WXUNUSED(event))
 	if(editor.getSelection().size() != 1) return;
 	Tile* tile = editor.getSelection().getSelectedTile();
 	if(!tile) return;
-	Item* item = tile->getTopSelectedItem();
+	Item* item = tile->getLastSelectedItem();
 
 	if(item)
 		g_gui.SelectBrush(item->getDoodadBrush(), TILESET_DOODAD);
@@ -2068,7 +2022,7 @@ void MapCanvas::OnSelectDoorBrush(wxCommandEvent& WXUNUSED(event))
 	if(editor.getSelection().size() != 1) return;
 	Tile* tile = editor.getSelection().getSelectedTile();
 	if(!tile) return;
-	Item* item = tile->getTopSelectedItem();
+	Item* item = tile->getLastSelectedItem();
 
 	if(item)
 		g_gui.SelectBrush(item->getDoorBrush(), TILESET_TERRAIN);
@@ -2157,17 +2111,7 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event))
 	else if(new_tile->creature && g_settings.getInteger(Config::SHOW_CREATURES))
 		w = newd OldPropertiesWindow(g_gui.root, &editor.getMap(), new_tile, new_tile->creature);
 	else {
-		ItemVector selected_items = new_tile->getSelectedItems();
-
-		Item* item = nullptr;
-		int count = 0;
-		for(ItemVector::iterator it = selected_items.begin(); it != selected_items.end(); ++it) {
-			++count;
-			if((*it)->isSelected()) {
-				item = *it;
-			}
-		}
-
+		Item *item = new_tile->getLastSelectedItem();
 		if(item) {
 			if(editor.getMap().getVersion().otbm >= MAP_OTBM_4)
 				w = newd PropertiesWindow(g_gui.root, &editor.getMap(), new_tile, item);
@@ -2306,17 +2250,14 @@ void MapPopupMenu::Update()
 	if(anything_selected) {
 		if(editor.getSelection().size() == 1) {
 			Tile* tile = editor.getSelection().getSelectedTile();
-			ItemVector selected_items = tile->getSelectedItems();
-
 			bool hasWall = false;
 			bool hasCarpet = false;
 			bool hasTable = false;
-			Item* topItem = nullptr;
-			Item* topSelectedItem = (selected_items.size() == 1 ? selected_items.back() : nullptr);
+			Item* topSelectedItem = tile->getLastSelectedItem();
 			Creature* topCreature = tile->creature;
 			Spawn* topSpawn = tile->spawn;
 
-			for(auto *item : tile->items) {
+			for(Item *item = tile->items; item != NULL; item = item->next){
 				if(item->isWall()) {
 					Brush* wb = item->getWallBrush();
 					if(wb && wb->visibleInPalette()) hasWall = true;
@@ -2329,32 +2270,23 @@ void MapPopupMenu::Update()
 					Brush* cb = item->getCarpetBrush();
 					if(cb && cb->visibleInPalette()) hasCarpet = true;
 				}
-				if(item->isSelected()) {
-					topItem = item;
-				}
-			}
-			if(!topItem) {
-				topItem = tile->ground;
 			}
 
 			AppendSeparator();
 
 			if(topSelectedItem) {
-				Append(MAP_POPUP_MENU_COPY_SERVER_ID, "Copy Item Server Id", "Copy the server id of this item");
-				Append(MAP_POPUP_MENU_COPY_CLIENT_ID, "Copy Item Client Id", "Copy the client id of this item");
+				Append(MAP_POPUP_MENU_COPY_TYPE_ID, "Copy Item Type Id", "Copy the type id of this item");
 				Append(MAP_POPUP_MENU_COPY_NAME, "Copy Item Name", "Copy the name of this item");
 				AppendSeparator();
 			}
 
-			if(topSelectedItem || topCreature || topItem) {
-				Teleport* teleport = dynamic_cast<Teleport*>(topSelectedItem);
-				if(topSelectedItem && (topSelectedItem->isBrushDoor() || topSelectedItem->isRoteable() || teleport)) {
-
-					if(topSelectedItem->isRoteable())
+			if(topSelectedItem || topCreature) {
+				if(topSelectedItem && (topSelectedItem->isBrushDoor() || topSelectedItem->getFlag(ROTATE) || topSelectedItem->getFlag(TELEPORTABSOLUTE))) {
+					if(topSelectedItem->getFlag(ROTATE))
 						Append(MAP_POPUP_MENU_ROTATE, "&Rotate item", "Rotate this item");
 
-					if(teleport) {
-						bool enabled = teleport->hasDestination();
+					if(topSelectedItem->getFlag(TELEPORTABSOLUTE)) {
+						bool enabled = (topSelectedItem->getAttribute(ABSTELEPORTDESTINATION) != 0);
 						wxMenuItem* goto_menu = Append(MAP_POPUP_MENU_GOTO, "&Go To Destination", "Go to the destination of this teleport");
 						goto_menu->Enable(enabled);
 						wxMenuItem* dest_menu = Append(MAP_POPUP_MENU_COPY_DESTINATION, "Copy &Destination", "Copy the destination of this teleport");
@@ -2362,6 +2294,8 @@ void MapPopupMenu::Update()
 						AppendSeparator();
 					}
 
+#if 0
+					// TODO(fusion): We may still find a way to re-enable this with the `editor.xml` file.
 					if(topSelectedItem->isDoor())
 					{
 						if(topSelectedItem->isOpen()) {
@@ -2371,6 +2305,7 @@ void MapPopupMenu::Update()
 						}
 						AppendSeparator();
 					}
+#endif
 				}
 
 				if(topCreature)
@@ -2396,7 +2331,7 @@ void MapPopupMenu::Update()
 				if(topSelectedItem && topSelectedItem->isBrushDoor() && topSelectedItem->getDoorBrush())
 					Append( MAP_POPUP_MENU_SELECT_DOOR_BRUSH, "Select Doorbrush", "Use this door brush");
 
-				if(tile->hasGround() && tile->getGroundBrush() && tile->getGroundBrush()->visibleInPalette())
+				if(tile->getGroundBrush() && tile->getGroundBrush()->visibleInPalette())
 					Append( MAP_POPUP_MENU_SELECT_GROUND_BRUSH, "Select Groundbrush", "Uses the current item as a groundbrush");
 
 				if(tile->isHouseTile())
@@ -2416,7 +2351,7 @@ void MapPopupMenu::Update()
 				if(hasWall) {
 					Append( MAP_POPUP_MENU_SELECT_WALL_BRUSH, "Select Wallbrush", "Uses the current item as a wallbrush");
 				}
-				if(tile->hasGround() && tile->getGroundBrush() && tile->getGroundBrush()->visibleInPalette()) {
+				if(tile->getGroundBrush() && tile->getGroundBrush()->visibleInPalette()) {
 					Append( MAP_POPUP_MENU_SELECT_GROUND_BRUSH, "Select Groundbrush", "Uses the current tile as a groundbrush");
 				}
 
@@ -2424,7 +2359,7 @@ void MapPopupMenu::Update()
 					Append(MAP_POPUP_MENU_SELECT_HOUSE_BRUSH, "Select House", "Draw with the house on this tile.");
 				}
 
-				if(tile->hasGround() || topCreature || topSpawn) {
+				if(tile->getFlag(BANK) || topCreature || topSpawn) {
 					AppendSeparator();
 					Append( MAP_POPUP_MENU_PROPERTIES, "&Properties", "Properties for the current object");
 				}

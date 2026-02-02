@@ -35,8 +35,7 @@ Tile::Tile(TileLocation& loc) :
 	creature(nullptr),
 	spawn(nullptr),
 	house_id(0),
-	mapflags(0),
-	statflags(0),
+	flags(0),
 	minimapColor(INVALID_MINIMAP_COLOR)
 {
 	////
@@ -48,8 +47,7 @@ Tile::Tile(int x, int y, int z) :
 	creature(nullptr),
 	spawn(nullptr),
 	house_id(0),
-	mapflags(0),
-	statflags(0),
+	flags(0),
 	minimapColor(INVALID_MINIMAP_COLOR)
 {
 	////
@@ -171,8 +169,6 @@ void Tile::select()
 	for(Item *it = items; it != NULL; it = it->next){
 		it->select();
 	}
-
-	statflags |= TILESTATE_SELECTED;
 }
 
 void Tile::deselect()
@@ -182,8 +178,6 @@ void Tile::deselect()
 	for(Item *it = items; it != NULL; it = it->next){
 		it->deselect();
 	}
-
-	statflags &= ~TILESTATE_SELECTED;
 }
 
 void Tile::selectGround()
@@ -194,7 +188,6 @@ void Tile::selectGround()
 		}
 
 		it->select();
-		statflags |= TILESTATE_SELECTED;
 	}
 }
 
@@ -209,52 +202,22 @@ void Tile::deselectGround()
 	}
 }
 
-Item *Tile::popSelectedItems(bool ignoreTileSelected)
+Item *Tile::popSelectedItems()
 {
 	Item *result = NULL;
-	if(ignoreTileSelected || isSelected()){
-		Item **tail = &result;
-		Item **it   = &items;
-		while(*it != NULL){
-			if((*it)->isSelected()){
-				// NOTE(fusion): Insert into the result list.
-				*tail = (*it);
-				tail = &(*tail)->next;
+	Item **tail = &result;
+	Item **it   = &items;
+	while(*it != NULL){
+		if((*it)->isSelected()){
+			// NOTE(fusion): Insert into the result list.
+			*tail = (*it);
+			tail = &(*tail)->next;
 
-				// NOTE(fusion): Remove from the tile list. Don't need to advance.
-				*it = (*it)->next;
-			}else{
-				// NOTE(fusion): Advance tile list.
-				it = &(*it)->next;
-			}
-		}
-
-		statflags &= ~TILESTATE_SELECTED;
-	}
-	return result;
-}
-
-Item *Tile::getTopSelectedItem()
-{
-	Item *result = NULL;
-	for(Item *it = items; it != NULL; it = it->next){
-		if(it->isSelected()){ // && !it->isMetaItem() ??
-			result = it;
-		}
-	}
-	return result;
-}
-
-std::vector<Item*> Tile::getSelectedItems()
-{
-	// TODO(fusion): Might as well just have some special iterator that only
-	// returns selected items?
-	std::vector<Item*> result;
-	if(isSelected()){
-		for(Item *it = items; it != NULL; it = it->next){
-			if(it->isSelected()){
-				result.push_back(it);
-			}
+			// NOTE(fusion): Remove from the tile list. Don't need to advance.
+			*it = (*it)->next;
+		}else{
+			// NOTE(fusion): Advance tile list.
+			it = &(*it)->next;
 		}
 	}
 	return result;
@@ -266,7 +229,8 @@ void Tile::addItem(Item *item)
 
 	ASSERT(item->next == NULL);
 	int stackPriority = item->getStackPriority();
-	bool append = (stackPriority == STACK_PRIORITY_LOW);
+	bool append = (stackPriority == STACK_PRIORITY_CREATURE
+			|| stackPriority == STACK_PRIORITY_LOW);
 	// TODO(fusion): Review this?
 	bool replace = (stackPriority == STACK_PRIORITY_BANK
 			|| stackPriority == STACK_PRIORITY_CLIP
@@ -294,13 +258,16 @@ void Tile::addItem(Item *item)
 	}
 }
 
-void Tile::addItems(Item *first)
+int Tile::addItems(Item *first)
 {
+	int count = 0;
 	while(Item *item = first){
 		first = item->next;
 		item->next = NULL;
 		addItem(item);
+		count += 1;
 	}
+	return count;
 }
 
 int Tile::getIndexOf(Item *item) const

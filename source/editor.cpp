@@ -46,44 +46,15 @@ Editor::Editor(CopyBuffer& copybuffer) :
 	copybuffer(copybuffer),
 	replace_brush(nullptr)
 {
-	wxString error;
-	wxArrayString warnings;
-	bool ok = true;
-
-	ClientVersionID defaultVersion = ClientVersionID(g_settings.getInteger(Config::DEFAULT_CLIENT_VERSION));
-	if(defaultVersion == CLIENT_VERSION_NONE)
-		defaultVersion = ClientVersion::getLatestVersion()->getID();
-
-	if(g_gui.GetCurrentVersionID() != defaultVersion) {
-		if(g_gui.CloseAllEditors()) {
-			ok = g_gui.LoadVersion(defaultVersion, error, warnings);
-			g_gui.PopupDialog("Error", error, wxOK);
-			g_gui.ListDialog("Warnings", warnings);
-		} else {
-			throw std::runtime_error("All maps of different versions were not closed.");
-		}
-	}
-
-	if(!ok)
-		throw std::runtime_error("Couldn't load client version");
-
-	MapVersion version;
-	version.otbm = g_gui.GetCurrentVersion().getPrefferedMapVersionID();
-	version.client = g_gui.GetCurrentVersionID();
-	map.convert(version);
-
+	static int unnamed_counter = 1;
+	std::string name = "Untitled-" + i2s(unnamed_counter++);
+	map.name = name + ".otbm";
+	map.spawnfile = name + "-spawn.xml";
+	map.housefile = name + "-house.xml";
+	map.description = "No map description available.";
 	map.height = 2048;
 	map.width = 2048;
-
-	static int unnamed_counter = 0;
-
-	std::string sname = "Untitled-" + i2s(++unnamed_counter);
-	map.name = sname + ".otbm";
-	map.spawnfile = sname + "-spawn.xml";
-	map.housefile = sname + "-house.xml";
-	map.description = "No map description available.";
 	map.unnamed = true;
-
 	map.doChange();
 }
 
@@ -95,51 +66,8 @@ Editor::Editor(CopyBuffer& copybuffer, const FileName& fn) :
 	copybuffer(copybuffer),
 	replace_brush(nullptr)
 {
-	MapVersion ver;
-	if(!IOMapOTBM::getVersionInfo(fn, ver)) {
-		// g_gui.PopupDialog("Error", "Could not open file \"" + fn.GetFullPath() + "\".", wxOK);
-		throw std::runtime_error("Could not open file \"" + nstr(fn.GetFullPath()) + "\".\nThis is not a valid OTBM file or it does not exist.");
-	}
-
-	/*
-	if(ver < CLIENT_VERSION_760) {
-		long b = g_gui.PopupDialog("Error", "Unsupported Client Version (pre 7.6), do you want to try to load the map anyways?", wxYES | wxNO);
-		if(b == wxID_NO) {
-			valid_state = false;
-			return;
-		}
-	}
-	*/
-
-	bool success = true;
-	if(g_gui.GetCurrentVersionID() != ver.client) {
-		wxString error;
-		wxArrayString warnings;
-		if(g_gui.CloseAllEditors()) {
-			success = g_gui.LoadVersion(ver.client, error, warnings);
-			if(!success)
-				g_gui.PopupDialog("Error", error, wxOK);
-			else
-				g_gui.ListDialog("Warnings", warnings);
-		} else {
-			throw std::runtime_error("All maps of different versions were not closed.");
-		}
-	}
-
-	if(success) {
-		ScopedLoadingBar LoadingBar("Loading OTBM map...");
-		success = map.open(nstr(fn.GetFullPath()));
-		/* TODO
-		if(success && ver.client == CLIENT_VERSION_854_BAD) {
-			int ok = g_gui.PopupDialog("Incorrect OTB", "This map has been saved with an incorrect OTB version, do you want to convert it to the new OTB version?\n\nIf you are not sure, click Yes.", wxYES | wxNO);
-
-			if(ok == wxID_YES){
-				ver.client = CLIENT_VERSION_854;
-				map.convert(ver);
-			}
-		}
-		*/
-	}
+	ScopedLoadingBar LoadingBar("Loading OTBM map...");
+	map.open(nstr(fn.GetFullPath()));
 }
 
 Editor::Editor(CopyBuffer& copybuffer, LiveClient* client) :
@@ -150,7 +78,7 @@ Editor::Editor(CopyBuffer& copybuffer, LiveClient* client) :
 	copybuffer(copybuffer),
 	replace_brush(nullptr)
 {
-	;
+	// no-op
 }
 
 Editor::~Editor()
@@ -721,17 +649,14 @@ bool Editor::importMap(FileName filename, int import_x_offset, int import_y_offs
 			import_tile->setLocation(location);
 		}
 
-#if 0
-		// TODO(fusion): Unpack and pack absolute position.
 		if(offset != Position(0,0,0)) {
 			for(Item *item = import_tile->items; item != NULL; item = item->next){
 				if(item->getFlag(TELEPORTABSOLUTE)){
-					Position pos = UnpackAbsPosition(item->getAttribute(ABSTELEPORTDESTINATION));
-					item->setAttribute(ABSTELEPORTDESTINATION, PackAbsPosition(pos + offset));
+					Position pos = UnpackAbsCoordinate(item->getAttribute(ABSTELEPORTDESTINATION));
+					item->setAttribute(ABSTELEPORTDESTINATION, PackAbsCoordinate(pos + offset));
 				}
 			}
 		}
-#endif
 
 		Tile* old_tile = map.getTile(new_pos);
 		if(old_tile) {
@@ -1157,12 +1082,8 @@ void Editor::destroySelection()
 			Tile* tile = *it;
 			Tile* newtile = tile->deepCopy(map);
 
-			ItemVector tile_selection = newtile->popSelectedItems();
-			for(ItemVector::iterator iit = tile_selection.begin(); iit != tile_selection.end(); ++iit) {
-				++item_count;
-				// Delete the items from the tile
-				delete *iit;
-			}
+
+			newtile->removeItems([](const Item *item){ return item->isSelected(); });
 
 			if(newtile->creature && newtile->creature->isSelected()) {
 				delete newtile->creature;
@@ -1298,8 +1219,8 @@ void Editor::drawInternal(Position offset, bool alt, bool dodraw)
 				if(tile) {
 					bool place = true;
 					if(!doodad_brush->placeOnDuplicate() && !alt) {
-						for(ItemVector::const_iterator iter = tile->items.begin(); iter != tile->items.end(); ++iter) {
-							if(doodad_brush->ownsItem(*iter)) {
+						for(Item *item = tile->items; item != NULL; item = item->next){
+							if(doodad_brush->ownsItem(item)) {
 								place = false;
 								break;
 							}
@@ -1323,8 +1244,8 @@ void Editor::drawInternal(Position offset, bool alt, bool dodraw)
 				if(tile && !tile->isBlocking()) {
 					bool place = true;
 					if(!doodad_brush->placeOnDuplicate() && !alt) {
-						for(ItemVector::const_iterator iter = tile->items.begin(); iter != tile->items.end(); ++iter) {
-							if(doodad_brush->ownsItem(*iter)) {
+						for(Item *item = tile->items; item != NULL; item = item->next){
+							if(doodad_brush->ownsItem(item)) {
 								place = false;
 								break;
 							}

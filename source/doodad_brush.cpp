@@ -40,8 +40,8 @@ DoodadBrush::DoodadBrush() :
 
 DoodadBrush::~DoodadBrush()
 {
-	for(std::vector<AlternativeBlock*>::iterator alt_iter = alternatives.begin(); alt_iter != alternatives.end(); ++alt_iter) {
-		delete *alt_iter;
+	for(AlternativeBlock *block: alternatives){
+		delete block;
 	}
 }
 
@@ -54,19 +54,31 @@ DoodadBrush::AlternativeBlock::AlternativeBlock() :
 
 DoodadBrush::AlternativeBlock::~AlternativeBlock()
 {
-	for(std::vector<CompositeBlock>::iterator composite_iter = composite_items.begin(); composite_iter != composite_items.end(); ++composite_iter) {
-		CompositeTileList& tv = composite_iter->items;
-
-		for(CompositeTileList::iterator compt_iter = tv.begin(); compt_iter != tv.end(); ++compt_iter) {
-			ItemVector& items = compt_iter->second;
-			for(ItemVector::iterator iiter = items.begin(); iiter != items.end(); ++iiter)
-				delete *iiter;
+	for(CompositeBlock &block: composite_items){
+		for(CompositeTile &tile: block.items){
+			for(Item *item = tile.first; item != NULL; item = item->next){
+				delete item;
+			}
 		}
 	}
 
-	for(std::vector<SingleBlock>::iterator single_iter = single_items.begin(); single_iter != single_items.end(); ++single_iter) {
-		delete single_iter->item;
+	for(SingleBlock &block: single_items){
+		delete block.item;
 	}
+}
+
+static Item *CreateItem(pugi::xml_node node){
+	Item *item = NULL;
+	if(pugi::xml_attribute id = node.attribute("id")){
+		int value = 0;
+		if(pugi::xml_attribute attr = node.attribute("count")){
+			value = attr.as_int();
+		}else if(pugi::xml_attribute attr = node.attribute("subtype")){
+			value = attr.as_int();
+		}
+		item = Item::Create(id.as_int(), value);
+	}
+	return item;
 }
 
 bool DoodadBrush::loadAlternative(pugi::xml_node node, wxArrayString& warnings, AlternativeBlock* which)
@@ -79,7 +91,7 @@ bool DoodadBrush::loadAlternative(pugi::xml_node node, wxArrayString& warnings, 
 	}
 
 	pugi::xml_attribute attribute;
-	for(pugi::xml_node childNode = node.first_child(); childNode; childNode = childNode.next_sibling()) {
+	for(pugi::xml_node childNode: node.children()){
 		const std::string& childName = as_lower_str(childNode.name());
 		if(childName == "item") {
 			if(!(attribute = childNode.attribute("chance"))) {
@@ -87,7 +99,7 @@ bool DoodadBrush::loadAlternative(pugi::xml_node node, wxArrayString& warnings, 
 				continue;
 			}
 
-			Item* item = Item::Create(childNode);
+			Item* item = CreateItem(childNode);
 			if(!item) {
 				warnings.push_back("Can't create item from doodad item node.");
 				continue;
@@ -140,24 +152,20 @@ bool DoodadBrush::loadAlternative(pugi::xml_node node, wxArrayString& warnings, 
 					continue;
 				}
 
-				ItemVector items;
-				for(pugi::xml_node itemNode = compositeNode.first_child(); itemNode; itemNode = itemNode.next_sibling()) {
-					if(as_lower_str(itemNode.name()) != "item") {
-						continue;
-					}
-
-					Item* item = Item::Create(itemNode);
-					if(item) {
-						items.push_back(item);
-
-						if(ItemType* type = GetMutableItemType(item->getID())) {
+				Item *first = NULL;
+				Item **tail = &first;
+				for(pugi::xml_node itemNode: compositeNode.children("item")){
+					if(Item *item = CreateItem(itemNode)){
+						*tail = item;
+						tail = &item->next;
+						if(ItemType *type = GetMutableItemType(item->getID())){
 							type->doodad_brush = this;
 						}
 					}
 				}
 
-				if(!items.empty()) {
-					cb.items.push_back(std::make_pair(Position(x, y, z), items));
+				if(first != NULL){
+					cb.items.push_back(CompositeTile{Position(x, y, z), first});
 				}
 			}
 			alternativeBlock->composite_items.push_back(cb);
@@ -239,34 +247,32 @@ bool DoodadBrush::load(pugi::xml_node node, wxArrayString& warnings)
 
 bool DoodadBrush::AlternativeBlock::ownsItem(uint16_t id) const
 {
-	for(std::vector<SingleBlock>::const_iterator single_iter = single_items.begin(); single_iter != single_items.end(); ++single_iter) {
-		if(single_iter->item->getID() == id) {
+	for(const SingleBlock &block: single_items){
+		if(block.item->getID() == id){
 			return true;
 		}
 	}
 
-	for(std::vector<CompositeBlock>::const_iterator composite_iter = composite_items.begin(); composite_iter != composite_items.end(); ++composite_iter) {
-		const CompositeTileList& ctl = composite_iter->items;
-		for(CompositeTileList::const_iterator comp_iter = ctl.begin(); comp_iter != ctl.end(); ++comp_iter) {
-			const ItemVector& items = comp_iter->second;
-
-			for(ItemVector::const_iterator item_iter = items.begin(), item_end = items.end(); item_iter != item_end; ++item_iter) {
-				if((*item_iter)->getID() == id) {
+	for(const CompositeBlock &block: composite_items){
+		for(const CompositeTile &tile: block.items){
+			for(const Item *item = tile.first; item != NULL; item = item->next){
+				if(item->getID() == id){
 					return true;
 				}
 			}
 		}
 	}
+
 	return false;
 }
 
-bool DoodadBrush::ownsItem(Item* item) const
+bool DoodadBrush::ownsItem(const Item* item) const
 {
 	if(item->getDoodadBrush() == this) return true;
 	uint16_t id = item->getID();
 
-	for(std::vector<AlternativeBlock*>::const_iterator alt_iter = alternatives.begin(); alt_iter != alternatives.end(); ++alt_iter) {
-		if((*alt_iter)->ownsItem(id)) {
+	for(AlternativeBlock *block: alternatives){
+		if(block->ownsItem(id)) {
 			return true;
 		}
 	}
@@ -276,40 +282,11 @@ bool DoodadBrush::ownsItem(Item* item) const
 void DoodadBrush::undraw(BaseMap* map, Tile* tile)
 {
 	// Remove all doodad-related
-	for(ItemVector::iterator item_iter = tile->items.begin(); item_iter != tile->items.end();) {
-		Item* item = *item_iter;
-		if(item->getDoodadBrush() != nullptr) {
-			if(item->isComplex() && g_settings.getInteger(Config::ERASER_LEAVE_UNIQUE)) {
-				++item_iter;
-			} else if(g_settings.getInteger(Config::DOODAD_BRUSH_ERASE_LIKE)) {
-				// Only delete items of the same doodad brush
-				if(ownsItem(item)) {
-					delete item;
-					item_iter = tile->items.erase(item_iter);
-				} else {
-					++item_iter;
-				}
-			} else {
-				delete item;
-				item_iter = tile->items.erase(item_iter);
-			}
-		} else {
-			++item_iter;
-		}
-	}
-
-	if(tile->ground && tile->ground->getDoodadBrush() != nullptr) {
-		if(g_settings.getInteger(Config::DOODAD_BRUSH_ERASE_LIKE)) {
-			// Only delete items of the same doodad brush
-			if(ownsItem(tile->ground)) {
-				delete tile->ground;
-				tile->ground = nullptr;
-			}
-		} else {
-			delete tile->ground;
-			tile->ground = nullptr;
-		}
-	}
+	bool doodadBrushEraseLike = g_settings.getInteger(Config::DOODAD_BRUSH_ERASE_LIKE);
+	tile->removeItems(
+		[this, doodadBrushEraseLike](const Item *item){
+			return item->getDoodadBrush() && (!doodadBrushEraseLike || ownsItem(item));
+		});
 }
 
 void DoodadBrush::draw(BaseMap* map, Tile* tile, void* parameter)
@@ -341,20 +318,16 @@ void DoodadBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 	}
 }
 
-const CompositeTileList& DoodadBrush::getComposite(int variation) const
+const std::vector<DoodadBrush::CompositeTile> &DoodadBrush::getComposite(int variation) const
 {
-	static CompositeTileList empty;
-
+	static std::vector<CompositeTile> empty;
 	if(alternatives.empty())
 		return empty;
 
-	variation %= alternatives.size();
-	const AlternativeBlock* ab_ptr = alternatives[variation];
+	const AlternativeBlock* ab = alternatives[variation % alternatives.size()];
 	ASSERT(ab_ptr);
-
-	int roll = random(1, ab_ptr->composite_chance);
-	for(std::vector<CompositeBlock>::const_iterator block_iter = ab_ptr->composite_items.begin(); block_iter != ab_ptr->composite_items.end(); ++block_iter) {
-		const CompositeBlock& cb = *block_iter;
+	int roll = random(1, ab->composite_chance);
+	for(const CompositeBlock &cb: ab->composite_items){
 		if(roll <= cb.chance) {
 			return cb.items;
 		}

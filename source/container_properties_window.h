@@ -47,7 +47,7 @@ class ContainerItemButton : public ItemButton
 		void OnRemoveItem(wxCommandEvent& event);
 
 		ObjectPropertiesWindowBase* getParentContainerWindow();
-		Container* getParentContainer();
+		Item *getParentContainer();
 
 		void setItem(Item* item);
 

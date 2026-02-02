@@ -35,6 +35,8 @@ public:
 	bool selected = false;
 	int attributes[4] = {};
 
+	static Item* Create(int typeId_, int value = 0);
+
 	Item(int typeId_, int value = 0);
 	~Item(void);
 
@@ -87,6 +89,5 @@ public:
 	void toggleSelection() {selected = !selected; }
 };
 
-Item* CreateItem(int typeId_, int value = 0);
 
 #endif

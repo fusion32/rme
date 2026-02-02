@@ -49,9 +49,7 @@ class Brush;
 #include <unordered_set>
 
 typedef std::vector<uint32_t> HouseExitList;
-typedef std::vector<Tile*> TileVector;
 typedef std::unordered_set<Tile*> TileSet;
-typedef std::vector<Item*> ItemVector;
 typedef std::vector<Brush*> BrushVector;
 
 #endif

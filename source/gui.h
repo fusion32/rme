@@ -28,7 +28,6 @@
 #include "editor_tabs.h"
 #include "map_tab.h"
 #include "palette_window.h"
-#include "client_version.h"
 
 class BaseMap;
 class Map;
@@ -280,11 +279,6 @@ public:
 	// Load/unload a client version (takes care of dialogs aswell)
 	void UnloadVersion();
 	bool LoadVersion(ClientVersionID ver, wxString& error, wxArrayString& warnings, bool force = false);
-	// The current version loaded (returns CLIENT_VERSION_NONE if no version is loaded)
-	const ClientVersion& GetCurrentVersion() const;
-	ClientVersionID GetCurrentVersionID() const;
-	// If any version is loaded at all
-	bool IsVersionLoaded() const { return loaded_version != CLIENT_VERSION_NONE; }
 
 	// Centers current view on position
 	void SetScreenCenterPosition(const Position& position, bool showIndicator = true);
@@ -336,9 +330,6 @@ public:
 
 protected:
 	bool LoadDataFiles(wxString& error, wxArrayString& warnings);
-	ClientVersion* getLoadedVersion() const {
-		return loaded_version == CLIENT_VERSION_NONE ? nullptr : ClientVersion::get(loaded_version);
-	}
 
 	//=========================================================================
 	// Palette Interface
@@ -420,7 +411,6 @@ protected:
 
 	wxGLContext* OGLContext;
 
-	ClientVersionID loaded_version;
 	EditorMode mode;
 	bool pasting;
 

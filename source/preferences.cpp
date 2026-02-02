@@ -21,7 +21,6 @@
 #include <wx/collpane.h>
 
 #include "settings.h"
-#include "client_version.h"
 #include "editor.h"
 
 #include "gui.h"
@@ -35,7 +34,7 @@ BEGIN_EVENT_TABLE(PreferencesWindow, wxDialog)
 	EVT_COLLAPSIBLEPANE_CHANGED(wxID_ANY, PreferencesWindow::OnCollapsiblePane)
 END_EVENT_TABLE()
 
-PreferencesWindow::PreferencesWindow(wxWindow *parent, bool clientVersionSelected = false)
+PreferencesWindow::PreferencesWindow(wxWindow *parent)
         : wxDialog(parent, wxID_ANY, "Preferences", wxDefaultPosition, wxSize(400, 400), wxCAPTION | wxCLOSE_BOX) {
     wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
 
@@ -46,7 +45,7 @@ PreferencesWindow::PreferencesWindow(wxWindow *parent, bool clientVersionSelecte
     book->AddPage(CreateEditorPage(), "Editor");
     book->AddPage(CreateGraphicsPage(), "Graphics");
     book->AddPage(CreateUIPage(), "Interface");
-    book->AddPage(CreateClientPage(), "Client Version", clientVersionSelected);
+    book->AddPage(CreateClientPage(), "Client Version");
 
     sizer->Add(book, 1, wxEXPAND | wxALL, 10);
 
@@ -488,68 +487,11 @@ wxNotebookPage* PreferencesWindow::CreateClientPage()
 {
 	wxNotebookPage* client_page = newd wxPanel(book, wxID_ANY);
 
-	// Refresh g_settings
-	ClientVersion::saveVersions();
-	ClientVersionList versions = ClientVersion::getAllVisible();
-
-	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
-
-    auto * options_sizer = newd wxFlexGridSizer(2, 10, 10);
-	options_sizer->AddGrowableCol(1);
-
-	// Default client version choice control
-	default_version_choice = newd wxChoice(client_page, wxID_ANY);
-	wxStaticText* default_client_tooltip = newd wxStaticText(client_page, wxID_ANY, "Default client version:");
-	options_sizer->Add(default_client_tooltip, 0, wxLEFT | wxTOP, 5);
-	options_sizer->Add(default_version_choice, 0, wxTOP, 5);
-	SetWindowToolTip(default_client_tooltip, default_version_choice, "This will decide what client version will be used when new maps are created.");
-
-	// Check file sigs checkbox
-	check_sigs_chkbox = newd wxCheckBox(client_page, wxID_ANY, "Check file signatures");
-	check_sigs_chkbox->SetValue(g_settings.getBoolean(Config::CHECK_SIGNATURES));
-	check_sigs_chkbox->SetToolTip("When this option is not checked, the editor will load any OTB/DAT/SPR combination without complaints. This may cause graphics bugs.");
-	options_sizer->Add(check_sigs_chkbox, 0, wxLEFT | wxRIGHT | wxTOP, 5);
-
-	// Add the grid sizer
-	topsizer->Add(options_sizer, wxSizerFlags(0).Expand());
-	topsizer->AddSpacer(10);
-
-	wxScrolledWindow *client_list_window = newd wxScrolledWindow(client_page, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-	client_list_window->SetMinSize(FROM_DIP(this, wxSize(450, 450)));
-    auto * client_list_sizer = newd wxFlexGridSizer(2, 10, 10);
-	client_list_sizer->AddGrowableCol(1);
-
-    int version_counter = 0;
-	for(auto version : versions) {
-        if(!version->isVisible())
-			continue;
-
-		default_version_choice->Append(wxstr(version->getName()));
-
-		wxStaticText *tmp_text = newd wxStaticText(client_list_window, wxID_ANY, wxString(version->getName()));
-		client_list_sizer->Add(tmp_text, wxSizerFlags(0).Expand());
-
-		wxDirPickerCtrl* dir_picker = newd wxDirPickerCtrl(client_list_window, wxID_ANY, version->getClientPath().GetFullPath());
-		version_dir_pickers.push_back(dir_picker);
-		client_list_sizer->Add(dir_picker, wxSizerFlags(0).Border(wxRIGHT, 10).Expand());
-
-		wxString tooltip;
-		tooltip << "The editor will look for " << wxstr(version->getName()) << " DAT & SPR here.";
-		tmp_text->SetToolTip(tooltip);
-		dir_picker->SetToolTip(tooltip);
-
-		if(version->getID() == g_settings.getInteger(Config::DEFAULT_CLIENT_VERSION))
-			default_version_choice->SetSelection(version_counter);
-
-		version_counter++;
-	}
-
-	// Set the sizers
-	client_list_window->SetSizer(client_list_sizer);
-	client_list_window->FitInside();
-	client_list_window->SetScrollRate(5, 5);
-	topsizer->Add(client_list_window, 0, wxALL, 5);
-	client_page->SetSizerAndFit(topsizer);
+	// TODO(fusion): We probably want to get rid of this page but we still want
+	// some way to determine which files are loaded. Probably get rid of multiple
+	// tabs and support a single open project ? Multiple windows would solve the
+	// need for multiple tabs while simplifying the management of different data
+	// sets (if any).
 
 	return client_page;
 }
@@ -688,26 +630,6 @@ void PreferencesWindow::Apply()
 	}
 	g_settings.setFloat(Config::SCROLL_SPEED, scroll_mul * scroll_speed_slider->GetValue()/10.f);
 	g_settings.setFloat(Config::ZOOM_SPEED, zoom_speed_slider->GetValue()/10.f);
-
-	// Client
-	ClientVersionList versions = ClientVersion::getAllVisible();
-	int version_counter = 0;
-	for(auto version : versions) {
-        wxString dir = version_dir_pickers[version_counter]->GetPath();
-		if(dir.Length() > 0 && dir.Last() != '/' && dir.Last() != '\\')
-			dir.Append("/");
-		version->setClientPath(FileName(dir));
-
-		if(version->getName() == default_version_choice->GetStringSelection())
-			g_settings.setInteger(Config::DEFAULT_CLIENT_VERSION, version->getID());
-
-		version_counter++;
-	}
-	g_settings.setInteger(Config::CHECK_SIGNATURES, check_sigs_chkbox->GetValue());
-
-	// Make sure to reload client paths
-	ClientVersion::saveVersions();
-	ClientVersion::loadVersions();
 
 	g_settings.save();
 

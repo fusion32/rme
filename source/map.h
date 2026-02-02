@@ -37,13 +37,9 @@ public:
 	void cleanInvalidTiles(bool showdialog = false);
 	// Save a bmp image of the minimap
 	bool exportMinimap(FileName filename, int floor = rme::MapGroundLayer, bool showdialog = false);
-	//
-	bool convert(MapVersion to, bool showdialog = false);
-	bool convert(const ConversionMap& cm, bool showdialog = false);
 
 	// Query information about the map
 
-	MapVersion getVersion() const noexcept { return mapVersion; }
 	// Returns true if any change has been done since last save
 	bool hasChanged() const noexcept { return has_changed; }
 	// Makes a change, doesn't matter what. Just so that it asks when saving (Also adds a * to the window title)
@@ -106,8 +102,6 @@ protected:
 	std::string filename; // the maps filename
 	std::string description; // The description of the map
 
-	MapVersion mapVersion;
-
 	// Map Width and Height - for info purposes
 	uint16_t width, height;
 
@@ -118,23 +112,14 @@ public:
 	Towns towns;
 	Houses houses;
 	Spawns spawns;
+	Waypoints waypoints;
 
 protected:
-	void updateUniqueIds(Tile* old_tile, Tile* new_tile) override;
-	void addUniqueId(uint16_t uid);
-	void removeUniqueId(uint16_t uid);
-
 	bool has_changed; // If the map has changed
 	bool unnamed; // If the map has yet to receive a name
 
-	friend class IOMapOTBM;
+	friend class IOMap;
 	friend class Editor;
-
-public:
-	Waypoints waypoints;
-
-private:
-	std::vector<uint16_t> uniqueIds;
 };
 
 template <typename ForeachType>
@@ -152,31 +137,21 @@ inline void foreach_ItemOnMap(Map& map, ForeachType& foreach, bool selectedTiles
 			continue;
 		}
 
-		if(tile->ground) {
-			foreach(map, tile, tile->ground, done);
-		}
-
-		std::queue<Container*> containers;
-		for(ItemVector::iterator itemiter = tile->items.begin(); itemiter != tile->items.end(); ++itemiter) {
-			Item* item = *itemiter;
-			Container* container = dynamic_cast<Container*>(item);
+		std::queue<Item*> containers;
+		for(Item *item = tile->items; item != NULL; item = item->next){
 			foreach(map, tile, item, done);
-			if(container) {
-				containers.push(container);
-
-				do {
-					container = containers.front();
-					ItemVector& v = container->getVector();
-					for(ItemVector::iterator containeriter = v.begin(); containeriter != v.end(); ++containeriter) {
-						Item* i = *containeriter;
-						Container* c = dynamic_cast<Container*>(i);
-						foreach(map, tile, i, done);
-						if(c) {
-							containers.push(c);
+			if(item->getFlag(CONTAINER) || item->getFlag(CHEST)) {
+				containers.push(item);
+				while(!containers.empty()){
+					Item *container = containers.front();
+					containers.pop();
+					for(Item *inner = container->content; inner != NULL; inner = inner->next){
+						foreach(map, tile, inner, done);
+						if(inner->getFlag(CONTAINER) || inner->getFlag(CHEST)){
+							containers.push(inner);
 						}
 					}
-					containers.pop();
-				} while(containers.size());
+				}
 			}
 		}
 		++tileiter;

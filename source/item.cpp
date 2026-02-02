@@ -100,6 +100,14 @@ static void ClearStringAttributes(void){
 
 // Item
 //==============================================================================
+Item *Item::Create(int typeId_, int value /*= 0*/){
+	if(ItemTypeExists(typeId_)){
+		return newd Item(typeId_, value);
+	}else{
+		return NULL;
+	}
+}
+
 Item::Item(int typeId_, int value /*= 0*/) : typeId(typeId_) {
 	const ItemType &type = getItemType();
 	if(type.getFlag(CUMULATIVE)){
@@ -378,7 +386,7 @@ DoorBrush* Item::getDoorBrush() const
 		return nullptr;
 	}
 
-	DoorType door_type = type.brush->asWall()->getDoorTypeFromID(id);
+	DoorType door_type = type.brush->asWall()->getDoorTypeFromID(typeId);
 	DoorBrush* door_brush = nullptr;
 	// Quite a horrible dependency on a global here, meh.
 	switch(door_type) {

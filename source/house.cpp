@@ -133,44 +133,6 @@ void House::removeTile(Tile* tile)
 	}
 }
 
-uint8_t House::getEmptyDoorID() const
-{
-	std::set<uint8_t> taken;
-	for(PositionList::const_iterator tile_iter = tiles.begin(); tile_iter != tiles.end(); ++tile_iter) {
-		if(const Tile* tile = map->getTile(*tile_iter)) {
-			for(ItemVector::const_iterator item_iter = tile->items.begin(); item_iter != tile->items.end(); ++item_iter) {
-				if(Door* door = dynamic_cast<Door*>(*item_iter))
-					taken.insert(door->getDoorID());
-			}
-		}
-	}
-
-	for(int i = 1; i < 256; ++i) {
-		std::set<uint8_t>::iterator it = taken.find(uint8_t(i));
-		if(it == taken.end()) {
-			// Free ID!
-			return i;
-		}
-	}
-	return 255;
-}
-
-Position House::getDoorPositionByID(uint8_t id) const
-{
-	for(PositionList::const_iterator tile_iter = tiles.begin(); tile_iter != tiles.end(); ++tile_iter) {
-		if(const Tile* tile = map->getTile(*tile_iter)) {
-			for(ItemVector::const_iterator item_iter = tile->items.begin(); item_iter != tile->items.end(); ++item_iter) {
-				if(Door* door = dynamic_cast<Door*>(*item_iter)) {
-					if(door->getDoorID() == id) {
-						return *tile_iter;
-					}
-				}
-			}
-		}
-	}
-	return Position();
-}
-
 std::string House::getDescription()
 {
 	std::ostringstream os;

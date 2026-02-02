@@ -22,8 +22,6 @@
 #include "common.h"
 #include <deque>
 
-#include "client_version.h"
-
 #include <wx/artprov.h>
 
 enum SpriteSize {
@@ -318,8 +316,6 @@ public:
 	bool hasTransparency() const;
 	bool isUnloaded() const;
 
-	ClientVersion *client_version;
-
 private:
 	bool unloaded;
 	// This is used if memcaching is NOT on
@@ -332,7 +328,6 @@ private:
 	ImageMap image_space;
 	std::deque<GameSprite*> cleanup_list;
 
-	DatFormat dat_format;
 	uint16_t item_count;
 	uint16_t creature_count;
 	bool otfi_found;

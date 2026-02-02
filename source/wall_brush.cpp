@@ -251,11 +251,10 @@ void WallBrush::undraw(BaseMap* map, Tile* tile)
 void WallBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 {
 	ASSERT(tile);
-	bool b = (parameter? *reinterpret_cast<bool*>(parameter) : false);
+	bool b = (parameter && *reinterpret_cast<bool*>(parameter));
 	if(b) {
 		// Find a matching wall item on this tile, and shift the id
-		for(ItemVector::iterator item_iter = tile->items.begin(); item_iter != tile->items.end(); ++item_iter) {
-			Item* item = *item_iter;
+		for(Item *item = tile->items; item != NULL; item = item->next){
 			if(item->isWall()) {
 				WallBrush* wb = item->getWallBrush();
 				if(wb == this) {
@@ -269,14 +268,14 @@ void WallBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 
 						for(int i = alignment + 1; i != alignment; ++i) {
 							if(i == 16) i = 0;
-							WallNode& wn = try_brush->wall_items[i];
+							const WallNode &wn = try_brush->wall_items[i];
 							if(wn.total_chance <= 0) {
 								continue;
 							}
 							int chance = random(1, wn.total_chance);
-							for(std::vector<WallType>::const_iterator it = wn.items.begin(); it != wn.items.end(); ++it) {
-								if(chance <= it->chance) {
-									id = it->id;
+							for(const WallType &wt: wn.items){
+								if(chance <= wt.chance) {
+									id = wt.id;
 									break;
 								}
 							}
@@ -290,8 +289,9 @@ void WallBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 							break;
 						}
 					}
+
 					if(id != 0) {
-						item->setID(id);
+						item->transform(id);
 					}
 					return;
 				}
@@ -303,21 +303,19 @@ void WallBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 
 	// Just find a valid item and place it, the bordering algorithm will change it to the proper shape.
 	uint16_t id = 0;
-	WallBrush* try_brush = this;
-
+	WallBrush *try_brush = this;
 	while(true) {
 		if(id != 0) break;
 		if(try_brush == nullptr) return;
-
 		for(int i = 0; i < 16; ++i) {
-			WallNode& wn = try_brush->wall_items[i];
+			const WallNode &wn = try_brush->wall_items[i];
 			if(wn.total_chance <= 0) {
 				continue;
 			}
 			int chance = random(1, wn.total_chance);
-			for(std::vector<WallType>::const_iterator it = wn.items.begin(); it != wn.items.end(); ++it) {
-				if(chance <= it->chance) {
-					id = it->id;
+			for(const WallType &wt: wn.items){
+				if(chance <= wt.chance) {
+					id = wt.id;
 					break;
 				}
 			}
@@ -340,9 +338,7 @@ bool hasMatchingWallBrushAtTile(BaseMap* map, WallBrush* wall_brush, uint32_t x,
 	Tile* t = map->getTile(x, y, z);
 	if(!t) return false;
 
-	ItemVector::const_iterator it = t->items.begin();
-	for(; it != t->items.end(); ++it) {
-		Item* item = *it;
+	for(Item *item = t->items; item != NULL; item = item->next){
 		if(item->isWall()) {
 			WallBrush* wb = item->getWallBrush();
 			if(wb == wall_brush) {
@@ -361,9 +357,9 @@ void WallBrush::doWalls(BaseMap* map, Tile* tile)
 	ASSERT(tile);
 
 	// For quicker reference
-	unsigned int x = tile->getPosition().x;
-	unsigned int y = tile->getPosition().y;
-	unsigned int z = tile->getPosition().z;
+	int x = tile->getPosition().x;
+	int y = tile->getPosition().y;
+	int z = tile->getPosition().z;
 
 	// Advance the vector to the beginning of the walls
 	ItemVector::iterator it = tile->items.begin();
@@ -646,10 +642,11 @@ WallDecorationBrush::~WallDecorationBrush()
 void WallDecorationBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 {
 	ASSERT(tile);
-
 	ItemVector::iterator iter = tile->items.begin();
 
 	tile->removeWalls(this);
+
+	// TODO(fusion): What the actual f***?
 	while(iter != tile->items.end()) {
 		Item* item = *iter;
 		if(item->isBorder()) {

@@ -76,16 +76,19 @@ void CopyBuffer::copy(Editor& editor, int floor)
 		TileLocation* newlocation = tiles->createTileL(tile->getPosition());
 		Tile* copied_tile = tiles->allocator(newlocation);
 
-		if(tile->ground && tile->ground->isSelected()) {
-			copied_tile->house_id = tile->house_id;
-			copied_tile->setMapFlags(tile->getMapFlags());
-		}
+		for(Item *item = tile->items; item != NULL; item = item->next){
+			if(item->isSelected()){
+				continue;
+			}
 
-		ItemVector tile_selection = tile->getSelectedItems();
-		for(ItemVector::iterator iit = tile_selection.begin(); iit != tile_selection.end(); ++iit) {
+			if(item->getFlag(BANK)){
+				copied_tile->house_id = tile->house_id;
+				copied_tile->flags    = tile->flags;
+			}
+
 			++item_count;
 			// Copy items to copybuffer
-			copied_tile->addItem((*iit)->deepCopy());
+			copied_tile->addItem(item->deepCopy());
 		}
 
 		if(tile->creature && tile->creature->isSelected()) {
@@ -135,19 +138,16 @@ void CopyBuffer::cut(Editor& editor, int floor)
 		Tile* newtile = tile->deepCopy(map);
 		Tile* copied_tile = tiles->allocator(tile->getLocation());
 
-		if(tile->ground && tile->ground->isSelected()) {
-			copied_tile->house_id = newtile->house_id;
-			newtile->house_id = 0;
-			copied_tile->setMapFlags(tile->getMapFlags());
-			newtile->setMapFlags(TILESTATE_NONE);
+		if(Item *ground = tile->getFirstItem(BANK)){
+			if(ground->isSelected()){
+				copied_tile->house_id = newtile->house_id;
+				copied_tile->flags = newtile->flags;
+				newtile->flags = 0;
+				newtile->house_id = 0;
+			}
 		}
 
-		ItemVector tile_selection = newtile->popSelectedItems();
-		for(ItemVector::iterator iit = tile_selection.begin(); iit != tile_selection.end(); ++iit) {
-			item_count++;
-			// Add items to copybuffer
-			copied_tile->addItem(*iit);
-		}
+		item_count += copied_tile->addItems(newtile->popSelectedItems());
 
 		if(newtile->creature && newtile->creature->isSelected()) {
 			copied_tile->creature = newtile->creature;

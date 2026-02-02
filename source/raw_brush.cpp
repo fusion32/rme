@@ -61,36 +61,24 @@ std::string RAWBrush::getName() const
 
 void RAWBrush::undraw(BaseMap* map, Tile* tile)
 {
-	if(tile->ground && tile->ground->getID() == itemtype->typeId) {
-		delete tile->ground;
-		tile->ground = nullptr;
-	}
-	for(ItemVector::iterator iter = tile->items.begin(); iter != tile->items.end();) {
-		Item* item = *iter;
-		if(item->getID() == itemtype->typeId) {
-			delete item;
-			iter = tile->items.erase(iter);
-		} else {
-			++iter;
-		}
-	}
+	ASSERT(itemtype); // ?
+	tile->removeItems(
+		[typeId = itemtype->typeId](const Item *item){
+			return item->getID() == typeId;
+		});
 }
 
 void RAWBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 {
 	if(!itemtype) return;
 
+	// TODO(fusion): I think this is now already handled by Tile::addItem? It is
+	// also a good idea to keep the tile ordering and constraints similar the the
+	// game servers'.
 	bool b = parameter && *reinterpret_cast<bool*>(parameter);
 	if((g_settings.getInteger(Config::RAW_LIKE_SIMONE) && !b) && itemtype->getFlag(BOTTOM)){
-		for(ItemVector::iterator iter = tile->items.begin(); iter != tile->items.end();) {
-			Item* item = *iter;
-			if(item->getFlag(BOTTOM)) {
-				delete item;
-				iter = tile->items.erase(iter);
-			}else{
-				++iter;
-			}
-		}
+		tile->removeItems([](const Item *item){ return item->getFlag(BOTTOM); });
 	}
+
 	tile->addItem(Item::Create(itemtype->typeId));
 }

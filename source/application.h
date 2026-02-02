@@ -49,7 +49,6 @@ private:
     bool m_startup;
     wxString m_file_to_open;
 	void FixVersionDiscrapencies();
-	bool ParseCommandLineMap(wxString& fileName);
 
 	virtual void OnFatalException();
 

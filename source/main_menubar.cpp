@@ -24,7 +24,6 @@
 #include "minimap_window.h"
 #include "dat_debug_view.h"
 #include "result_window.h"
-#include "extension_window.h"
 #include "find_item_window.h"
 #include "duplicated_items_window.h"
 #include "settings.h"
@@ -1431,7 +1430,7 @@ void MainMenuBar::OnMapRemoveEmptySpawns(wxCommandEvent& WXUNUSED(event))
 
 		Map& map = g_gui.GetCurrentMap();
 		CreatureVector creatures;
-		TileVector toDeleteSpawns;
+		std::vector<Tile*> toDeleteSpawns;
 		for(const auto& spawnPosition : map.spawns) {
 			Tile* tile = map.getTile(spawnPosition);
 			if(!tile || !tile->spawn) {

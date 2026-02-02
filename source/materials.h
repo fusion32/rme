@@ -18,17 +18,12 @@
 #ifndef RME_MATERIALS_H_
 #define RME_MATERIALS_H_
 
-#include "extension.h"
-
 class Materials {
 public:
 	Materials();
 	~Materials();
 
 	void clear();
-
-	const MaterialsExtensionList& getExtensions();
-	MaterialsExtensionList getExtensionsByVersion(uint16_t version_id);
 
 	TilesetContainer tilesets;
 
@@ -42,8 +37,6 @@ public:
 protected:
 	bool unserializeMaterials(const FileName& filename, pugi::xml_node node, wxString& error, wxArrayString& warnings);
 	bool unserializeTileset(pugi::xml_node node, wxArrayString& warnings);
-
-	MaterialsExtensionList extensions;
 
 private:
 	Materials(const Materials&);

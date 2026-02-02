@@ -595,10 +595,12 @@ void MapDrawer::DrawDraggingShadow()
 			int draw_x, draw_y;
 			getDrawPosition(pos, draw_x, draw_y);
 
-			ItemVector items = tile->getSelectedItems();
 			Tile* dest_tile = editor.getMap().getTile(pos);
+			for(Item *item = tile->items; item != NULL; item = item->next){
+				if(!item->isSelected()){
+					continue;
+				}
 
-			for(Item* item : items) {
 				if(dest_tile)
 					BlitItem(draw_x, draw_y, dest_tile, item, true, 160,160,160,160);
 				else

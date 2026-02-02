@@ -106,9 +106,7 @@ static uint32_t TemplateOutfitLookupTable[] = {
 };
 
 GraphicManager::GraphicManager() :
-	client_version(nullptr),
 	unloaded(true),
-	dat_format(DAT_FORMAT_UNKNOWN),
 	otfi_found(false),
 	is_extended(false),
 	has_transparency(false),

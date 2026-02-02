@@ -31,7 +31,6 @@ class BaseMap;
 class House;
 class Item;
 class Tile;
-typedef std::vector<Tile*> TileVector;
 class AutoBorder;
 class Brush;
 class RAWBrush;

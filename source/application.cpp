@@ -113,16 +113,16 @@ bool Application::OnInit()
 	wxArtProvider::Push(new ArtProvider());
 
 #if defined(__LINUX__) || defined(__WINDOWS__)
-	int argc = 1;
-	char* argv[1] = { wxString(this->argv[0]).char_str() };
-	glutInit(&argc, argv);
+	{
+		int glutArgc = 1;
+		glutInit(&glutArgc, argv);
+	}
 #endif
 
 	// Load some internal stuff
 	g_settings.load();
 	FixVersionDiscrapencies();
 	g_gui.LoadHotkeys();
-	ClientVersion::loadVersions();
 
 #ifdef _USE_PROCESS_COM
 	m_single_instance_checker = newd wxSingleInstanceChecker; //Instance checker has to stay alive throughout the applications lifetime
@@ -130,10 +130,9 @@ bool Application::OnInit()
 		RMEProcessClient client;
 		wxConnectionBase* connection = client.MakeConnection("localhost", "rme_host", "rme_talk");
 		if(connection) {
-			wxString fileName;
-			if(ParseCommandLineMap(fileName)) {
+			if(argc == 2){
 				wxLogNull nolog; //We might get a timeout message if the file fails to open on the running instance. Let's not show that message.
-				connection->Execute(fileName);
+				connection->Execute(argv[1]);
 			}
 			connection->Disconnect();
 			wxDELETE(connection);
@@ -159,14 +158,13 @@ bool Application::OnInit()
 #ifndef __DEBUG_MODE__
 	//wxHandleFatalExceptions(true);
 #endif
-    // Load all the dependency files
-    std::string error;
-    StringVector warnings;
 
     m_file_to_open = wxEmptyString;
-    ParseCommandLineMap(m_file_to_open);
+	if(argc == 2){
+		m_file_to_open = argv[1];
+	}
 
-    g_gui.root = newd MainFrame(__W_RME_APPLICATION_NAME__, wxDefaultPosition, wxSize(700,500));
+    g_gui.root = newd MainFrame(__W_RME_APPLICATION_NAME__, wxDefaultPosition, wxSize(700, 500));
 	SetTopWindow(g_gui.root);
 	g_gui.SetTitle("");
 
@@ -272,10 +270,6 @@ void Application::OnEventLoopEnter(wxEventLoopBase* loop) {
         return;
     m_startup = false;
 
-    //Don't try to create a map if we didn't load the client map.
-    if(ClientVersion::getLatestVersion() == nullptr)
-        return;
-
     //Open a map.
     if(m_file_to_open != wxEmptyString) {
         g_gui.LoadMap(FileName(m_file_to_open));
@@ -299,10 +293,6 @@ void Application::FixVersionDiscrapencies()
 		g_settings.setInteger(Config::USE_MEMCACHED_SPRITES_TO_SAVE, 0);
 	}
 
-	if(g_settings.getInteger(Config::VERSION_ID) < __RME_VERSION_ID__ && ClientVersion::getLatestVersion() != nullptr){
-		g_settings.setInteger(Config::DEFAULT_CLIENT_VERSION, ClientVersion::getLatestVersion()->getID());
-	}
-
 	wxString ss = wxstr(g_settings.getString(Config::SCREENSHOT_DIRECTORY));
 	if(ss.empty()) {
 		ss = wxStandardPaths::Get().GetDocumentsDir();
@@ -323,8 +313,6 @@ void Application::Unload()
 	g_gui.SaveHotkeys();
 	g_gui.SavePerspective();
 	g_gui.root->SaveRecentFiles();
-	ClientVersion::saveVersions();
-	ClientVersion::unloadVersions();
 	g_settings.save(true);
 	g_gui.root = nullptr;
 }
@@ -341,15 +329,6 @@ int Application::OnExit()
 void Application::OnFatalException()
 {
 	////
-}
-
-bool Application::ParseCommandLineMap(wxString& fileName)
-{
-	if(argc == 2) {
-		fileName = wxString(argv[1]);
-		return true;
-	}
-	return false;
 }
 
 MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& size) :

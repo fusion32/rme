@@ -23,8 +23,6 @@
 //=============================================================================
 // Doodadbrush, add doodads!
 
-typedef std::vector<std::pair<Position, ItemVector> > CompositeTileList;
-
 class DoodadBrush : public Brush
 {
 public:
@@ -35,6 +33,9 @@ public:
 	DoodadBrush* asDoodad() { return static_cast<DoodadBrush*>(this); }
 
 protected:
+	struct SimpleBlock;
+	struct CompositeTile;
+	struct CompositeBlock;
 	struct AlternativeBlock;
 
 public:
@@ -43,7 +44,7 @@ public:
 
 	virtual bool canDraw(BaseMap* map, const Position& position) const { return true; }
 	virtual void draw(BaseMap* map, Tile* tile, void* parameter);
-	const CompositeTileList& getComposite(int variation) const;
+	const std::vector<CompositeTile> &getComposite(int variation) const;
 	virtual void undraw(BaseMap* map, Tile* tile);
 
 	bool isEmpty(int variation) const;
@@ -61,7 +62,7 @@ public:
 	bool placeOnBlocking() const { return on_blocking; }
 	bool placeOnDuplicate() const { return on_duplicate; }
 	bool doNewBorders() const { return do_new_borders; }
-	bool ownsItem(Item* item) const;
+	bool ownsItem(const Item* item) const;
 
 	virtual bool canSmear() const { return draggable; }
 	virtual bool canDrag() const { return false; }
@@ -91,9 +92,14 @@ protected:
 		Item* item;
 	};
 
+	struct CompositeTile {
+		Position offset;
+		Item *first;
+	};
+
 	struct CompositeBlock {
 		int chance;
-		CompositeTileList items;
+		std::vector<CompositeTile> items;
 	};
 
 	struct AlternativeBlock {

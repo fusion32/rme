@@ -9,7 +9,6 @@ ${CMAKE_CURRENT_LIST_DIR}/browse_tile_window.h
 ${CMAKE_CURRENT_LIST_DIR}/brush.h
 ${CMAKE_CURRENT_LIST_DIR}/brush_enums.h
 ${CMAKE_CURRENT_LIST_DIR}/carpet_brush.h
-${CMAKE_CURRENT_LIST_DIR}/client_version.h
 ${CMAKE_CURRENT_LIST_DIR}/common.h
 ${CMAKE_CURRENT_LIST_DIR}/common_windows.h
 ${CMAKE_CURRENT_LIST_DIR}/const.h
@@ -25,8 +24,6 @@ ${CMAKE_CURRENT_LIST_DIR}/doodad_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/duplicated_items_window.h
 ${CMAKE_CURRENT_LIST_DIR}/editor.h
 ${CMAKE_CURRENT_LIST_DIR}/editor_tabs.h
-${CMAKE_CURRENT_LIST_DIR}/extension.h
-${CMAKE_CURRENT_LIST_DIR}/extension_window.h
 ${CMAKE_CURRENT_LIST_DIR}/find_item_window.h
 ${CMAKE_CURRENT_LIST_DIR}/filehandle.h
 ${CMAKE_CURRENT_LIST_DIR}/graphics.h
@@ -114,7 +111,6 @@ ${CMAKE_CURRENT_LIST_DIR}/brush_tables.cpp
 ${CMAKE_CURRENT_LIST_DIR}/browse_tile_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/positionctrl.cpp
 ${CMAKE_CURRENT_LIST_DIR}/carpet_brush.cpp
-${CMAKE_CURRENT_LIST_DIR}/client_version.cpp
 ${CMAKE_CURRENT_LIST_DIR}/common.cpp
 ${CMAKE_CURRENT_LIST_DIR}/common_windows.cpp
 ${CMAKE_CURRENT_LIST_DIR}/container_properties_window.cpp
@@ -129,8 +125,6 @@ ${CMAKE_CURRENT_LIST_DIR}/duplicated_items_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/editor.cpp
 ${CMAKE_CURRENT_LIST_DIR}/editor_tabs.cpp
 ${CMAKE_CURRENT_LIST_DIR}/eraser_brush.cpp
-${CMAKE_CURRENT_LIST_DIR}/extension.cpp
-${CMAKE_CURRENT_LIST_DIR}/extension_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/find_item_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/filehandle.cpp
 ${CMAKE_CURRENT_LIST_DIR}/graphics.cpp

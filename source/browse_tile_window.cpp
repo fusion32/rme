@@ -91,7 +91,7 @@ Item* BrowseTileListBox::GetSelectedItem()
 	if(GetItemCount() == 0 || GetSelectedCount() == 0)
 		return nullptr;
 
-	return tile->getTopSelectedItem();
+	return tile->getLastSelectedItem();
 }
 
 void BrowseTileListBox::RemoveSelected()
@@ -100,7 +100,7 @@ void BrowseTileListBox::RemoveSelected()
 
 	Clear();
 
-	Item *items = tile->popSelectedItems(true);
+	Item *items = tile->popSelectedItems();
 	while(Item *it = items){
 		items = it->next;
 		it->next = NULL;

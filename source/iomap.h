@@ -18,8 +18,6 @@
 #ifndef RME_MAP_IO_H_
 #define RME_MAP_IO_H_
 
-#include "client_version.h"
-
 enum ImportType
 {
 	IMPORT_DONT,
@@ -40,13 +38,8 @@ protected:
 	void warning(const wxString format, ...);
 	void error(const wxString format, ...);
 public:
-	IOMap() {
-		version.otbm = MAP_OTBM_1;
-		version.client = CLIENT_VERSION_NONE;
-	}
+	IOMap() {}
 	virtual ~IOMap() {}
-
-	MapVersion version;
 
 	wxArrayString& getWarnings() { return warnings; }
 	wxString& getError() { return errorstr; }
@@ -58,10 +51,6 @@ public:
 
 class VirtualIOMap : public IOMap {
 public:
-	VirtualIOMap(MapVersion v) {
-		version = v;
-	}
-
 	virtual bool loadMap(Map& map, const FileName& identifier) { return false; }
 	virtual bool saveMap(Map& map, const FileName& identifier) { return false; }
 };
