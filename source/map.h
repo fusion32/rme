@@ -202,7 +202,7 @@ inline int64_t RemoveItemOnMap(Map& map, RemoveIfType& condition, bool selectedO
 		Tile* tile = (*it)->get();
 		if(!selectedOnly || tile->isSelected()){
 			tile->removeItems(
-				[&condition, &map, &removed, &done](const Item *item){
+				[&condition, &map, removed, done](const Item *item){
 					return condition(map, item, removed, done);
 				});
 		}

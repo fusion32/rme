@@ -325,6 +325,20 @@ public:
 	void SaveMapAs();
 	bool LoadMap(const FileName& fileName);
 
+	// TODO(fusion): Even before, there could only be a single "client version"
+	// loaded at any given time and it didn't make a lot of sense to have multiple
+	// maps loaded at the same time, unless you were trying to copy and paste stuff
+	// over. Overall it should be simpler to have a single project per editor and
+	// have support for copy and paste across editor instances. I still want to
+	// keep tabs tho, as they could be used to edit other aspects of a project but
+	// that's for a later stage.
+	void NewProject(void);
+	void OpenProject(FileName filename);
+	void CloseProject(void);
+	//void SaveProject(void);
+	//void SaveProjectAs(void);
+	bool IsProjectOpen(void) const { return false; }
+
 protected:
 	bool LoadDataFiles(wxString& error, wxArrayString& warnings);
 

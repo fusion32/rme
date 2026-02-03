@@ -22,6 +22,7 @@
 #include "gui.h"
 #include "artprovider.h"
 #include "items.h"
+#include "settings.h"
 
 // ============================================================================
 // ReplaceItemsButton
@@ -345,7 +346,7 @@ void ReplaceItemsDialog::OnExecuteButtonClicked(wxCommandEvent& WXUNUSED(event))
 				ASSERT(index != wxNOT_FOUND);
 				Item* item = new_tile->getItemAt(index);
 				ASSERT(item && item->getID() == pair.second->getID());
-				transformItem(item, info.withId, new_tile);
+				item->transform(info.withId);
 				action->addChange(new Change(new_tile));
 				total++;
 			}

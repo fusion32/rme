@@ -27,8 +27,7 @@
 class PreferencesWindow : public wxDialog
 {
 public:
-	explicit PreferencesWindow(wxWindow* parent) : PreferencesWindow(parent, false) {};
-    PreferencesWindow(wxWindow* parent, bool clientVersionSelected);
+	explicit PreferencesWindow(wxWindow* parent);
 	virtual ~PreferencesWindow();
 
 	void OnClickDefaults(wxCommandEvent&);

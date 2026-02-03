@@ -280,7 +280,7 @@ int Tile::getIndexOf(Item *item) const
 	return wxNOT_FOUND;
 }
 
-Item* Tile::getItemAt(int index) const
+Item *Tile::getItemAt(int index) const
 {
 	Item *result = items;
 	while(result && index > 0){
@@ -290,11 +290,16 @@ Item* Tile::getItemAt(int index) const
 	return result;
 }
 
-Item* Tile::getTopItem() const
+Item *Tile::getTopItem(int *outIndex /*= NULL*/) const
 {
+	int index = -1;
 	Item *result = NULL;
 	for(Item *it = items; it != NULL; it = it->next){
 		result = it;
+		index += 1;
+	}
+	if(outIndex){
+		*outIndex = index;
 	}
 	return result;
 }
@@ -309,7 +314,7 @@ bool Tile::getFlag(ObjectFlag flag) const
 	return false;
 }
 
-uint16_t Tile::getGroundSpeed() const noexcept
+uint16_t Tile::getGroundSpeed(void) const noexcept
 {
 	if(items && items->getFlag(BANK)){
 		return items->getAttribute(WAYPOINTS);
@@ -317,7 +322,7 @@ uint16_t Tile::getGroundSpeed() const noexcept
 	return 0;
 }
 
-uint8_t Tile::getMiniMapColor() const
+uint8_t Tile::getMiniMapColor(void) const
 {
 	if(minimapColor != INVALID_MINIMAP_COLOR)
 		return minimapColor;

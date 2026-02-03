@@ -180,7 +180,6 @@ MainMenuBar::MainMenuBar(MainFrame *frame) : frame(frame)
 	MAKE_ACTION(FLOOR_15, wxITEM_RADIO, OnChangeFloor);
 
 	MAKE_ACTION(DEBUG_VIEW_DAT, wxITEM_NORMAL, OnDebugViewDat);
-	MAKE_ACTION(EXTENSIONS, wxITEM_NORMAL, OnListExtensions);
 	MAKE_ACTION(GOTO_WEBSITE, wxITEM_NORMAL, OnGotoWebsite);
 	MAKE_ACTION(ABOUT, wxITEM_NORMAL, OnAbout);
 
@@ -231,10 +230,10 @@ namespace OnMapRemoveItems
 
 		uint16_t itemId;
 
-		bool operator()(Map& map, Item* item, int64_t removed, int64_t done) {
+		bool operator()(Map& map, const Item* item, int64_t removed, int64_t done) {
 			if(done % 0x8000 == 0)
 				g_gui.SetLoadDone((uint32_t)(100 * done / map.getTileCount()));
-			return item->getID() == itemId && !item->isComplex();
+			return item->getID() == itemId;
 		}
 	};
 }
@@ -302,7 +301,7 @@ void MainMenuBar::Update()
 		EnableItem(PASTE, false);
 	}
 
-	bool loaded = g_gui.IsVersionLoaded();
+	bool loaded = g_gui.IsProjectOpen();
 	bool has_map = editor != nullptr;
 	bool has_selection = editor && editor->hasSelection();
 	bool is_host = has_map;
@@ -321,14 +320,10 @@ void MainMenuBar::Update()
 	EnableItem(FIND_ITEM, is_host);
 	EnableItem(REPLACE_ITEMS, is_local);
 	EnableItem(SEARCH_ON_MAP_EVERYTHING, is_host);
-	EnableItem(SEARCH_ON_MAP_UNIQUE, is_host);
-	EnableItem(SEARCH_ON_MAP_ACTION, is_host);
 	EnableItem(SEARCH_ON_MAP_CONTAINER, is_host);
 	EnableItem(SEARCH_ON_MAP_WRITEABLE, is_host);
 	EnableItem(SEARCH_ON_MAP_DUPLICATED_ITEMS, is_host);
 	EnableItem(SEARCH_ON_SELECTION_EVERYTHING, has_selection && is_host);
-	EnableItem(SEARCH_ON_SELECTION_UNIQUE, has_selection && is_host);
-	EnableItem(SEARCH_ON_SELECTION_ACTION, has_selection && is_host);
 	EnableItem(SEARCH_ON_SELECTION_CONTAINER, has_selection && is_host);
 	EnableItem(SEARCH_ON_SELECTION_WRITEABLE, has_selection && is_host);
 	EnableItem(SEARCH_ON_SELECTION_DUPLICATED_ITEMS, has_selection && is_host);
@@ -815,15 +810,9 @@ void MainMenuBar::OnReloadDataFiles(wxCommandEvent& WXUNUSED(event))
 {
 	wxString error;
 	wxArrayString warnings;
-	g_gui.LoadVersion(g_gui.GetCurrentVersionID(), error, warnings, true);
+	g_gui.LoadVersion(error, warnings, true);
 	g_gui.PopupDialog("Error", error, wxOK);
 	g_gui.ListDialog("Warnings", warnings);
-}
-
-void MainMenuBar::OnListExtensions(wxCommandEvent& WXUNUSED(event))
-{
-	ExtensionsDialog exts(frame);
-	exts.ShowModal();
 }
 
 void MainMenuBar::OnGotoWebsite(wxCommandEvent& WXUNUSED(event))
@@ -911,7 +900,7 @@ void MainMenuBar::OnSearchForItem(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnReplaceItems(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsVersionLoaded())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	if(MapTab* tab = g_gui.GetCurrentMapTab()) {
@@ -944,7 +933,7 @@ namespace OnSearchForStuff
 			}
 
 			if(!add && search_writable){
-				if(item->getFlag(TEXT) || item->getFlag(WRITE) || item->getFlag(WRITEONCE)){
+				if(item->getFlag(TEXT)){
 					const char *text = item->getTextAttribute(TEXTSTRING);
 					if(text && strlen(text) > 0){
 						add = true;
@@ -965,7 +954,7 @@ namespace OnSearchForStuff
 				label << " (Container) ";
 			}
 
-			if(item->getFlag(TEXT) || item->getFlag(WRITE) || item->getFlag(WRITEONCE)){
+			if(item->getFlag(TEXT)){
 				const char *text = item->getTextAttribute(TEXTSTRING);
 				if(text && strlen(text) > 0){
 					label << " (Text: " << text << ") ";
@@ -1060,7 +1049,7 @@ void MainMenuBar::OnSearchForDuplicatedItemsOnSelection(wxCommandEvent& WXUNUSED
 
 void MainMenuBar::OnReplaceItemsOnSelection(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsVersionLoaded())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	if(MapTab* tab = g_gui.GetCurrentMapTab()) {
@@ -1173,7 +1162,7 @@ void MainMenuBar::OnRandomizeMap(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnJumpToBrush(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsVersionLoaded())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	// Create the jump to dialog
@@ -1192,7 +1181,7 @@ void MainMenuBar::OnJumpToBrush(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnJumpToItemBrush(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsVersionLoaded())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	// Create the jump to dialog
@@ -1260,7 +1249,7 @@ namespace OnMapRemoveCorpses
 	{
 		condition() {}
 
-		bool operator()(Map& map, Item* item, long long removed, long long done){
+		bool operator()(Map& map, const Item* item, long long removed, long long done){
 			if(done % 0x800 == 0)
 				g_gui.SetLoadDone((unsigned int)(100 * done / map.getTileCount()));
 

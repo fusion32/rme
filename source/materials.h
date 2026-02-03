@@ -34,7 +34,7 @@ public:
 	bool loadExtensions(FileName identifier, wxString& error, wxArrayString& warnings);
 	void createOtherTileset();
 
-	bool isInTileset(Item* item, std::string tileset) const;
+	bool isInTileset(const Item* item, std::string tileset) const;
 	bool isInTileset(Brush* brush, std::string tileset) const;
 
 protected:

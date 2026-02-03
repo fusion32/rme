@@ -20,6 +20,7 @@
 #include "graphics.h"
 #include "editor.h"
 #include "map.h"
+#include "settings.h"
 
 #include "gui.h"
 #include "map_display.h"

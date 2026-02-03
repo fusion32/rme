@@ -72,8 +72,10 @@ void WaypointPalettePanel::OnSwitchOut()
 
 void WaypointPalettePanel::SetMap(Map* m)
 {
+	// TODO(fusion): Waypoints are stored differently with sec maps so we might
+	// want to have something else to support that here.
 	map = m;
-	this->Enable(m && m->getVersion().otbm >= MAP_OTBM_3);
+	this->Enable(false);
 }
 
 void WaypointPalettePanel::SelectFirstBrush()

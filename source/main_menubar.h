@@ -144,7 +144,6 @@ namespace MenuBar
 		FLOOR_14,
 		FLOOR_15,
 		DEBUG_VIEW_DAT,
-		EXTENSIONS,
 		GOTO_WEBSITE,
 		ABOUT,
 	};
@@ -270,7 +269,6 @@ public:
 
 	// About Menu
 	void OnDebugViewDat(wxCommandEvent& event);
-	void OnListExtensions(wxCommandEvent& event);
 	void OnGotoWebsite(wxCommandEvent& event);
 	void OnAbout(wxCommandEvent& event);
 

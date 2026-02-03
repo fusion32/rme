@@ -203,26 +203,6 @@ wxString GUI::GetLocalDirectory()
 	}
 }
 
-wxString GUI::GetExtensionsDirectory()
-{
-	std::string cfg_str = g_settings.getString(Config::EXTENSIONS_DIRECTORY);
-	if(!cfg_str.empty()) {
-		FileName dir;
-		dir.Assign(wxstr(cfg_str));
-		wxString path;
-		if(dir.DirExists()) {
-			path = dir.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
-			return path;
-		}
-	}
-
-	// Silently reset directory
-	FileName local_directory = GetLocalDirectory();
-	local_directory.AppendDir("extensions");
-	local_directory.Mkdir(0755, wxPATH_MKDIR_FULL);
-	return local_directory.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
-}
-
 void GUI::discoverDataDirectory(const wxString& existentFile)
 {
 	wxString currentDir = wxGetCwd();
@@ -325,6 +305,9 @@ bool GUI::LoadDataFiles(wxString& error, wxArrayString& warnings)
 	// of them as well. Maybe have a single `editor.xml` that can be placed in
 	// the root directory of the project and loaded along with srv and sec files.
 
+	//wxString projectPath = ?.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
+	wxString projectPath = ".";
+
 	g_gui.CreateLoadBar("Loading assets...");
 
 	g_gui.SetLoadDone(0, "Loading DAT file...");
@@ -346,7 +329,7 @@ bool GUI::LoadDataFiles(wxString& error, wxArrayString& warnings)
 	}
 
 	g_gui.SetLoadDone(25, "Loading objects.srv file...");
-	if(!LoadItemTypes(data_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + "objects.srv", error, warnings)){
+	if(!LoadItemTypes(projectPath + "objects.srv", error, warnings)){
 		error = "Couldn't load items.otb: " + error;
 		g_gui.DestroyLoadBar();
 		UnloadVersion();
@@ -354,12 +337,12 @@ bool GUI::LoadDataFiles(wxString& error, wxArrayString& warnings)
 	}
 
 	g_gui.SetLoadDone(45, "Loading creatures.xml ...");
-	if(!g_creatures.loadFromXML(data_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + "creatures.xml", true, error, warnings)) {
+	if(!g_creatures.loadFromXML(projectPath + "creatures.xml", true, error, warnings)) {
 		warnings.push_back("Couldn't load creatures.xml: " + error);
 	}
 
 	g_gui.SetLoadDone(50, "Loading materials.xml ...");
-	if(!g_materials.loadMaterials(data_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + "materials.xml", error, warnings)) {
+	if(!g_materials.loadMaterials(projectPath + "materials.xml", error, warnings)) {
 		warnings.push_back("Couldn't load materials.xml: " + error);
 	}
 
@@ -373,6 +356,7 @@ bool GUI::LoadDataFiles(wxString& error, wxArrayString& warnings)
 
 void GUI::UnloadVersion()
 {
+#if 0
 	UnnamedRenderingLock();
 	gfx.clear();
 	current_brush = nullptr;
@@ -399,6 +383,7 @@ void GUI::UnloadVersion()
 
 		loaded_version = CLIENT_VERSION_NONE;
 	}
+#endif
 }
 
 void GUI::SaveCurrentMap(FileName filename, bool showdialog)
@@ -699,21 +684,22 @@ void GUI::NewMapView()
 
 void GUI::LoadPerspective()
 {
-	std::string tmp;
-	std::string layout = g_settings.getString(Config::PALETTE_LAYOUT);
-
 	std::vector<std::string> palette_list;
-	for(char c : layout) {
-		if(c == '|') {
-			palette_list.push_back(tmp);
-			tmp.clear();
-		} else {
-			tmp.push_back(c);
+	{
+		std::string tmp;
+		std::string layout = g_settings.getString(Config::PALETTE_LAYOUT);
+		for(char c : layout) {
+			if(c == '|') {
+				palette_list.push_back(tmp);
+				tmp.clear();
+			} else {
+				tmp.push_back(c);
+			}
 		}
-	}
 
-	if(!tmp.empty()) {
-		palette_list.push_back(tmp);
+		if(!tmp.empty()) {
+			palette_list.push_back(tmp);
+		}
 	}
 
 	for(const std::string& name : palette_list) {
@@ -941,7 +927,7 @@ void GUI::RefreshOtherPalettes(PaletteWindow* p)
 
 PaletteWindow* GUI::CreatePalette()
 {
-	if(!IsVersionLoaded())
+	if(!IsProjectOpen())
 		return nullptr;
 
 	auto *palette = newd PaletteWindow(root, g_materials.tilesets);
@@ -1017,7 +1003,7 @@ void GUI::SelectPalettePage(PaletteType pt)
 
 void GUI::CreateMinimap()
 {
-	if(!IsVersionLoaded())
+	if(!IsProjectOpen())
 		return;
 
 	if(minimap) {

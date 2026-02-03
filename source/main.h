@@ -46,8 +46,6 @@ _Ret_bytecap_(_Size) inline void* __CRTDECL operator new[](size_t _Size, const c
 #include <wx/defs.h>
 #include "definitions.h"
 
-#include <asio.hpp>
-
 #include <wx/wxprec.h>
 #ifndef WX_PRECOMP
 #   include <wx/wx.h>
@@ -103,6 +101,11 @@ _Ret_bytecap_(_Size) inline void* __CRTDECL operator new[](size_t _Size, const c
 
 // The complete STL ?, well, almost ;)
 #include <math.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <time.h>
+
 #include <list>
 #include <vector>
 #include <map>
@@ -117,8 +120,6 @@ _Ret_bytecap_(_Size) inline void* __CRTDECL operator new[](size_t _Size, const c
 #include <set>
 #include <queue>
 #include <stdexcept>
-#include <stdlib.h>
-#include <time.h>
 #include <fstream>
 #include <memory>
 #include <exception>

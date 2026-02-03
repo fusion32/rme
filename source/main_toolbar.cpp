@@ -17,6 +17,7 @@
 
 #include "main.h"
 #include "main_toolbar.h"
+#include "application.h"
 #include "gui.h"
 #include "editor.h"
 #include "settings.h"

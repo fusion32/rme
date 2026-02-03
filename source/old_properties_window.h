@@ -43,10 +43,6 @@ public:
 protected:
 	wxSpinCtrl* count_field;
 	wxChoice* direction_field;
-	wxSpinCtrl* action_id_field;
-	wxSpinCtrl* unique_id_field;
-	wxSpinCtrl* door_id_field;
-	wxChoice* depot_id_field;
 	PositionCtrl* destination_field;
 	wxChoice* splash_type_field;
 	wxTextCtrl* text_field;

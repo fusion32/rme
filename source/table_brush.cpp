@@ -147,7 +147,7 @@ void TableBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 }
 
 
-bool hasMatchingTableBrushAtTile(BaseMap* map, TableBrush* table_brush, uint32_t x, uint32_t y, uint32_t z)
+bool hasMatchingTableBrushAtTile(BaseMap* map, TableBrush* table_brush, int x, int y, int z)
 {
 	Tile* t = map->getTile(x, y, z);
 	if(!t) return false;
@@ -164,7 +164,7 @@ bool hasMatchingTableBrushAtTile(BaseMap* map, TableBrush* table_brush, uint32_t
 void TableBrush::doTables(BaseMap* map, Tile* tile)
 {
 	ASSERT(tile);
-	if(!tile->hasTable()) {
+	if(!tile->getTable()) {
 		return;
 	}
 
@@ -174,54 +174,21 @@ void TableBrush::doTables(BaseMap* map, Tile* tile)
 	int32_t y = position.y;
 	int32_t z = position.z;
 
-	for(Item* item : tile->items) {
-		ASSERT(item);
-
+	for(Item *item = tile->items; item != NULL; item = item->next){
 		TableBrush* table_brush = item->getTableBrush();
 		if(!table_brush) {
 			continue;
 		}
 
-		bool neighbours[8];
-		if(x == 0) {
-			if(y == 0) {
-				neighbours[0] = false;
-				neighbours[1] = false;
-				neighbours[2] = false;
-				neighbours[3] = false;
-				neighbours[4] = hasMatchingTableBrushAtTile(map, table_brush, x + 1, y, z);
-				neighbours[5] = false;
-				neighbours[6] = hasMatchingTableBrushAtTile(map, table_brush, x,     y + 1, z);
-				neighbours[7] = hasMatchingTableBrushAtTile(map, table_brush, x + 1, y + 1, z);
-			} else {
-				neighbours[0] = false;
-				neighbours[1] = hasMatchingTableBrushAtTile(map, table_brush, x,     y - 1, z);
-				neighbours[2] = hasMatchingTableBrushAtTile(map, table_brush, x + 1, y - 1, z);
-				neighbours[3] = false;
-				neighbours[4] = hasMatchingTableBrushAtTile(map, table_brush, x + 1, y, z);
-				neighbours[5] = false;
-				neighbours[6] = hasMatchingTableBrushAtTile(map, table_brush, x,     y + 1, z);
-				neighbours[7] = hasMatchingTableBrushAtTile(map, table_brush, x + 1, y + 1, z);
-			}
-		} else if(y == 0) {
-			neighbours[0] = false;
-			neighbours[1] = false;
-			neighbours[2] = false;
-			neighbours[3] = hasMatchingTableBrushAtTile(map, table_brush, x - 1, y, z);
-			neighbours[4] = hasMatchingTableBrushAtTile(map, table_brush, x + 1, y, z);
-			neighbours[5] = hasMatchingTableBrushAtTile(map, table_brush, x - 1, y + 1, z);
-			neighbours[6] = hasMatchingTableBrushAtTile(map, table_brush, x,     y + 1, z);
-			neighbours[7] = hasMatchingTableBrushAtTile(map, table_brush, x + 1, y + 1, z);
-		} else {
-			neighbours[0] = hasMatchingTableBrushAtTile(map, table_brush, x - 1, y - 1, z);
-			neighbours[1] = hasMatchingTableBrushAtTile(map, table_brush, x,     y - 1, z);
-			neighbours[2] = hasMatchingTableBrushAtTile(map, table_brush, x + 1, y - 1, z);
-			neighbours[3] = hasMatchingTableBrushAtTile(map, table_brush, x - 1, y, z);
-			neighbours[4] = hasMatchingTableBrushAtTile(map, table_brush, x + 1, y, z);
-			neighbours[5] = hasMatchingTableBrushAtTile(map, table_brush, x - 1, y + 1, z);
-			neighbours[6] = hasMatchingTableBrushAtTile(map, table_brush, x,     y + 1, z);
-			neighbours[7] = hasMatchingTableBrushAtTile(map, table_brush, x + 1, y + 1, z);
-		}
+		bool neighbours[8] = {};
+		neighbours[0] = hasMatchingTableBrushAtTile(map, table_brush, x - 1, y - 1, z);
+		neighbours[1] = hasMatchingTableBrushAtTile(map, table_brush, x,     y - 1, z);
+		neighbours[2] = hasMatchingTableBrushAtTile(map, table_brush, x + 1, y - 1, z);
+		neighbours[3] = hasMatchingTableBrushAtTile(map, table_brush, x - 1, y,     z);
+		neighbours[4] = hasMatchingTableBrushAtTile(map, table_brush, x + 1, y,     z);
+		neighbours[5] = hasMatchingTableBrushAtTile(map, table_brush, x - 1, y + 1, z);
+		neighbours[6] = hasMatchingTableBrushAtTile(map, table_brush, x,     y + 1, z);
+		neighbours[7] = hasMatchingTableBrushAtTile(map, table_brush, x + 1, y + 1, z);
 
 		uint32_t tiledata = 0;
 		for(int32_t i = 0; i < 8; ++i) {
@@ -238,18 +205,17 @@ void TableBrush::doTables(BaseMap* map, Tile* tile)
 		}
 
 		int32_t chance = random(1, tn.total_chance);
-		uint16_t id = 0;
-
+		uint16_t newId = 0;
 		for(const TableType& tableType : tn.items) {
 			if(chance <= tableType.chance) {
-				id = tableType.item_id;
+				newId = tableType.item_id;
 				break;
 			}
 			chance -= tableType.chance;
 		}
 
-		if(id != 0) {
-			item->setID(id);
+		if(newId != 0) {
+			item->transform(newId);
 		}
 	}
 }

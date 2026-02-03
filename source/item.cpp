@@ -35,7 +35,7 @@
 // NOTE(fusion): Definitely not the most optimized approach but string pointers
 // should be stable as long as they're not deleted.
 
-static std::vector<const char*> g_textAttributes;
+static std::vector<char*> g_textAttributes;
 
 static int AddTextAttribute(const char *text){
 	if(text == NULL || strlen(text) == 0){

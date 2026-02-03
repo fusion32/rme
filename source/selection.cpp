@@ -23,6 +23,7 @@
 #include "item.h"
 #include "editor.h"
 #include "gui.h"
+#include "settings.h"
 
 Selection::Selection(Editor& editor) :
 	editor(editor),
@@ -87,7 +88,7 @@ void Selection::add(const Tile* tile, Item* item)
 	item->deselect();
 
 	if(g_settings.getInteger(Config::BORDER_IS_GROUND)) {
-		if(item->isBorder())
+		if(item->getFlag(CLIP))
 			new_tile->selectGround();
 	}
 
@@ -147,7 +148,7 @@ void Selection::remove(Tile* tile, Item* item)
 	item->deselect();
 	Tile* new_tile = tile->deepCopy(editor.getMap());
 	if(selected) item->select();
-	if(item->isBorder() && g_settings.getInteger(Config::BORDER_IS_GROUND)) new_tile->deselectGround();
+	if(item->getFlag(CLIP) && g_settings.getInteger(Config::BORDER_IS_GROUND)) new_tile->deselectGround();
 
 	subsession->addChange(newd Change(new_tile));
 }

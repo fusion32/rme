@@ -18,7 +18,6 @@
 #include "items.h"
 #include "main.h"
 
-#include <sstream>
 #include <time.h>
 #include <wx/wfstream.h>
 
@@ -246,9 +245,6 @@ void MapCanvas::OnPaint(wxPaintEvent& event)
 
 	// Swap buffer
 	SwapBuffers();
-
-	// Send newd node requests
-	editor.SendNodeRequests();
 }
 
 void MapCanvas::ShowPositionIndicator(const Position& position)
@@ -598,11 +594,7 @@ void MapCanvas::OnMouseLeftDoubleClick(wxMouseEvent& event)
 		} else if(new_tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
 			dialog = newd OldPropertiesWindow(g_gui.root, &map, new_tile, new_tile->creature);
 		} else if(Item* item = new_tile->getTopItem()) {
-			if(map.getVersion().otbm >= MAP_OTBM_4) {
-				dialog = newd PropertiesWindow(g_gui.root, &map, new_tile, item);
-			} else {
-				dialog = newd OldPropertiesWindow(g_gui.root, &map, new_tile, item);
-			}
+			dialog = newd PropertiesWindow(g_gui.root, &map, new_tile, item);
 		} else {
 			delete new_tile;
 			return;
@@ -2108,10 +2100,7 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event))
 	else {
 		Item *item = new_tile->getLastSelectedItem();
 		if(item) {
-			if(editor.getMap().getVersion().otbm >= MAP_OTBM_4)
-				w = newd PropertiesWindow(g_gui.root, &editor.getMap(), new_tile, item);
-			else
-				w = newd OldPropertiesWindow(g_gui.root, &editor.getMap(), new_tile, item);
+			w = newd PropertiesWindow(g_gui.root, &editor.getMap(), new_tile, item);
 		}
 		else
 			return;
@@ -2389,7 +2378,7 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor, Posi
 			return;
 		}
 
-		if((tile && tile->ground && !oldBrush) || (!tile && oldBrush)) {
+		if((tile && tile->getFlag(BANK) && !oldBrush) || (!tile && oldBrush)) {
 			return;
 		}
 
@@ -2446,7 +2435,7 @@ bool MapCanvas::floodFill(Map *map, const Position& center, int x, int y, Ground
 	}
 
 	Tile* tile = map->getTile(px, py, center.z);
-	if((tile && tile->ground && !brush) || (!tile && brush)) {
+	if((tile && tile->getFlag(BANK) && !brush) || (!tile && brush)) {
 		return false;
 	}
 

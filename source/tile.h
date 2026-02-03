@@ -73,11 +73,11 @@ public:
 	void addItem(Item *item);
 	int addItems(Item *first);
 	int getIndexOf(Item *item) const;
-	Item* getItemAt(int index) const;
-	Item* getTopItem() const;
+	Item *getItemAt(int index) const;
+	Item *getTopItem(int *outIndex = NULL) const;
 	bool getFlag(ObjectFlag flag) const;
-	uint16_t getGroundSpeed() const noexcept;
-	uint8_t getMiniMapColor() const;
+	uint16_t getGroundSpeed(void) const noexcept;
+	uint8_t getMiniMapColor(void) const;
 
 	GroundBrush* getGroundBrush() const;
 	void borderize(BaseMap* parent);

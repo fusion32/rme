@@ -19,6 +19,7 @@
 #include "main.h"
 
 #include "map_window.h"
+#include "map_display.h"
 #include "gui.h"
 #include "sprites.h"
 #include "editor.h"

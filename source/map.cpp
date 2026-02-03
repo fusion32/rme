@@ -21,8 +21,6 @@
 
 #include "map.h"
 
-#include <sstream>
-
 Map::Map() : BaseMap(),
 	width(512),
 	height(512),
@@ -31,44 +29,21 @@ Map::Map() : BaseMap(),
 	unnamed(false),
 	waypoints(*this)
 {
-	// Earliest version possible
-	// Caller is responsible for converting us to proper version
-	mapVersion.otbm = MAP_OTBM_1;
-	mapVersion.client = CLIENT_VERSION_NONE;
+	// no-op
 }
 
 Map::~Map()
 {
-	////
+	// no-op
 }
 
 bool Map::open(const std::string file)
 {
-	if(file == filename)
-		return true; // Do not reopen ourselves!
-
-	tilecount = 0;
-
-	IOMapOTBM maploader(getVersion());
-
-	bool success = maploader.loadMap(*this, wxstr(file));
-
-	mapVersion = maploader.version;
-
-	warnings = maploader.getWarnings();
-
-	if(!success) {
-		error = maploader.getError();
-		return false;
-	}
-
-	has_changed = false;
-
-	wxFileName fn = wxstr(file);
-	filename = fn.GetFullPath().mb_str(wxConvUTF8);
-	name = fn.GetFullName().mb_str(wxConvUTF8);
-
-	return true;
+	// TODO
+	// error = ...;
+	// warnings = ...;
+	error = "TODO";
+	return false;
 }
 
 void Map::cleanInvalidTiles(bool showdialog)
@@ -403,62 +378,3 @@ bool Map::exportMinimap(FileName filename, int floor /*= rme::MapGroundLayer*/, 
 	return true;
 }
 
-void Map::updateUniqueIds(Tile* old_tile, Tile* new_tile)
-{
-	if(old_tile && old_tile->hasUniqueItem()) {
-		if(old_tile->ground) {
-			uint16_t uid = old_tile->ground->getUniqueID();
-			if(uid != 0)
-				removeUniqueId(uid);
-		}
-		for(const Item* item : old_tile->items) {
-			if(item) {
-				uint16_t uid = item->getUniqueID();
-				if(uid != 0) {
-					removeUniqueId(uid);
-				}
-			}
-		}
-	}
-
-	if(new_tile && new_tile->hasUniqueItem()) {
-		if(new_tile->ground) {
-			uint16_t uid = new_tile->ground->getUniqueID();
-			if(uid != 0)
-				addUniqueId(uid);
-		}
-		for(const Item* item : new_tile->items) {
-			if(item) {
-				uint16_t uid = item->getUniqueID();
-				if(uid != 0) {
-					addUniqueId(uid);
-				}
-			}
-		}
-	}
-}
-
-void Map::addUniqueId(uint16_t uid)
-{
-	auto it = std::find(uniqueIds.begin(), uniqueIds.end(), uid);
-	if (it == uniqueIds.end()) {
-		uniqueIds.push_back(uid);
-	}
-}
-
-void Map::removeUniqueId(uint16_t uid)
-{
-	auto it = std::find(uniqueIds.begin(), uniqueIds.end(), uid);
-	if (it != uniqueIds.end()) {
-		uniqueIds.erase(it);
-	}
-}
-
-bool Map::hasUniqueId(uint16_t uid) const
-{
-	if (uid < rme::MinUniqueId || uniqueIds.empty())
-		return false;
-
-	auto it = std::find(uniqueIds.begin(), uniqueIds.end(), uid);
-	return it != uniqueIds.end();
-}

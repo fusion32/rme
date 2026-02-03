@@ -20,6 +20,7 @@
 #include "palette_brushlist.h"
 #include "gui.h"
 #include "brush.h"
+#include "settings.h"
 
 // ============================================================================
 // Brush Palette Panel
