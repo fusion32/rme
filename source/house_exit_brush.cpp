@@ -50,10 +50,10 @@ uint32_t HouseExitBrush::getHouseID() const
 bool HouseExitBrush::canDraw(BaseMap* map, const Position& position) const
 {
 	Tile* tile = map->getTile(position);
-	if(!tile || !tile->hasGround()) {
+	if(!tile || !tile->getFlag(BANK)) {
 		return false;
 	}
-	if(tile->isHouseTile() || tile->isBlocking()) {
+	if(tile->isHouseTile() || tile->getFlag(UNPASS)) {
 		return false;
 	}
 	return true;

@@ -104,7 +104,7 @@ void DuplicatedItemsWindow::StartSearch(MapTab* tab, bool selection)
 		uint16_t prevId = 0;
 		uint16_t count = 0;
 
-		for(Item* item : tile->items) {
+		for(Item *item = tile->items; item != NULL; item = item->next){
 			uint16_t id = item->getID();
 			if(id == prevId) {
 				count++;
@@ -114,6 +114,7 @@ void DuplicatedItemsWindow::StartSearch(MapTab* tab, bool selection)
 			}
 			prevId = id;
 		}
+
 		// Check for the last item
 		if(count > 0) {
 			result.push_back(new DuplicatedItem(position, prevId, count));
@@ -270,17 +271,12 @@ bool DuplicatedItemsWindow::removeItem(DuplicatedItem* data, Action* action)
 		return false;
 	}
 
-	uint16_t count = 0;
+	int count = 0;
 	Tile* new_tile = tile->deepCopy(*map);
-	for(auto it = new_tile->items.begin(); it != new_tile->items.end();) {
-		Item* item = *it;
-		if (item->getID() != data->itemId || ++count == 1) {
-			++it;
-			continue;
-		}
-		delete item;
-		it = new_tile->items.erase(it);
-	}
+	new_tile->removeItems(
+		[&count, data](const Item *item){
+			return item->getID() == data->itemId && ++count > 1;
+		});
 
 	action->addChange(new Change(new_tile));
 	return true;

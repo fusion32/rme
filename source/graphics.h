@@ -196,11 +196,9 @@ public:
 	uint8_t pattern_y;
 	uint8_t pattern_z;
 	uint8_t frames;
-	uint32_t numsprites;
-
+	int numsprites;
 	Animator* animator;
 
-	uint16_t ground_speed;
 	uint16_t draw_height;
 	wxPoint draw_offset;
 	uint16_t minimap_color;

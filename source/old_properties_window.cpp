@@ -328,7 +328,7 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, "Block Missiles"));
 	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.getFlag(UNTHROW))));
 	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, "Block Pathfinder"));
-	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.getFlag(UNPASS))));
+	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.getFlag(AVOID))));
 	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, "Has Elevation"));
 	others_subsizer->Add(newd wxStaticText(this, wxID_ANY, b2yn(type.getFlag(HEIGHT))));
 	others_sizer->Add(others_subsizer, wxSizerFlags(1).Expand());
@@ -510,13 +510,13 @@ void OldPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 			if(edit_item->getFlag(TELEPORTABSOLUTE)) {
 				Position dest = destination_field->GetPosition();
 				Tile *destTile = edit_map->getTile(dest);
-				if(!destTile || destTile->getFlag(UNPASS)){
+				if(!destTile || destTile->getFlag(UNPASS) || destTile->getFlag(AVOID)){
 					int ret = g_gui.PopupDialog(this, "Warning", "This teleport leads nowhere, or to an invalid location. Do you want to change the destination?", wxYES | wxNO);
 					if(ret == wxID_YES) {
 						return;
 					}
 				}
-				edit_item->setAttribute(ABSTELEPORTDESTINATION, PackAbsCoordinate(dest));
+				edit_item->setAttribute(ABSTELEPORTDESTINATION, PackAbsoluteCoordinate(dest));
 			}
 
 			// Done validating, set the values.

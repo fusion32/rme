@@ -56,7 +56,7 @@ std::string CreatureBrush::getName() const
 bool CreatureBrush::canDraw(BaseMap* map, const Position& position) const
 {
 	Tile* tile = map->getTile(position);
-	if(creature_type && tile && !tile->getFlag(UNPASS)) {
+	if(creature_type && tile && !tile->getFlag(UNPASS) && !tile->getFlag(AVOID)) {
 		if(tile->getLocation()->getSpawnCount() != 0 || g_settings.getInteger(Config::AUTO_CREATE_SPAWN)) {
  		   if(tile->getTileFlag(TILE_FLAG_PROTECTIONZONE)) {
 				if(creature_type->isNpc) {

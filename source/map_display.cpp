@@ -34,7 +34,6 @@
 #include "map_display.h"
 #include "map_drawer.h"
 #include "application.h"
-#include "live_server.h"
 #include "browse_tile_window.h"
 
 #include "doodad_brush.h"
@@ -410,9 +409,9 @@ void MapCanvas::UpdatePositionStatus(int x, int y)
 			ss << " typeId:" << item->getID();
 			// TODO(fusion): Relevant srv flags/attributes instead?
 			if(item->getFlag(TAKE)){
-				int weight = getAttribute(WEIGHT);
-				if(getFlag(CUMULATIVE) && getAttribute(AMOUNT) > 0){
-					weight *= getAttribute(AMOUNT);
+				int weight = item->getAttribute(WEIGHT);
+				if(item->getFlag(CUMULATIVE) && item->getAttribute(AMOUNT) > 0){
+					weight *= item->getAttribute(AMOUNT);
 				}
 				ss << " weight: " << (weight / 100) << "." << (weight % 100) << "oz";
 			}
@@ -421,10 +420,6 @@ void MapCanvas::UpdatePositionStatus(int x, int y)
 		}
 	} else {
 		ss << "Nothing";
-	}
-
-	if(editor.IsLive()) {
-		editor.GetLive().updateCursor(Position(map_x, map_y, floor));
 	}
 
 	g_gui.root->SetStatusText(ss, 1);
@@ -1954,7 +1949,7 @@ void MapCanvas::OnGotoDestination(wxCommandEvent& WXUNUSED(event))
 	Tile *tile = editor.getSelection().getSelectedTile();
 	Item *item = tile->getFirstSelectedItem();
 	if(item && item->getFlag(TELEPORTABSOLUTE)){
-		Position teleportDest = UnpackAbsCoordinate(item->getAttribute(ABSTELEPORTDESTINATION));
+		Position teleportDest = UnpackAbsoluteCoordinate(item->getAttribute(ABSTELEPORTDESTINATION));
 		g_gui.SetScreenCenterPosition(teleportDest);
 	}
 }
@@ -1964,7 +1959,7 @@ void MapCanvas::OnCopyDestination(wxCommandEvent& WXUNUSED(event))
 	Tile *tile = editor.getSelection().getSelectedTile();
 	Item *item = tile->getFirstSelectedItem();
 	if(item && item->getFlag(TELEPORTABSOLUTE)){
-		Position teleportDest = UnpackAbsCoordinate(item->getAttribute(ABSTELEPORTDESTINATION));
+		Position teleportDest = UnpackAbsoluteCoordinate(item->getAttribute(ABSTELEPORTDESTINATION));
 		int format = g_settings.getInteger(Config::COPY_POSITION_FORMAT);
 		posToClipboard(teleportDest.x, teleportDest.y, teleportDest.z, format);
 

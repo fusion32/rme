@@ -187,10 +187,9 @@ public:
 	void OnClickHatchDoorButton(wxCommandEvent& event);
 	void OnClickWindowDoorButton(wxCommandEvent& event);
 	// ----
-	void OnClickPZBrushButton(wxCommandEvent& event);
-	void OnClickNOPVPBrushButton(wxCommandEvent& event);
+	void OnClickRefreshBrushButton(wxCommandEvent& event);
 	void OnClickNoLogoutBrushButton(wxCommandEvent& event);
-	void OnClickPVPZoneBrushButton(wxCommandEvent& event);
+	void OnClickPZBrushButton(wxCommandEvent& event);
 public:
 	void DeselectAll();
 
@@ -207,10 +206,9 @@ public:
 	BrushButton* hatchDoorButton;
 	BrushButton* windowDoorButton;
 	// ----
-	BrushButton* pzBrushButton;
-	BrushButton* nopvpBrushButton;
+	BrushButton* refreshBrushButton;
 	BrushButton* nologBrushButton;
-	BrushButton* pvpzoneBrushButton;
+	BrushButton* pzBrushButton;
 
 	DECLARE_EVENT_TABLE()
 };

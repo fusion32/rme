@@ -35,8 +35,6 @@
 #include "items.h"
 #include "editor.h"
 #include "materials.h"
-#include "live_client.h"
-#include "live_server.h"
 
 BEGIN_EVENT_TABLE(MainMenuBar, wxEvtHandler)
 END_EVENT_TABLE()
@@ -72,16 +70,12 @@ MainMenuBar::MainMenuBar(MainFrame *frame) : frame(frame)
 	MAKE_ACTION(FIND_ITEM, wxITEM_NORMAL, OnSearchForItem);
 	MAKE_ACTION(REPLACE_ITEMS, wxITEM_NORMAL, OnReplaceItems);
 	MAKE_ACTION(SEARCH_ON_MAP_EVERYTHING, wxITEM_NORMAL, OnSearchForStuffOnMap);
-	MAKE_ACTION(SEARCH_ON_MAP_UNIQUE, wxITEM_NORMAL, OnSearchForUniqueOnMap);
-	MAKE_ACTION(SEARCH_ON_MAP_ACTION, wxITEM_NORMAL, OnSearchForActionOnMap);
 	MAKE_ACTION(SEARCH_ON_MAP_CONTAINER, wxITEM_NORMAL, OnSearchForContainerOnMap);
-	MAKE_ACTION(SEARCH_ON_MAP_WRITEABLE, wxITEM_NORMAL, OnSearchForWriteableOnMap);
+	MAKE_ACTION(SEARCH_ON_MAP_WRITEABLE, wxITEM_NORMAL, OnSearchForWritableOnMap);
 	MAKE_ACTION(SEARCH_ON_MAP_DUPLICATED_ITEMS, wxITEM_NORMAL, OnSearchForDuplicatedItemsOnMap);
 	MAKE_ACTION(SEARCH_ON_SELECTION_EVERYTHING, wxITEM_NORMAL, OnSearchForStuffOnSelection);
-	MAKE_ACTION(SEARCH_ON_SELECTION_UNIQUE, wxITEM_NORMAL, OnSearchForUniqueOnSelection);
-	MAKE_ACTION(SEARCH_ON_SELECTION_ACTION, wxITEM_NORMAL, OnSearchForActionOnSelection);
 	MAKE_ACTION(SEARCH_ON_SELECTION_CONTAINER, wxITEM_NORMAL, OnSearchForContainerOnSelection);
-	MAKE_ACTION(SEARCH_ON_SELECTION_WRITEABLE, wxITEM_NORMAL, OnSearchForWriteableOnSelection);
+	MAKE_ACTION(SEARCH_ON_SELECTION_WRITEABLE, wxITEM_NORMAL, OnSearchForWritableOnSelection);
 	MAKE_ACTION(SEARCH_ON_SELECTION_ITEM, wxITEM_NORMAL, OnSearchForItemOnSelection);
 	MAKE_ACTION(SEARCH_ON_SELECTION_DUPLICATED_ITEMS, wxITEM_NORMAL, OnSearchForDuplicatedItemsOnSelection);
 	MAKE_ACTION(REPLACE_ON_SELECTION_ITEMS, wxITEM_NORMAL, OnReplaceItemsOnSelection);
@@ -159,10 +153,6 @@ MainMenuBar::MainMenuBar(MainFrame *frame) : frame(frame)
 	MAKE_ACTION(WIN_ACTIONS_HISTORY, wxITEM_NORMAL, OnActionsHistoryWindow);
 	MAKE_ACTION(NEW_PALETTE, wxITEM_NORMAL, OnNewPalette);
 	MAKE_ACTION(TAKE_SCREENSHOT, wxITEM_NORMAL, OnTakeScreenshot);
-
-	MAKE_ACTION(LIVE_START, wxITEM_NORMAL, OnStartLive);
-	MAKE_ACTION(LIVE_JOIN, wxITEM_NORMAL, OnJoinLive);
-	MAKE_ACTION(LIVE_CLOSE, wxITEM_NORMAL, OnCloseLive);
 
 	MAKE_ACTION(SELECT_TERRAIN, wxITEM_NORMAL, OnSelectTerrainPalette);
 	MAKE_ACTION(SELECT_DOODAD, wxITEM_NORMAL, OnSelectDoodadPalette);
@@ -315,9 +305,8 @@ void MainMenuBar::Update()
 	bool loaded = g_gui.IsVersionLoaded();
 	bool has_map = editor != nullptr;
 	bool has_selection = editor && editor->hasSelection();
-	bool is_live = editor && editor->IsLive();
-	bool is_host = has_map && !editor->IsLiveClient();
-	bool is_local = has_map && !is_live;
+	bool is_host = has_map;
+	bool is_local = has_map;
 
 	EnableItem(CLOSE, is_local);
 	EnableItem(SAVE, is_host);
@@ -392,10 +381,6 @@ void MainMenuBar::Update()
 	EnableItem(SELECT_CREATURE, loaded);
 	EnableItem(SELECT_WAYPOINT, loaded);
 	EnableItem(SELECT_RAW, loaded);
-
-	EnableItem(LIVE_START, is_local);
-	EnableItem(LIVE_JOIN, loaded);
-	EnableItem(LIVE_CLOSE, is_live);
 
 	EnableItem(DEBUG_VIEW_DAT, loaded);
 
@@ -940,96 +925,76 @@ namespace OnSearchForStuff
 {
 	struct Searcher
 	{
-		Searcher() :
-			search_unique(false),
-			search_action(false),
-			search_container(false),
-			search_writeable(false) {}
-
-		bool search_unique;
-		bool search_action;
+		// TODO(fusion): Relevant srv flags/attributes instead?
 		bool search_container;
-		bool search_writeable;
-		std::vector<std::pair<Tile*, Item*> > found;
+		bool search_writable;
+		std::vector<std::pair<Tile*, Item*>> found;
 
 		void operator()(Map& map, Tile* tile, Item* item, long long done)
 		{
 			if(done % 0x8000 == 0) {
 				g_gui.SetLoadDone((unsigned int)(100 * done / map.getTileCount()));
 			}
-			Container* container;
-			if((search_unique && item->getUniqueID() > 0) ||
-				(search_action && item->getActionID() > 0) ||
-				(search_container && ((container = dynamic_cast<Container*>(item)) && container->getItemCount())) ||
-				(search_writeable && item->getText().length() > 0)) {
+
+			bool add = false;
+			if(!add && search_container){
+				if((item->getFlag(CONTAINER) || item->getFlag(CHEST)) && item->content != NULL){
+					add = true;
+				}
+			}
+
+			if(!add && search_writable){
+				if(item->getFlag(TEXT) || item->getFlag(WRITE) || item->getFlag(WRITEONCE)){
+					const char *text = item->getTextAttribute(TEXTSTRING);
+					if(text && strlen(text) > 0){
+						add = true;
+					}
+				}
+			}
+
+			if(add){
 				found.push_back(std::make_pair(tile, item));
 			}
 		}
 
 		wxString desc(Item* item)
 		{
-			wxString label;
-			if(item->getUniqueID() > 0)
-				label << "UID:" << item->getUniqueID() << " ";
+			wxString label = wxstr(item->getName());
 
-			if(item->getActionID() > 0)
-				label << "AID:" << item->getActionID() << " ";
-
-			label << wxstr(item->getName());
-
-			if(dynamic_cast<Container*>(item))
+			if(item->getFlag(CONTAINER) || item->getFlag(CHEST)){
 				label << " (Container) ";
+			}
 
-			if(item->getText().length() > 0)
-				label << " (Text: " << wxstr(item->getText()) << ") ";
+			if(item->getFlag(TEXT) || item->getFlag(WRITE) || item->getFlag(WRITEONCE)){
+				const char *text = item->getTextAttribute(TEXTSTRING);
+				if(text && strlen(text) > 0){
+					label << " (Text: " << text << ") ";
+				}
+			}
 
 			return label;
 		}
 
 		void sort()
 		{
-			if(search_unique || search_action)
-				std::sort(found.begin(), found.end(), Searcher::compare);
-		}
-
-		static bool compare(const std::pair<Tile*, Item*>& pair1, const std::pair<Tile*, Item*>& pair2)
-		{
-			const Item* item1 = pair1.second;
-			const Item* item2 = pair2.second;
-
-			if(item1->getActionID() != 0 || item2->getActionID() != 0)
-				return item1->getActionID() < item2->getActionID();
-			else if(item1->getUniqueID() != 0 || item2->getUniqueID() != 0)
-				return item1->getUniqueID() < item2->getUniqueID();
-
-			return false;
+			// TODO ?
 		}
 	};
 }
 
 void MainMenuBar::OnSearchForStuffOnMap(wxCommandEvent& WXUNUSED(event))
 {
-	SearchItems(true, true, true, true);
-}
-
-void MainMenuBar::OnSearchForUniqueOnMap(wxCommandEvent& WXUNUSED(event))
-{
-	SearchItems(true, false, false, false);
-}
-
-void MainMenuBar::OnSearchForActionOnMap(wxCommandEvent& WXUNUSED(event))
-{
-	SearchItems(false, true, false, false);
+	SearchItems(true, true);
 }
 
 void MainMenuBar::OnSearchForContainerOnMap(wxCommandEvent& WXUNUSED(event))
 {
-	SearchItems(false, false, true, false);
+	SearchItems(true, false);
 }
 
-void MainMenuBar::OnSearchForWriteableOnMap(wxCommandEvent& WXUNUSED(event))
+void MainMenuBar::OnSearchForWritableOnMap(wxCommandEvent& WXUNUSED(event))
 {
-	SearchItems(false, false, false, true);
+	SearchItems(false, true);
 }
 
 void MainMenuBar::OnSearchForDuplicatedItemsOnMap(wxCommandEvent& WXUNUSED(event))
@@ -1039,27 +1004,17 @@ void MainMenuBar::OnSearchForDuplicatedItemsOnMap(wxCommandEvent& WXUNUSED(event
 
 void MainMenuBar::OnSearchForStuffOnSelection(wxCommandEvent& WXUNUSED(event))
 {
-	SearchItems(true, true, true, true, true);
-}
-
-void MainMenuBar::OnSearchForUniqueOnSelection(wxCommandEvent& WXUNUSED(event))
-{
-	SearchItems(true, false, false, false, true);
-}
-
-void MainMenuBar::OnSearchForActionOnSelection(wxCommandEvent& WXUNUSED(event))
-{
-	SearchItems(false, true, false, false, true);
+	SearchItems(true, true, true);
 }
 
 void MainMenuBar::OnSearchForContainerOnSelection(wxCommandEvent& WXUNUSED(event))
 {
-	SearchItems(false, false, true, false, true);
+	SearchItems(true, false, true);
 }
 
-void MainMenuBar::OnSearchForWriteableOnSelection(wxCommandEvent& WXUNUSED(event))
+void MainMenuBar::OnSearchForWritableOnSelection(wxCommandEvent& WXUNUSED(event))
 {
-	SearchItems(false, false, false, true, true);
+	SearchItems(false, true, true);
 }
 
 void MainMenuBar::OnSearchForItemOnSelection(wxCommandEvent& WXUNUSED(event))
@@ -1309,7 +1264,7 @@ namespace OnMapRemoveCorpses
 			if(done % 0x800 == 0)
 				g_gui.SetLoadDone((unsigned int)(100 * done / map.getTileCount()));
 
-			return g_materials.isInTileset(item, "Corpses") & !item->isComplex();
+			return g_materials.isInTileset(item, "Corpses");
 		}
 	};
 }
@@ -1347,11 +1302,7 @@ namespace OnMapRemoveUnreachable
 
 		bool isReachable(Tile* tile)
 		{
-			if(tile == nullptr)
-				return false;
-			if(!tile->isBlocking())
-				return true;
-			return false;
+			return tile && !tile->getFlag(UNPASS);
 		}
 
 		bool operator()(Map& map, Tile* tile, long long removed, long long done, long long total)
@@ -1621,30 +1572,20 @@ void MainMenuBar::OnMapStatistics(wxCommandEvent& WXUNUSED(event))
 
 		// TODO(fusion): Relevant srv flags/attributes instead?
 		bool is_detailed = false;
-#define ANALYZE_ITEM(_item)												\
-		do {															\
-			item_count += 1;											\
-			if(!(_item)->getFlag(BANK) && !(_item)->getFlag(CLIP)) {	\
-				is_detailed = true;										\
-				if(!it.getFlag(UNMOVE)) {								\
-					loose_item_count += 1;								\
-				}														\
-				if(it.getFlag(CONTAINER) || it.getFlag(CHEST)){			\
-					if((_item)->content != NULL) {						\
-						container_count += 1;							\
-					}													\
-				}														\
-			}															\
-		} while(false)
-
-		if(tile->ground) {
-			ANALYZE_ITEM(tile->ground);
+		for(const Item *item = tile->items; item != NULL; item = item->next){
+			item_count += 1;
+			if(!item->getFlag(BANK) && !item->getFlag(CLIP)) {
+				is_detailed = true;
+				if(!item->getFlag(UNMOVE)) {
+					loose_item_count += 1;
+				}
+				if(item->getFlag(CONTAINER) || item->getFlag(CHEST)){
+					if(item->content != NULL) {
+						container_count += 1;
+					}
+				}
+			}
 		}
-
-		for(Item* item : tile->items) {
-			ANALYZE_ITEM(item);
-		}
-#undef ANALYZE_ITEM
 
 		if(tile->spawn)
 			spawn_count += 1;
@@ -1652,7 +1593,7 @@ void MainMenuBar::OnMapStatistics(wxCommandEvent& WXUNUSED(event))
 		if(tile->creature)
 			creature_count += 1;
 
-		if(tile->isBlocking())
+		if(tile->getFlag(UNPASS))
 			blocking_tile_count += 1;
 		else
 			walkable_tile_count += 1;
@@ -1975,165 +1916,9 @@ void MainMenuBar::OnSelectRawPalette(wxCommandEvent& WXUNUSED(event))
 	g_gui.SelectPalettePage(TILESET_RAW);
 }
 
-void MainMenuBar::OnStartLive(wxCommandEvent& event)
+void MainMenuBar::SearchItems(bool container, bool writable, bool onSelection/* = false*/)
 {
-	Editor* editor = g_gui.GetCurrentEditor();
-	if(!editor) {
-		g_gui.PopupDialog("Error", "You need to have a map open to start a live mapping session.", wxOK);
-		return;
-	}
-	if(editor->IsLive()) {
-		g_gui.PopupDialog("Error", "You can not start two live servers on the same map (or a server using a remote map).", wxOK);
-		return;
-	}
-
-	wxDialog* live_host_dlg = newd wxDialog(frame, wxID_ANY, "Host Live Server", wxDefaultPosition, wxDefaultSize);
-
-	wxSizer* top_sizer = newd wxBoxSizer(wxVERTICAL);
-	wxFlexGridSizer* gsizer = newd wxFlexGridSizer(2, 10, 10);
-	gsizer->AddGrowableCol(0, 2);
-	gsizer->AddGrowableCol(1, 3);
-
-	// Data fields
-	wxTextCtrl* hostname;
-	wxSpinCtrl* port;
-	wxTextCtrl* password;
-	wxCheckBox* allow_copy;
-
-	gsizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Server Name:"));
-	gsizer->Add(hostname = newd wxTextCtrl(live_host_dlg, wxID_ANY, "RME Live Server"), 0, wxEXPAND);
-
-	gsizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Port:"));
-	gsizer->Add(port = newd wxSpinCtrl(live_host_dlg, wxID_ANY, "31313", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, 31313), 0, wxEXPAND);
-
-	gsizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Password:"));
-	gsizer->Add(password = newd wxTextCtrl(live_host_dlg, wxID_ANY), 0, wxEXPAND);
-
-	top_sizer->Add(gsizer, 0, wxALL, 20);
-
-	top_sizer->Add(allow_copy = newd wxCheckBox(live_host_dlg, wxID_ANY, "Allow copy & paste between maps."), 0, wxRIGHT | wxLEFT, 20);
-	allow_copy->SetToolTip("Allows remote clients to copy & paste from the hosted map to local maps.");
-
-	wxSizer* ok_sizer = newd wxBoxSizer(wxHORIZONTAL);
-	ok_sizer->Add(newd wxButton(live_host_dlg, wxID_OK, "OK"), 1, wxCENTER);
-	ok_sizer->Add(newd wxButton(live_host_dlg, wxID_CANCEL, "Cancel"), wxCENTER, 1);
-	top_sizer->Add(ok_sizer, 0, wxCENTER | wxALL, 20);
-
-	live_host_dlg->SetSizerAndFit(top_sizer);
-
-	while(true) {
-		int ret = live_host_dlg->ShowModal();
-		if(ret == wxID_OK) {
-			LiveServer* liveServer = editor->StartLiveServer();
-			liveServer->setName(hostname->GetValue());
-			liveServer->setPassword(password->GetValue());
-			liveServer->setPort(port->GetValue());
-
-			const wxString& error = liveServer->getLastError();
-			if(!error.empty()) {
-				g_gui.PopupDialog(live_host_dlg, "Error", error, wxOK);
-				editor->CloseLiveServer();
-				continue;
-			}
-
-			if(!liveServer->bind()) {
-				g_gui.PopupDialog("Socket Error", "Could not bind socket! Try another port?", wxOK);
-				editor->CloseLiveServer();
-			} else {
-				liveServer->createLogWindow(g_gui.tabbook);
-			}
-			break;
-		} else
-			break;
-	}
-	live_host_dlg->Destroy();
-	Update();
-}
-
-void MainMenuBar::OnJoinLive(wxCommandEvent& event)
-{
-	wxDialog* live_join_dlg = newd wxDialog(frame, wxID_ANY, "Join Live Server", wxDefaultPosition, wxDefaultSize);
-
-	wxSizer* top_sizer = newd wxBoxSizer(wxVERTICAL);
-	wxFlexGridSizer* gsizer = newd wxFlexGridSizer(2, 10, 10);
-	gsizer->AddGrowableCol(0, 2);
-	gsizer->AddGrowableCol(1, 3);
-
-	// Data fields
-	wxTextCtrl* name;
-	wxTextCtrl* ip;
-	wxSpinCtrl* port;
-	wxTextCtrl* password;
-
-	gsizer->Add(newd wxStaticText(live_join_dlg, wxID_ANY, "Name:"));
-	gsizer->Add(name = newd wxTextCtrl(live_join_dlg, wxID_ANY, ""), 0, wxEXPAND);
-
-	gsizer->Add(newd wxStaticText(live_join_dlg, wxID_ANY, "IP:"));
-	gsizer->Add(ip = newd wxTextCtrl(live_join_dlg, wxID_ANY, "localhost"), 0, wxEXPAND);
-
-	gsizer->Add(newd wxStaticText(live_join_dlg, wxID_ANY, "Port:"));
-	gsizer->Add(port = newd wxSpinCtrl(live_join_dlg, wxID_ANY, "31313", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, 31313), 0, wxEXPAND);
-
-	gsizer->Add(newd wxStaticText(live_join_dlg, wxID_ANY, "Password:"));
-	gsizer->Add(password = newd wxTextCtrl(live_join_dlg, wxID_ANY), 0, wxEXPAND);
-
-	top_sizer->Add(gsizer, 0, wxALL, 20);
-
-	wxSizer* ok_sizer = newd wxBoxSizer(wxHORIZONTAL);
-	ok_sizer->Add(newd wxButton(live_join_dlg, wxID_OK, "OK"), 1, wxRIGHT);
-	ok_sizer->Add(newd wxButton(live_join_dlg, wxID_CANCEL, "Cancel"), 1, wxRIGHT);
-	top_sizer->Add(ok_sizer, 0, wxCENTER | wxALL, 20);
-
-	live_join_dlg->SetSizerAndFit(top_sizer);
-
-	while(true) {
-		int ret = live_join_dlg->ShowModal();
-		if(ret == wxID_OK) {
-			LiveClient* liveClient = newd LiveClient();
-			liveClient->setPassword(password->GetValue());
-
-			wxString tmp = name->GetValue();
-			if(tmp.empty()) {
-				tmp = "User";
-			}
-			liveClient->setName(tmp);
-
-			const wxString& error = liveClient->getLastError();
-			if(!error.empty()) {
-				g_gui.PopupDialog(live_join_dlg, "Error", error, wxOK);
-				delete liveClient;
-				continue;
-			}
-
-			const wxString& address = ip->GetValue();
-			int32_t portNumber = port->GetValue();
-
-			liveClient->createLogWindow(g_gui.tabbook);
-			if(!liveClient->connect(nstr(address), portNumber)) {
-				g_gui.PopupDialog("Connection Error", liveClient->getLastError(), wxOK);
-				delete liveClient;
-			}
-
-			break;
-		} else
-			break;
-	}
-	live_join_dlg->Destroy();
-	Update();
-}
-
-void MainMenuBar::OnCloseLive(wxCommandEvent& event)
-{
-	Editor* editor = g_gui.GetCurrentEditor();
-	if(editor && editor->IsLive())
-		g_gui.CloseLiveEditors(&editor->GetLive());
-
-	Update();
-}
-
-void MainMenuBar::SearchItems(bool unique, bool action, bool container, bool writable, bool onSelection/* = false*/)
-{
-	if(!unique && !action && !container && !writable)
+	if(!container && !writable)
 		return;
 
 	if(!g_gui.IsEditorOpen())
@@ -2145,21 +1930,19 @@ void MainMenuBar::SearchItems(bool unique, bool action, bool container, bool wri
 		g_gui.CreateLoadBar("Searching on map...");
 
 	OnSearchForStuff::Searcher searcher;
-	searcher.search_unique = unique;
-	searcher.search_action = action;
 	searcher.search_container = container;
-	searcher.search_writeable = writable;
+	searcher.search_writable = writable;
 
 	foreach_ItemOnMap(g_gui.GetCurrentMap(), searcher, onSelection);
 	searcher.sort();
-	std::vector<std::pair<Tile*, Item*> >& found = searcher.found;
 
 	g_gui.DestroyLoadBar();
 
 	SearchResultWindow* result = g_gui.ShowSearchWindow();
 	result->Clear();
-	for(std::vector<std::pair<Tile*, Item*> >::iterator iter = found.begin(); iter != found.end(); ++iter) {
-		result->AddPosition(searcher.desc(iter->second), iter->first->getPosition());
+
+	for(const auto &p: searcher.found){
+		result->AddPosition(searcher.desc(p.second), p.first->getPosition());
 	}
 }
 

@@ -208,6 +208,16 @@ public:
 	void addHouseExit(House* house);
 	void removeHouseExit(House* house);
 	bool hasHouseExit(uint32_t houseId) const;
+
+	// TODO(fusion): This could be a non-persistent tile flag but I'm not sure it
+	// is used for anything particularly useful.
+	bool isModified(void) const { return false; }
+	void modify(void) {}
+	void unmodify(void) {}
+
+	// TODO(fusion): Same thing.
+	bool hasOptionalBorder(void) const { return false; }
+	void setOptionalBorder(bool dummy) {}
 };
 
 typedef std::unordered_set<Tile*> TileSet;

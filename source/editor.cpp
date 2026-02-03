@@ -35,13 +35,7 @@
 #include "spawn_brush.h"
 #include "settings.h"
 
-#include "live_server.h"
-#include "live_client.h"
-#include "live_action.h"
-
 Editor::Editor(CopyBuffer& copybuffer) :
-	live_server(nullptr),
-	live_client(nullptr),
 	actionQueue(newd ActionQueue(*this)),
 	selection(*this),
 	copybuffer(copybuffer),
@@ -60,8 +54,6 @@ Editor::Editor(CopyBuffer& copybuffer) :
 }
 
 Editor::Editor(CopyBuffer& copybuffer, const FileName& fn) :
-	live_server(nullptr),
-	live_client(nullptr),
 	actionQueue(newd ActionQueue(*this)),
 	selection(*this),
 	copybuffer(copybuffer),
@@ -71,23 +63,8 @@ Editor::Editor(CopyBuffer& copybuffer, const FileName& fn) :
 	map.open(nstr(fn.GetFullPath()));
 }
 
-Editor::Editor(CopyBuffer& copybuffer, LiveClient* client) :
-	live_server(nullptr),
-	live_client(client),
-	actionQueue(newd NetworkedActionQueue(*this)),
-	selection(*this),
-	copybuffer(copybuffer),
-	replace_brush(nullptr)
-{
-	// no-op
-}
-
 Editor::~Editor()
 {
-	if(IsLive()) {
-		CloseLiveServer();
-	}
-
 	UnnamedRenderingLock();
 	selection.clear();
 	delete actionQueue;
@@ -267,6 +244,7 @@ void Editor::saveMap(FileName filename, bool showdialog)
 
 	{
 
+#if 0
 		// Set up the Map paths
 		wxFileName fn = wxstr(savefile);
 		map.filename = fn.GetFullPath().mb_str(wxConvUTF8);
@@ -313,9 +291,11 @@ void Editor::saveMap(FileName filename, bool showdialog)
 			std::remove(n.c_str());
 		}
 
-		// If failure, don't run the rest of the function
 		if(!success)
 			return;
+#else
+		return;
+#endif
 	}
 
 	// Move to permanent backup
@@ -653,8 +633,8 @@ bool Editor::importMap(FileName filename, int import_x_offset, int import_y_offs
 		if(offset != Position(0,0,0)) {
 			for(Item *item = import_tile->items; item != NULL; item = item->next){
 				if(item->getFlag(TELEPORTABSOLUTE)){
-					Position pos = UnpackAbsCoordinate(item->getAttribute(ABSTELEPORTDESTINATION));
-					item->setAttribute(ABSTELEPORTDESTINATION, PackAbsCoordinate(pos + offset));
+					Position pos = UnpackAbsoluteCoordinate(item->getAttribute(ABSTELEPORTDESTINATION));
+					item->setAttribute(ABSTELEPORTDESTINATION, PackAbsoluteCoordinate(pos + offset));
 				}
 			}
 		}
@@ -751,14 +731,6 @@ void Editor::randomizeSelection()
 		GroundBrush* brush = new_tile->getGroundBrush();
 		if(brush && brush->isReRandomizable()) {
 			brush->draw(&map, new_tile, nullptr);
-
-			Item* old_ground = tile->ground;
-			Item* new_ground = new_tile->ground;
-			if(old_ground && new_ground) {
-				new_ground->setActionID(old_ground->getActionID());
-				new_ground->setUniqueID(old_ground->getUniqueID());
-			}
-
 			new_tile->select();
 			action->addChange(new Change(new_tile));
 		}
@@ -782,26 +754,8 @@ void Editor::randomizeMap(bool showdialog)
 		Tile* tile = tileLocation->get();
 		ASSERT(tile);
 
-		GroundBrush* groundBrush = tile->getGroundBrush();
-		if(groundBrush) {
-			Item* oldGround = tile->ground;
-
-			uint16_t actionId, uniqueId;
-			if(oldGround) {
-				actionId = oldGround->getActionID();
-				uniqueId = oldGround->getUniqueID();
-			} else {
-				actionId = 0;
-				uniqueId = 0;
-			}
+		if(GroundBrush* groundBrush = tile->getGroundBrush()) {
 			groundBrush->draw(&map, tile, nullptr);
-
-			Item* newGround = tile->ground;
-			if(newGround) {
-				newGround->setActionID(actionId);
-				newGround->setUniqueID(uniqueId);
-			}
-			tile->update();
 		}
 		++tiles_done;
 	}
@@ -890,7 +844,7 @@ void Editor::clearModifiedTileState(bool showdialog)
 
 void Editor::moveSelection(const Position& offset)
 {
-	if(!CanEdit() || !hasSelection()) {
+	if(!hasSelection()) {
 		return;
 	}
 
@@ -1159,43 +1113,36 @@ void doSurroundingBorders(DoodadBrush* doodad_brush, PositionList& tilestoborder
 	if(doodad_brush->doNewBorders() && g_settings.getInteger(Config::USE_AUTOMAGIC)) {
 		const Position& position = new_tile->getPosition();
 		tilestoborder.push_back(Position(position));
-		if(buffer_tile->hasGround()) {
+		if(buffer_tile->getFlag(BANK)) {
 			for(int y = -1; y <= 1; y++) {
 				for(int x = -1; x <= 1; x++) {
 					tilestoborder.push_back(Position(position.x + x, position.y + y, position.z));
 				}
 			}
-		} else if(buffer_tile->hasWall()) {
-			tilestoborder.push_back(Position(position.x, position.y-1, position.z));
-			tilestoborder.push_back(Position(position.x-1, position.y, position.z));
-			tilestoborder.push_back(Position(position.x+1, position.y, position.z));
-			tilestoborder.push_back(Position(position.x, position.y+1, position.z));
+		} else if(buffer_tile->getWall()) {
+			tilestoborder.push_back(Position(position.x,   position.y-1, position.z));
+			tilestoborder.push_back(Position(position.x-1, position.y,   position.z));
+			tilestoborder.push_back(Position(position.x+1, position.y,   position.z));
+			tilestoborder.push_back(Position(position.x,   position.y+1, position.z));
 		}
 	}
 }
 
 void removeDuplicateWalls(Tile* buffer, Tile* tile)
 {
-	if (!buffer || buffer->items.empty() || !tile || tile->items.empty()) {
+	if (!buffer || !buffer->items || !tile || !tile->items) {
 		return;
 	}
 
-	for(const Item* item : buffer->items) {
-		if(item) {
-			WallBrush* brush = item->getWallBrush();
-			if(brush) {
-				tile->removeWalls(brush);
-			}
+	for(const Item *item = buffer->items; item != NULL; item = item->next){
+		if(WallBrush *brush = item->getWallBrush()){
+			tile->removeWalls(brush);
 		}
 	}
 }
 
 void Editor::drawInternal(Position offset, bool alt, bool dodraw)
 {
-	if(!CanEdit()) {
-		return;
-	}
-
 	Brush* brush = g_gui.GetCurrentBrush();
 	if(!brush) {
 		return;
@@ -1246,7 +1193,7 @@ void Editor::drawInternal(Position offset, bool alt, bool dodraw)
 					action->addChange(newd Change(new_tile));
 				}
 			} else {
-				if(tile && !tile->isBlocking()) {
+				if(tile && !tile->getFlag(UNPASS)) {
 					bool place = true;
 					if(!doodad_brush->placeOnDuplicate() && !alt) {
 						for(Item *item = tile->items; item != NULL; item = item->next){
@@ -1364,10 +1311,6 @@ void Editor::drawInternal(Position offset, bool alt, bool dodraw)
 
 void Editor::drawInternal(const PositionVector& tilestodraw, bool alt, bool dodraw)
 {
-	if(!CanEdit()) {
-		return;
-	}
-
 	Brush* brush = g_gui.GetCurrentBrush();
 	if(!brush) {
 		return;
@@ -1435,10 +1378,6 @@ void Editor::drawInternal(const PositionVector& tilestodraw, bool alt, bool dodr
 
 void Editor::drawInternal(const PositionVector& tilestodraw, PositionVector& tilestoborder, bool alt, bool dodraw)
 {
-	if(!CanEdit()) {
-		return;
-	}
-
 	Brush* brush = g_gui.GetCurrentBrush();
 	if(!brush) {
 		return;
@@ -1562,13 +1501,13 @@ void Editor::drawInternal(const PositionVector& tilestodraw, PositionVector& til
 		for(PositionVector::const_iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
 			Tile* tile = map.getTile(*it);
 			if(brush->isTable()) {
-				if(tile && tile->hasTable()) {
+				if(tile && tile->getTable()) {
 					Tile* new_tile = tile->deepCopy(map);
 					new_tile->tableize(&map);
 					action->addChange(newd Change(new_tile));
 				}
 			} else if(brush->isCarpet()) {
-				if(tile && tile->hasCarpet()) {
+				if(tile && tile->getCarpet()) {
 					Tile* new_tile = tile->deepCopy(map);
 					new_tile->carpetize(&map);
 					action->addChange(newd Change(new_tile));
@@ -1716,103 +1655,6 @@ void Editor::drawInternal(const PositionVector& tilestodraw, PositionVector& til
 			}
 		}
 		addAction(action, 2);
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Live!
-
-bool Editor::IsLiveClient() const
-{
-	return live_client != nullptr;
-}
-
-bool Editor::IsLiveServer() const
-{
-	return live_server != nullptr;
-}
-
-bool Editor::IsLive() const
-{
-	return IsLiveClient() || IsLiveServer();
-}
-
-bool Editor::IsLocal() const
-{
-	return !IsLive();
-}
-
-LiveClient* Editor::GetLiveClient() const
-{
-	return live_client;
-}
-
-LiveServer* Editor::GetLiveServer() const
-{
-	return live_server;
-}
-
-LiveSocket& Editor::GetLive() const
-{
-	if(live_server)
-		return *live_server;
-	return *live_client;
-}
-
-LiveServer* Editor::StartLiveServer()
-{
-	ASSERT(IsLocal());
-	live_server = newd LiveServer(*this);
-
-	delete actionQueue;
-	actionQueue = newd NetworkedActionQueue(*this);
-
-	return live_server;
-}
-
-void Editor::BroadcastNodes(DirtyList& dirtyList)
-{
-	if(IsLiveClient()) {
-		live_client->sendChanges(dirtyList);
-	} else {
-		live_server->broadcastNodes(dirtyList);
-	}
-}
-
-void Editor::CloseLiveServer()
-{
-	ASSERT(IsLive());
-	if(live_client) {
-		live_client->close();
-
-		delete live_client;
-		live_client = nullptr;
-	}
-
-	if(live_server) {
-		live_server->close();
-
-		delete live_server;
-		live_server = nullptr;
-
-		delete actionQueue;
-		actionQueue = newd ActionQueue(*this);
-	}
-
-	NetworkConnection& connection = NetworkConnection::getInstance();
-	connection.stop();
-}
-
-void Editor::QueryNode(int ndx, int ndy, bool underground)
-{
-	ASSERT(live_client);
-	live_client->queryNode(ndx, ndy, underground);
-}
-
-void Editor::SendNodeRequests()
-{
-	if(live_client) {
-		live_client->sendNodeRequests();
 	}
 }
 

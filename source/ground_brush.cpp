@@ -527,10 +527,7 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 void GroundBrush::undraw(BaseMap* map, Tile* tile)
 {
 	ASSERT(tile);
-	if(tile->hasGround() && tile->ground->getGroundBrush() == this) {
-		delete tile->ground;
-		tile->ground = nullptr;
-	}
+	tile->removeItems([this](const Item *item){ return item->getGroundBrush() == this; });
 }
 
 void GroundBrush::draw(BaseMap* map, Tile* tile, void* parameter)
@@ -632,24 +629,17 @@ const GroundBrush::BorderBlock* GroundBrush::getBrushTo(GroundBrush* first, Grou
 	return nullptr;
 }
 
+static GroundBrush *extractGroundBrushFromTile(BaseMap* map, uint32_t x, uint32_t y, uint32_t z){
+	GroundBrush *brush = NULL;
+	if(Tile* tile = map->getTile(x, y, z)) {
+		brush = tile->getGroundBrush();
+	}
+	return brush;
+};
+
 void GroundBrush::doBorders(BaseMap* map, Tile* tile)
 {
-	static const auto extractGroundBrushFromTile = [](BaseMap* map, uint32_t x, uint32_t y, uint32_t z) -> GroundBrush* {
-		Tile* tile = map->getTile(x, y, z);
-		if(tile) {
-			return tile->getGroundBrush();
-		}
-		return nullptr;
-	};
-
 	ASSERT(tile);
-
-	GroundBrush* borderBrush;
-	if(tile->ground) {
-		borderBrush = tile->ground->getGroundBrush();
-	} else {
-		borderBrush = nullptr;
-	}
 
 	const Position& position = tile->getPosition();
 
@@ -659,50 +649,20 @@ void GroundBrush::doBorders(BaseMap* map, Tile* tile)
 
 	// Pair of visited / what border type
 	std::pair<bool, GroundBrush*> neighbours[8];
-	if(x == 0) {
-		if(y == 0) {
-			neighbours[0] = { false, nullptr };
-			neighbours[1] = { false, nullptr };
-			neighbours[2] = { false, nullptr };
-			neighbours[3] = { false, nullptr };
-			neighbours[4] = { false, extractGroundBrushFromTile(map, x + 1, y,     z) };
-			neighbours[5] = { false, nullptr };
-			neighbours[6] = { false, extractGroundBrushFromTile(map, x,     y + 1, z) };
-			neighbours[7] = { false, extractGroundBrushFromTile(map, x + 1, y + 1, z) };
-		} else {
-			neighbours[0] = { false, nullptr };
-			neighbours[1] = { false, extractGroundBrushFromTile(map, x,     y - 1, z) };
-			neighbours[2] = { false, extractGroundBrushFromTile(map, x + 1, y - 1, z) };
-			neighbours[3] = { false, nullptr };
-			neighbours[4] = { false, extractGroundBrushFromTile(map, x + 1, y,     z) };
-			neighbours[5] = { false, nullptr };
-			neighbours[6] = { false, extractGroundBrushFromTile(map, x,     y + 1, z) };
-			neighbours[7] = { false, extractGroundBrushFromTile(map, x + 1, y + 1, z) };
-		}
-	} else if(y == 0) {
-		neighbours[0] = { false, nullptr };
-		neighbours[1] = { false, nullptr };
-		neighbours[2] = { false, nullptr };
-		neighbours[3] = { false, extractGroundBrushFromTile(map, x - 1, y,     z) };
-		neighbours[4] = { false, extractGroundBrushFromTile(map, x + 1, y,     z) };
-		neighbours[5] = { false, extractGroundBrushFromTile(map, x - 1, y + 1, z) };
-		neighbours[6] = { false, extractGroundBrushFromTile(map, x,     y + 1, z) };
-		neighbours[7] = { false, extractGroundBrushFromTile(map, x + 1, y + 1, z) };
-	} else {
-		neighbours[0] = { false, extractGroundBrushFromTile(map, x - 1, y - 1, z) };
-		neighbours[1] = { false, extractGroundBrushFromTile(map, x,     y - 1, z) };
-		neighbours[2] = { false, extractGroundBrushFromTile(map, x + 1, y - 1, z) };
-		neighbours[3] = { false, extractGroundBrushFromTile(map, x - 1, y,     z) };
-		neighbours[4] = { false, extractGroundBrushFromTile(map, x + 1, y,     z) };
-		neighbours[5] = { false, extractGroundBrushFromTile(map, x - 1, y + 1, z) };
-		neighbours[6] = { false, extractGroundBrushFromTile(map, x,     y + 1, z) };
-		neighbours[7] = { false, extractGroundBrushFromTile(map, x + 1, y + 1, z) };
-	}
+	neighbours[0] = { false, extractGroundBrushFromTile(map, x - 1, y - 1, z) };
+	neighbours[1] = { false, extractGroundBrushFromTile(map, x,     y - 1, z) };
+	neighbours[2] = { false, extractGroundBrushFromTile(map, x + 1, y - 1, z) };
+	neighbours[3] = { false, extractGroundBrushFromTile(map, x - 1, y,     z) };
+	neighbours[4] = { false, extractGroundBrushFromTile(map, x + 1, y,     z) };
+	neighbours[5] = { false, extractGroundBrushFromTile(map, x - 1, y + 1, z) };
+	neighbours[6] = { false, extractGroundBrushFromTile(map, x,     y + 1, z) };
+	neighbours[7] = { false, extractGroundBrushFromTile(map, x + 1, y + 1, z) };
 
 	static std::vector<const BorderBlock*> specificList;
 	specificList.clear();
 
 	std::vector<BorderCluster> borderList;
+	GroundBrush *borderBrush = tile->getGroundBrush();
 	for(int32_t i = 0; i < 8; ++i) {
 		auto& neighbourPair = neighbours[i];
 		if(neighbourPair.first) {
@@ -931,8 +891,8 @@ void GroundBrush::doBorders(BaseMap* map, Tile* tile)
 			}
 			*/
 			uint32_t matches = 0;
-			for(Item* item : tile->items) {
-				if(!item->isBorder()) {
+			for(Item *item = tile->items; item != NULL; item = item->next){
+				if(!item->getFlag(CLIP)) {
 					break;
 				}
 
@@ -956,43 +916,30 @@ void GroundBrush::doBorders(BaseMap* map, Tile* tile)
 
 			//printf("\t\t%d matches of %d\n", matches, scb->items_to_match.size());
 			if(matches == specificCaseBlock->items_to_match.size()) {
-				auto& tileItems = tile->items;
-				auto it = tileItems.begin();
 				if(specificCaseBlock->delete_all) {
 					// Delete all matching borders
-					while(it != tileItems.end()) {
-						Item* item = *it;
-						if(!item->isBorder()) {
-							break;
-						}
-
-						bool inc = true;
-						for(uint16_t matchId : specificCaseBlock->items_to_match) {
-							if(item->getID() == matchId) {
-								delete item;
-								it = tileItems.erase(it);
-								inc = false;
-								break;
+					tile->removeItems(
+						[specificCaseBlock](const Item *item){
+							if(item->getFlag(CLIP)){
+								for(uint16_t matchId: specificCaseBlock->items_to_match){
+									if(item->getID() == matchId){
+										return true;
+									}
+								}
 							}
-						}
-
-						if(inc) {
-							++it;
-						}
-					}
+							return false;
+						});
 				} else {
 					// All matched, replace!
-					while(it != tileItems.end()) {
-						Item* item = *it;
-						if(!item->isBorder()) {
+					for(Item *item = tile->items; item != NULL; item = item->next){
+						if(!item->getFlag(CLIP)){
 							return;
 						}
 
-						if(item->getID() == specificCaseBlock->to_replace_id) {
-							item->setID(specificCaseBlock->with_id);
+						if(item->getID() == specificCaseBlock->to_replace_id){
+							item->transform(specificCaseBlock->with_id);
 							return;
 						}
-						++it;
 					}
 				}
 			}

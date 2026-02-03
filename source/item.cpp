@@ -30,71 +30,75 @@
 #include "table_brush.h"
 #include "wall_brush.h"
 
-// String Attributes
+// Text Attributes
 //==============================================================================
-// NOTE(fusion): Definitely not the most performant approach but string pointers
+// NOTE(fusion): Definitely not the most optimized approach but string pointers
 // should be stable as long as they're not deleted.
-// NOTE(fusion): Definitely not the best approach overall
-static std::vector<const char*> g_stringAttributes;
 
-static int AddStringAttribute(const char *text){
+static std::vector<const char*> g_textAttributes;
+
+static int AddTextAttribute(const char *text){
 	if(text == NULL || strlen(text) == 0){
 		return 0;
 	}
 
-	int numStrings = (int)g_stringAttributes.size();
+	int curCapacity = (int)g_textAttributes.size();
 	int insertIndex = 0;
-	while(insertIndex < numStrings){
-		if(g_stringAttributes[insertIndex] == NULL){
+	while(insertIndex < curCapacity){
+		if(g_textAttributes[insertIndex] == NULL){
 			break;
 		}
 		insertIndex += 1;
 	}
 
-	if(insertIndex >= numStrings){
-		g_stringAttributes.push_back(NULL);
+	if(insertIndex >= curCapacity){
+		g_textAttributes.push_back(NULL);
 	}
 
-	g_stringAttributes[insertIndex] = strdup(text);
+	g_textAttributes[insertIndex] = strdup(text);
 	return 1 + insertIndex;
 }
 
-static const char *GetStringAttribute(int number){
-	int numStrings = (int)g_stringAttributes.size();
-	int readIndex = number - 1;
-	if(readIndex < 0 || readIndex >= numStrings){
-		std::cout << "GetStringAttribute: Invalid string number." << std::endl;
+static const char *GetTextAttribute(int ref){
+	int curCapacity = (int)g_textAttributes.size();
+	int readIndex = ref - 1;
+	if(readIndex < 0 || readIndex >= curCapacity){
+		std::cout << "GetTextAttribute: Invalid text reference." << std::endl;
 		return NULL;
 	}
 
-	return g_stringAttributes[readIndex];
+	return g_textAttributes[readIndex];
 }
 
-static int DupStringAttribute(int number){
-	return AddStringAttribute(GetStringAttribute(number));
+static int DupTextAttribute(int ref){
+	return AddTextAttribute(GetTextAttribute(ref));
 }
 
-static void DeleteStringAttribute(int number){
-	int numStrings = (int)g_stringAttributes.size();
-	int deleteIndex = number - 1;
-	if(deleteIndex < 0 || deleteIndex >= numStrings){
-		std::cout << "DeleteStringAttribute: Invalid string number." << std::endl;
+static void DeleteTextAttribute(int ref){
+	if(ref == 0){
 		return;
 	}
 
-	if(g_stringAttributes[deleteIndex]){
-		free(g_stringAttributes[deleteIndex]);
-		g_stringAttributes[deleteIndex] = NULL;
+	int curCapacity = (int)g_textAttributes.size();
+	int deleteIndex = ref - 1;
+	if(deleteIndex < 0 || deleteIndex >= curCapacity){
+		std::cout << "DeleteTextAttribute: Invalid text reference." << std::endl;
+		return;
+	}
+
+	if(g_textAttributes[deleteIndex]){
+		free(g_textAttributes[deleteIndex]);
+		g_textAttributes[deleteIndex] = NULL;
 	}
 }
 
 #if 0
 // TODO(fusion): Probably uneeded?
-static void ClearStringAttributes(void){
-	for(const char *s: g_stringAttributes){
-		free(s);
+static void ClearTextAttributes(void){
+	for(const char *text: g_textAttributes){
+		free(text);
 	}
-	g_stringAttributes.clear();
+	g_textAttributes.clear();
 }
 #endif
 
@@ -136,8 +140,8 @@ Item::~Item(void) {
 	}
 
 	if(getFlag(TEXT)){
-		DeleteStringAttribute(getAttribute(TEXTSTRING));
-		DeleteStringAttribute(getAttribute(EDITOR));
+		DeleteTextAttribute(getAttribute(TEXTSTRING));
+		DeleteTextAttribute(getAttribute(EDITOR));
 	}
 }
 
@@ -176,9 +180,9 @@ void Item::transform(int newTypeId, int value /*= 0*/){
 	}
 
 	if(oldType.getFlag(TEXT) && !newType.getFlag(TEXT)){
-		DeleteStringAttribute(getAttribute(TEXTSTRING));
+		DeleteTextAttribute(getAttribute(TEXTSTRING));
 		setAttribute(TEXTSTRING, 0);
-		DeleteStringAttribute(getAttribute(EDITOR));
+		DeleteTextAttribute(getAttribute(EDITOR));
 		setAttribute(EDITOR, 0);
 	}
 
@@ -228,13 +232,13 @@ Item *Item::deepCopy(void) const {
 	if(getFlag(TEXT)){
 		int textString = getAttribute(TEXTSTRING);
 		if(textString != 0){
-			textString = DupStringAttribute(textString);
+			textString = DupTextAttribute(textString);
 			result->setAttribute(EDITOR, textString);
 		}
 
 		int editor = getAttribute(EDITOR);
 		if(editor != 0){
-			editor = DupStringAttribute(editor);
+			editor = DupTextAttribute(editor);
 			result->setAttribute(EDITOR, editor);
 		}
 	}
@@ -272,6 +276,11 @@ int Item::getAttribute(ObjectInstanceAttribute attr) const
 	return attributes[attrOffset];
 }
 
+const char *Item::getTextAttribute(ObjectInstanceAttribute attr) const
+{
+	return GetTextAttribute(getAttribute(attr));
+}
+
 int Item::getStackPriority(void) const {
 	return getItemType().getStackPriority();
 }
@@ -301,6 +310,12 @@ void Item::setAttribute(ObjectInstanceAttribute attr, int value){
 	}
 
 	attributes[attrOffset] = value;
+}
+
+void Item::setTextAttribute(ObjectInstanceAttribute attr, const char *text)
+{
+	DeleteTextAttribute(getAttribute(attr));
+	setAttribute(attr, AddTextAttribute(text));
 }
 
 int Item::countItems(void) const {

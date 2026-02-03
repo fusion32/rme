@@ -19,7 +19,6 @@
 #define RME_MAP_TAB_H_
 
 #include "editor_tabs.h"
-#include "application.h"
 #include "map_window.h"
 
 class MapTab : public EditorTab, public MapWindow

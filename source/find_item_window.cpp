@@ -287,7 +287,7 @@ void FindItemDialog::RefreshContentsInternal()
 		int typeId = server_id_spin->GetValue();
 		const ItemType &type = GetItemType(typeId);
 		if(type.typeId != 0 && type.raw_brush
-				&& (!only_pickupables || item.getFlag(TAKE))){
+				&& (!only_pickupables || type.getFlag(TAKE))){
 			found_search_results = true;
 			items_list->AddBrush(type.raw_brush);
 		}
@@ -371,14 +371,14 @@ void FindItemDialog::RefreshContentsInternal()
 				if(type.typeId == 0)
 					continue;
 
-				RAWBrush* raw_brush = item.raw_brush;
+				RAWBrush* raw_brush = type.raw_brush;
 				if(!raw_brush)
 					continue;
 
 				if((unpassable->GetValue() && !type.getFlag(UNPASS)) ||
 					(unmovable->GetValue() && !type.getFlag(UNMOVE)) ||
 					(block_missiles->GetValue() && !type.getFlag(UNTHROW)) ||
-					(block_pathfinder->GetValue() && !type.getFlag(UNPASS)) ||
+					(block_pathfinder->GetValue() && !type.getFlag(AVOID)) ||
 					(readable->GetValue() && !type.getFlag(TEXT)) ||
 					(writeable->GetValue() && !type.getFlag(WRITE) && !type.getFlag(WRITEONCE)) ||
 					(pickupable->GetValue() && !type.getFlag(TAKE)) ||

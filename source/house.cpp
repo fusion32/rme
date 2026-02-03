@@ -108,7 +108,7 @@ size_t House::size() const
 	size_t count = 0;
 	for(PositionList::const_iterator pos_iter = tiles.begin(); pos_iter != tiles.end(); ++pos_iter) {
 		Tile* tile = map->getTile(*pos_iter);
-		if(tile && !tile->isBlocking())
+		if(tile && !tile->getFlag(UNPASS))
 			++count;
 	}
 	return count;

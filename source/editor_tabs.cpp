@@ -17,18 +17,20 @@
 
 #include "main.h"
 
+#include "application.h"
 #include "editor_tabs.h"
 #include "editor.h"
-#include "live_tab.h"
+#include "map_tab.h"
+#include "gui.h"
 
 EditorTab::EditorTab()
 {
-	;
+	// no-op
 }
 
 EditorTab::~EditorTab()
 {
-	;
+	// no-op
 }
 
 BEGIN_EVENT_TABLE(MapTabbook, wxPanel)
@@ -66,7 +68,6 @@ void MapTabbook::CycleTab(bool forward)
 void MapTabbook::OnNotebookPageClose(wxAuiNotebookEvent& event)
 {
 	EditorTab* editor_tab = GetTab(event.GetInt());
-
 	MapTab* map_tab = dynamic_cast<MapTab*>(editor_tab);
 	if(map_tab && map_tab->IsUniqueReference() && map_tab->GetMap()) {
 		bool need_refresh = true;
@@ -83,12 +84,6 @@ void MapTabbook::OnNotebookPageClose(wxAuiNotebookEvent& event)
 			g_gui.RefreshPalettes(nullptr, false);
 			g_gui.UpdateMenus();
 		}
-		return;
-	}
-
-	LiveLogTab* live_tab = dynamic_cast<LiveLogTab*>(editor_tab);
-	if(live_tab && live_tab->IsConnected()) {
-		event.Veto();
 	}
 }
 

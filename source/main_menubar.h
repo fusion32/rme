@@ -45,14 +45,10 @@ namespace MenuBar
 		FIND_ITEM,
 		REPLACE_ITEMS,
 		SEARCH_ON_MAP_EVERYTHING,
-		SEARCH_ON_MAP_UNIQUE,
-		SEARCH_ON_MAP_ACTION,
 		SEARCH_ON_MAP_CONTAINER,
 		SEARCH_ON_MAP_WRITEABLE,
 		SEARCH_ON_MAP_DUPLICATED_ITEMS,
 		SEARCH_ON_SELECTION_EVERYTHING,
-		SEARCH_ON_SELECTION_UNIQUE,
-		SEARCH_ON_SELECTION_ACTION,
 		SEARCH_ON_SELECTION_CONTAINER,
 		SEARCH_ON_SELECTION_WRITEABLE,
 		SEARCH_ON_SELECTION_ITEM,
@@ -124,9 +120,6 @@ namespace MenuBar
 		WIN_ACTIONS_HISTORY,
 		NEW_PALETTE,
 		TAKE_SCREENSHOT,
-		LIVE_START,
-		LIVE_JOIN,
-		LIVE_CLOSE,
 		SELECT_TERRAIN,
 		SELECT_DOODAD,
 		SELECT_ITEM,
@@ -228,18 +221,14 @@ public:
 	void OnSearchForItem(wxCommandEvent& event);
 	void OnReplaceItems(wxCommandEvent& event);
 	void OnSearchForStuffOnMap(wxCommandEvent& event);
-	void OnSearchForUniqueOnMap(wxCommandEvent& event);
-	void OnSearchForActionOnMap(wxCommandEvent& event);
 	void OnSearchForContainerOnMap(wxCommandEvent& event);
-	void OnSearchForWriteableOnMap(wxCommandEvent& event);
+	void OnSearchForWritableOnMap(wxCommandEvent& event);
 	void OnSearchForDuplicatedItemsOnMap(wxCommandEvent& event);
 
 	// Select menu
 	void OnSearchForStuffOnSelection(wxCommandEvent& event);
-	void OnSearchForUniqueOnSelection(wxCommandEvent& event);
-	void OnSearchForActionOnSelection(wxCommandEvent& event);
 	void OnSearchForContainerOnSelection(wxCommandEvent& event);
-	void OnSearchForWriteableOnSelection(wxCommandEvent& event);
+	void OnSearchForWritableOnSelection(wxCommandEvent& event);
 	void OnSearchForItemOnSelection(wxCommandEvent& event);
 	void OnSearchForDuplicatedItemsOnSelection(wxCommandEvent& event);
 	void OnReplaceItemsOnSelection(wxCommandEvent& event);
@@ -262,11 +251,6 @@ public:
 	void OnZoomOut(wxCommandEvent& event);
 	void OnZoomNormal(wxCommandEvent& event);
 	void OnChangeViewSettings(wxCommandEvent& event);
-
-	// Network menu
-	void OnStartLive(wxCommandEvent& event);
-	void OnJoinLive(wxCommandEvent& event);
-	void OnCloseLive(wxCommandEvent& event);
 
 	// Window Menu
 	void OnMinimapWindow(wxCommandEvent& event);
@@ -295,7 +279,7 @@ protected:
 	wxObject* LoadItem(pugi::xml_node node, wxMenu* parent, wxArrayString& warnings, wxString& error);
 	// Checks the items in the menus according to the settings (in config)
 	void LoadValues();
-	void SearchItems(bool unique, bool action, bool container, bool writable, bool onSelection = false);
+	void SearchItems(bool container, bool writable, bool onSelection = false);
 	void SearchDuplicatedItems(bool selection);
 
 protected:

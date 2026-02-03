@@ -28,22 +28,13 @@
 
 class BaseMap;
 class CopyBuffer;
-class LiveClient;
-class LiveServer;
-class LiveSocket;
 
 class Editor
 {
 public:
-	Editor(CopyBuffer& copybuffer, LiveClient* client);
-	Editor(CopyBuffer& copybuffer, const FileName& fn);
 	Editor(CopyBuffer& copybuffer);
+	Editor(CopyBuffer& copybuffer, const FileName& fn);
 	~Editor();
-
-protected:
-	// Live Server
-	LiveServer* live_server;
-	LiveClient* live_client;
 
 public:
 	// Public members
@@ -51,25 +42,6 @@ public:
 	GroundBrush* replace_brush;
 
 public: // Functions
-	// Live Server handling
-	LiveClient* GetLiveClient() const;
-	LiveServer* GetLiveServer() const;
-	LiveSocket& GetLive() const;
-	bool CanEdit() const noexcept { return true; }
-	bool IsLocal() const;
-	bool IsLive() const;
-	bool IsLiveServer() const;
-	bool IsLiveClient() const;
-
-	// Server side
-	LiveServer* StartLiveServer();
-	void CloseLiveServer();
-	void BroadcastNodes(DirtyList& dirty_list);
-
-	// Client side
-	void QueryNode(int ndx, int ndy, bool underground);
-	void SendNodeRequests();
-
 	bool hasChanges() const;
 	void clearChanges();
 

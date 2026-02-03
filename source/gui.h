@@ -57,8 +57,6 @@ class OldPropertiesWindow;
 class EditTownsDialog;
 class ItemButton;
 
-class LiveSocket;
-
 extern const wxEventType EVT_UPDATE_MENUS;
 extern const wxEventType EVT_UPDATE_ACTIONS;
 
@@ -312,7 +310,6 @@ public:
 	Editor* GetCurrentEditor();
 	MapTab* GetCurrentMapTab() const;
 	void CycleTab(bool forward = true);
-	bool CloseLiveEditors(LiveSocket* sock);
 	bool CloseAllEditors();
 	void NewMapView();
 

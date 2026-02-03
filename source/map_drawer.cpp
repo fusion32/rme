@@ -29,7 +29,6 @@
 #include "map_drawer.h"
 #include "map_display.h"
 #include "copybuffer.h"
-#include "live_socket.h"
 #include "graphics.h"
 
 #include "doodad_brush.h"
@@ -225,7 +224,6 @@ void MapDrawer::Draw()
 	DrawHigherFloors();
 	if(options.dragging)
 		DrawSelectionBox();
-	DrawLiveCursors();
 	DrawBrush();
 	if(options.show_grid && zoom <= 10.f)
 		DrawGrid();
@@ -290,8 +288,6 @@ void MapDrawer::DrawMap()
 	int box_end_map_x = center_x + rme::ClientMapWidth;
 	int box_end_map_y = center_y + rme::ClientMapHeight + offset_y;
 
-	bool live_client = editor.IsLiveClient();
-
 	Brush* brush = g_gui.GetCurrentBrush();
 
 	// The current house we're drawing
@@ -323,14 +319,11 @@ void MapDrawer::DrawMap()
 			for(int nd_map_x = nd_start_x; nd_map_x <= nd_end_x; nd_map_x += 4) {
 				for(int nd_map_y = nd_start_y; nd_map_y <= nd_end_y; nd_map_y += 4) {
 					QTreeNode* nd = editor.getMap().getLeaf(nd_map_x, nd_map_y);
-					if(!nd) {
-						if(!live_client)
-							continue;
-						nd = editor.getMap().createLeaf(nd_map_x, nd_map_y);
-						nd->setVisible(false, false);
+					if(!nd){
+						continue;
 					}
 
-					if(!live_client || nd->isVisible(map_z > rme::MapGroundLayer)) {
+					if(nd->isVisible(map_z > rme::MapGroundLayer)) {
 						for(int map_x = 0; map_x < 4; ++map_x) {
 							for(int map_y = 0; map_y < 4; ++map_y) {
 								TileLocation* location = nd->getTile(map_x, map_y, map_z);
@@ -700,49 +693,6 @@ void MapDrawer::DrawSelectionBox()
 	glEnd();
 	glDisable(GL_LINE_STIPPLE);
 	glEnable(GL_TEXTURE_2D);
-}
-
-void MapDrawer::DrawLiveCursors()
-{
-	if(options.ingame || !editor.IsLive())
-		return;
-
-	LiveSocket& live = editor.GetLive();
-	for(LiveCursor& cursor : live.getCursorList()) {
-		if(cursor.pos.z <= rme::MapGroundLayer && floor > rme::MapGroundLayer) {
-			continue;
-		}
-
-		if(cursor.pos.z > rme::MapGroundLayer && floor <= 8) {
-			continue;
-		}
-
-		if(cursor.pos.z < floor) {
-			cursor.color = wxColor(
-				cursor.color.Red(),
-				cursor.color.Green(),
-				cursor.color.Blue(),
-				std::max<uint8_t>(cursor.color.Alpha() / 2, 64)
-			);
-		}
-
-		int offset;
-		if(cursor.pos.z <= rme::MapGroundLayer)
-			offset = (rme::MapGroundLayer - cursor.pos.z) * rme::TileSize;
-		else
-			offset = rme::TileSize * (floor - cursor.pos.z);
-
-		float draw_x = ((cursor.pos.x * rme::TileSize) - view_scroll_x) - offset;
-		float draw_y = ((cursor.pos.y * rme::TileSize) - view_scroll_y) - offset;
-
-		glColor(cursor.color);
-		glBegin(GL_QUADS);
-			glVertex2f(draw_x, draw_y);
-			glVertex2f(draw_x + rme::TileSize, draw_y);
-			glVertex2f(draw_x + rme::TileSize, draw_y + rme::TileSize);
-			glVertex2f(draw_x, draw_y + rme::TileSize);
-		glEnd();
-	}
 }
 
 void MapDrawer::DrawBrush()

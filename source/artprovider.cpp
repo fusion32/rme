@@ -25,11 +25,10 @@
 #include "../icons/circular_5.xpm"
 #include "../icons/circular_6.xpm"
 #include "../icons/circular_7.xpm"
+#include "../icons/refresh_zone.xpm"
 #include "../icons/nologout_zone.xpm"
-#include "../icons/nopvp_zone.xpm"
-#include "../icons/position_go.xpm"
 #include "../icons/protected_zone.xpm"
-#include "../icons/pvp_zone.xpm"
+#include "../icons/position_go.xpm"
 #include "../icons/rectangular_1.xpm"
 #include "../icons/rectangular_2.xpm"
 #include "../icons/rectangular_3.xpm"
@@ -80,16 +79,14 @@ wxBitmap ArtProvider::CreateBitmap(const wxArtID& id, const wxArtClient& client,
 			return wxBitmap(circular_6_xpm);
 		else if(id == ART_CIRCULAR_7)
 			return wxBitmap(circular_7_xpm);
-		else if(id == ART_NOLOOUT_BRUSH)
+		else if(id == ART_REFRESH_BRUSH)
+			return wxBitmap(refresh_zone_xpm);
+		else if(id == ART_NOLOGOUT_BRUSH)
 			return wxBitmap(nologout_zone_xpm);
-		else if(id == ART_NOPVP_BRUSH)
-			return wxBitmap(nopvp_zone_xpm);
-		else if(id == ART_POSITION_GO)
-			return wxBitmap(position_go_xpm);
-		else if(id == ART_PVP_BRUSH)
-			return wxBitmap(pvp_zone_xpm);
 		else if(id == ART_PZ_BRUSH)
 			return wxBitmap(protected_zone_xpm);
+		else if(id == ART_POSITION_GO)
+			return wxBitmap(position_go_xpm);
 		else if(id == ART_RECTANGULAR)
 			return wxBitmap(rectangular_4_xpm);
 		else if(id == ART_RECTANGULAR_1)

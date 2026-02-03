@@ -38,13 +38,6 @@ ${CMAKE_CURRENT_LIST_DIR}/iominimap.h
 ${CMAKE_CURRENT_LIST_DIR}/item.h
 ${CMAKE_CURRENT_LIST_DIR}/items.h
 ${CMAKE_CURRENT_LIST_DIR}/light_drawer.h
-${CMAKE_CURRENT_LIST_DIR}/live_action.h
-${CMAKE_CURRENT_LIST_DIR}/live_client.h
-${CMAKE_CURRENT_LIST_DIR}/live_packets.h
-${CMAKE_CURRENT_LIST_DIR}/live_peer.h
-${CMAKE_CURRENT_LIST_DIR}/live_server.h
-${CMAKE_CURRENT_LIST_DIR}/live_socket.h
-${CMAKE_CURRENT_LIST_DIR}/live_tab.h
 ${CMAKE_CURRENT_LIST_DIR}/main.h
 ${CMAKE_CURRENT_LIST_DIR}/main_menubar.h
 ${CMAKE_CURRENT_LIST_DIR}/main_toolbar.h
@@ -58,7 +51,6 @@ ${CMAKE_CURRENT_LIST_DIR}/map_window.h
 ${CMAKE_CURRENT_LIST_DIR}/materials.h
 ${CMAKE_CURRENT_LIST_DIR}/minimap_window.h
 ${CMAKE_CURRENT_LIST_DIR}/mt_rand.h
-${CMAKE_CURRENT_LIST_DIR}/net_connection.h
 ${CMAKE_CURRENT_LIST_DIR}/numbertextctrl.h
 ${CMAKE_CURRENT_LIST_DIR}/old_properties_window.h
 ${CMAKE_CURRENT_LIST_DIR}/otml.h
@@ -79,7 +71,6 @@ ${CMAKE_CURRENT_LIST_DIR}/raw_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/replace_items_window.h
 ${CMAKE_CURRENT_LIST_DIR}/result_window.h
 ${CMAKE_CURRENT_LIST_DIR}/rme_forward_declarations.h
-${CMAKE_CURRENT_LIST_DIR}/rme_net.h
 ${CMAKE_CURRENT_LIST_DIR}/script.h
 ${CMAKE_CURRENT_LIST_DIR}/selection.h
 ${CMAKE_CURRENT_LIST_DIR}/settings.h
@@ -138,12 +129,6 @@ ${CMAKE_CURRENT_LIST_DIR}/iominimap.cpp
 ${CMAKE_CURRENT_LIST_DIR}/item.cpp
 ${CMAKE_CURRENT_LIST_DIR}/items.cpp
 ${CMAKE_CURRENT_LIST_DIR}/light_drawer.cpp
-${CMAKE_CURRENT_LIST_DIR}/live_action.cpp
-${CMAKE_CURRENT_LIST_DIR}/live_client.cpp
-${CMAKE_CURRENT_LIST_DIR}/live_peer.cpp
-${CMAKE_CURRENT_LIST_DIR}/live_server.cpp
-${CMAKE_CURRENT_LIST_DIR}/live_socket.cpp
-${CMAKE_CURRENT_LIST_DIR}/live_tab.cpp
 ${CMAKE_CURRENT_LIST_DIR}/main_menubar.cpp
 ${CMAKE_CURRENT_LIST_DIR}/main_toolbar.cpp
 ${CMAKE_CURRENT_LIST_DIR}/map.cpp
@@ -156,7 +141,6 @@ ${CMAKE_CURRENT_LIST_DIR}/materials.cpp
 ${CMAKE_CURRENT_LIST_DIR}/minimap_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/mkpch.cpp
 ${CMAKE_CURRENT_LIST_DIR}/mt_rand.cpp
-${CMAKE_CURRENT_LIST_DIR}/net_connection.cpp
 ${CMAKE_CURRENT_LIST_DIR}/numbertextctrl.cpp
 ${CMAKE_CURRENT_LIST_DIR}/old_properties_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/palette_brushlist.cpp
@@ -172,7 +156,6 @@ ${CMAKE_CURRENT_LIST_DIR}/properties_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/raw_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/replace_items_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/result_window.cpp
-${CMAKE_CURRENT_LIST_DIR}/rme_net.cpp
 ${CMAKE_CURRENT_LIST_DIR}/script.cpp
 ${CMAKE_CURRENT_LIST_DIR}/selection.cpp
 ${CMAKE_CURRENT_LIST_DIR}/settings.cpp

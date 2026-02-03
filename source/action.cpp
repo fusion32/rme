@@ -143,23 +143,8 @@ void Action::commit(DirtyList* dirty_list)
 				ASSERT(new_tile);
 
 				const Position& pos = new_tile->getPosition();
-
-				if(editor.IsLiveClient()) {
-					QTreeNode* node = map.getLeaf(pos.x, pos.y);
-					if(!node || !node->isVisible(pos.z > rme::MapGroundLayer)) {
-						change->clear();
-						continue;
-					}
-				}
-
 				Tile* old_tile = map.swapTile(pos, new_tile);
 				TileLocation* location = new_tile->getLocation();
-
-				// Update other nodes in the network
-				if(editor.IsLiveServer() && dirty_list)
-					dirty_list->AddPosition(pos.x, pos.y, pos.z);
-
-				new_tile->update();
 
 				//std::cout << "\tSwitched tile at " << pos.x << ";" << pos.y << ";" << pos.z << " from " << (void*)oldtile << " to " << *data <<  std::endl;
 				if(new_tile->isSelected())
@@ -167,7 +152,6 @@ void Action::commit(DirtyList* dirty_list)
 
 				if(old_tile) {
 					if(new_tile->getHouseID() != old_tile->getHouseID()) {
-						// oooooomggzzz we need to add it to the appropriate house!
 						House* house = map.houses.getHouse(old_tile->getHouseID());
 						if(house)
 							house->removeTile(old_tile);
@@ -209,11 +193,6 @@ void Action::commit(DirtyList* dirty_list)
 
 				}
 				new_tile->modify();
-
-				// Update client dirty list
-				if(editor.IsLiveClient() && dirty_list && type != ACTION_REMOTE) {
-					dirty_list->AddChange(change);
-				}
 				break;
 			}
 
@@ -276,21 +255,7 @@ void Action::undo(DirtyList* dirty_list)
 				ASSERT(old_tile);
 				const Position& pos = old_tile->getPosition();
 
-				if(editor.IsLiveClient()) {
-					QTreeNode* node = map.getLeaf(pos.x, pos.y);
-					if(!node || !node->isVisible(pos.z > rme::MapGroundLayer)) {
-						// Delete all changes that affect tiles outside our view
-						change->clear();
-						continue;
-					}
-				}
-
 				Tile* new_tile = map.swapTile(pos, old_tile);
-
-				// Update server side change list (for broadcast)
-				if(editor.IsLiveServer() && dirty_list)
-					dirty_list->AddPosition(pos.x, pos.y, pos.z);
-
 
 				if(old_tile->isSelected())
 					selection.addInternal(old_tile);
@@ -325,11 +290,6 @@ void Action::undo(DirtyList* dirty_list)
 					map.removeSpawn(new_tile);
 				}
 				*data = new_tile;
-
-				// Update client dirty list
-				if(editor.IsLiveClient() && dirty_list && type != ACTION_REMOTE) {
-					dirty_list->AddChange(change);
-				}
 				break;
 			}
 
@@ -428,7 +388,7 @@ void BatchAction::addAction(Action* action)
 		return;
 	}
 
-	if(action->empty() || !editor.CanEdit()) {
+	if(action->empty()) {
 		delete action;
 		return;
 	}
@@ -445,7 +405,7 @@ void BatchAction::addAndCommitAction(Action* action)
 		return;
 	}
 
-	if(!editor.CanEdit() || action->empty()) {
+	if(action->empty()) {
 		delete action;
 		return;
 	}

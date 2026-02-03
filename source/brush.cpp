@@ -589,11 +589,11 @@ bool OptionalBorderBrush::canDraw(BaseMap* map, const Position& position) const
 
 void OptionalBorderBrush::undraw(BaseMap* map, Tile* tile)
 {
-	//tile->setOptionalBorder(false); // The bordering algorithm will handle this automagicaly
+	tile->setOptionalBorder(false); // The bordering algorithm will handle this automagicaly
 }
 
 void OptionalBorderBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 {
-	//tile->setOptionalBorder(true); // The bordering algorithm will handle this automagicaly
+	tile->setOptionalBorder(true); // The bordering algorithm will handle this automagicaly
 }
 

@@ -18,7 +18,7 @@
 #ifndef __POSITION_HPP__
 #define __POSITION_HPP__
 
-#include <ostream>
+#include <iostream>
 #include <cstdint>
 #include <vector>
 #include <list>
@@ -35,26 +35,11 @@ public:
 	Position(int x, int y, int z) : x(x), y(y), z(z) {}
 
 	bool operator<(const Position& other) const noexcept {
-		if(z < other.z)
-			return true;
-		if(z > other.z)
-			return false;
-
-		if(y < other.y)
-			return true;
-		if(y > other.y)
-			return false;
-
-		if(x < other.x)
-			return true;
-		//if(x > p.x)
-		//	return false;
-
-		return false;
+		return z < other.z && y < other.y && x < other.x;
 	}
 
 	bool operator>(const Position& other) const noexcept {
-		return !(*this < other);
+		return z > other.z && y > other.y && x > other.x;
 	}
 
 	Position operator-(const Position& other) const noexcept {
@@ -71,7 +56,7 @@ public:
 	}
 
 	bool operator==(const Position& other) const noexcept {
-		return other.z == z && other.x == x && other.y == y;
+		return z == other.z && y == other.y && x == other.x;
 	}
 
 	bool operator!=(const Position& other) const noexcept {
@@ -82,8 +67,8 @@ public:
 		if(x == 0 && y == 0 && z == 0)
 			return false;
 		return (z >= rme::MapMinLayer && z <= rme::MapMaxLayer)
-			&& (x >= 0 && x <= rme::MapMaxWidth)
-			&& (y >= 0 && y <= rme::MapMaxHeight);
+			&& (y >= 0                && y <= rme::MapMaxHeight)
+			&& (x >= 0                && x <= rme::MapMaxWidth);
 	}
 };
 
@@ -113,12 +98,46 @@ inline std::istream& operator>>(std::istream& is, Position& pos) {
 	return is;
 }
 
-inline Position abs(const Position& position) {
+inline Position abs(Position position){
 	return Position(
 		std::abs(position.x),
 		std::abs(position.y),
 		std::abs(position.z)
 	);
+}
+
+inline int PackAbsoluteCoordinate(Position pos){
+	// DOMAIN: [24576, 40959] x [24576, 40959] x [0, 15]
+	// TODO(fusion): Warning if position is outside domain?
+	int packed = (((pos.x - 24576) & 0x00003FFF) << 18)
+				| (((pos.y - 24576) & 0x00003FFF) << 4)
+				| (pos.z & 0x0000000F);
+	return packed;
+}
+
+inline Position UnpackAbsoluteCoordinate(int packed){
+	Position pos;
+	pos.x = ((packed >> 18) & 0x00003FFF) + 24576;
+	pos.y = ((packed >>  4) & 0x00003FFF) + 24576;
+	pos.z = ((packed >>  0) & 0x0000000F);
+	return pos;
+}
+
+inline int PackRelativeCoordinate(Position pos){
+	// DOMAIN: [-8192, 8191] x [-8192, 8191] x [-8, 7]
+	// TODO(fusion): Warning if position is outside domain?
+	int packed = (((pos.x + 8192) & 0x00003FFF) << 18)
+				| (((pos.y + 8192) & 0x00003FFF) << 4)
+				| ((pos.z + 8) & 0x0000000F);
+	return packed;
+}
+
+inline Position UnpackRelativeCoordinate(int packed){
+	Position pos;
+	pos.x = ((packed >> 18) & 0x00003FFF) - 8192;
+	pos.y = ((packed >>  4) & 0x00003FFF) - 8192;
+	pos.z = ((packed >>  0) & 0x0000000F) - 8;
+	return pos;
 }
 
 typedef std::vector<Position> PositionVector;

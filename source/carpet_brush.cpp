@@ -156,7 +156,7 @@ void CarpetBrush::undraw(BaseMap* map, Tile* tile)
 {
 	tile->removeItems(
 		[](const Item *item){
-			return item->isCarpet() && item->getCarpetBrush() != NULL;
+			return item->isCarpet() && item->getCarpetBrush();
 		});
 }
 

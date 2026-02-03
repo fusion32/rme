@@ -21,6 +21,7 @@
 #include "editor.h"
 #include "gui.h"
 #include "creature.h"
+#include "settings.h"
 
 CopyBuffer::CopyBuffer() :
 	tiles(newd BaseMap())
@@ -237,7 +238,7 @@ void CopyBuffer::paste(Editor& editor, const Position& toPosition)
 		Tile* new_dest_tile = nullptr;
 		copy_tile->setLocation(location);
 
-		if(g_settings.getInteger(Config::MERGE_PASTE) || !copy_tile->ground) {
+		if(g_settings.getInteger(Config::MERGE_PASTE) || !copy_tile->getFlag(BANK)) {
 			if(old_dest_tile)
 				new_dest_tile = old_dest_tile->deepCopy(map);
 			else

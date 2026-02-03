@@ -177,7 +177,7 @@ bool IOMinimap::exportMinimap(const std::string& directory)
 
 	for(auto it = map.begin(); it != map.end(); ++it) {
 		auto tile = (*it)->get();
-		if(!tile || (!tile->ground && tile->items.empty())) {
+		if(!tile || !tile->items) {
 			continue;
 		}
 
@@ -221,7 +221,7 @@ bool IOMinimap::exportMinimap(const std::string& directory)
 				for (int y = 0; y < image_size; y++) {
 					for (int x = 0; x < image_size; x++) {
 						auto tile = map.getTile(w + x, h + y, z);
-						if(!tile || (!tile->ground && tile->items.empty())) {
+						if(!tile || !tile->items) {
 							index += rme::PixelFormatRGB;
 							continue;
 						}
@@ -268,7 +268,7 @@ bool IOMinimap::exportSelection(const std::string& directory, const std::string&
 	const auto& tiles = selection.getTiles();
 
 	for(auto tile : tiles) {
-		if(!tile || (!tile->ground && tile->items.empty())) {
+		if(!tile || !tile->items){
 			continue;
 		}
 
@@ -327,7 +327,7 @@ bool IOMinimap::exportSelection(const std::string& directory, const std::string&
 				}
 			}
 
-			if(!tile->ground && tile->items.empty()) {
+			if(!tile->items) {
 				continue;
 			}
 
@@ -379,7 +379,7 @@ void IOMinimap::readBlocks()
 			}
 		}
 
-		if(!tile || (!tile->ground && tile->items.empty())) {
+		if(!tile || !tile->items){
 			continue;
 		}
 
@@ -396,10 +396,10 @@ void IOMinimap::readBlocks()
 		MinimapTile minimapTile;
 		minimapTile.color = tile->getMiniMapColor();
 		minimapTile.flags |= MinimapTileWasSeen;
-		if (tile->isBlocking()) {
+		if (tile->getFlag(UNPASS)) {
 			minimapTile.flags |= MinimapTileNotWalkable;
 		}
-		//if (!tile->isPathable()) {
+		//if (!tile->getFlag(AVOID)) {
 			//minimapTile.flags |= MinimapTileNotPathable;
 		//}
 		minimapTile.speed = std::min<int>((int)std::ceil(tile->getGroundSpeed() / 10.f), 0xFF);

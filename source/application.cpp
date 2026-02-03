@@ -443,20 +443,6 @@ void MainFrame::UpdateMenubar()
 }
 
 bool MainFrame::DoQueryClose() {
-	Editor* editor = g_gui.GetCurrentEditor();
-	if(editor) {
-		if(editor->IsLive()) {
-			long ret = g_gui.PopupDialog(
-				"Must Close Server",
-				wxString("You are currently connected to a live server, to close this map the connection must be severed."),
-				wxOK | wxCANCEL);
-			if(ret == wxID_OK) {
-				editor->CloseLiveServer();
-			} else {
-				return false;
-			}
-		}
-	}
 	return true;
 }
 
@@ -466,34 +452,8 @@ bool MainFrame::DoQuerySave(bool doclose)
 		return true;
 	}
 
-	Editor& editor = *g_gui.GetCurrentEditor();
-	if(editor.IsLiveClient()) {
-		long ret = g_gui.PopupDialog(
-			"Disconnect",
-			"Do you want to disconnect?",
-			wxYES | wxNO
-		);
-
-		if(ret != wxID_YES) {
-			return false;
-		}
-
-		editor.CloseLiveServer();
-		return DoQuerySave(doclose);
-	} else if(editor.IsLiveServer()) {
-		long ret = g_gui.PopupDialog(
-			"Shutdown",
-			"Do you want to shut down the server? (any clients will be disconnected)",
-			wxYES | wxNO
-		);
-
-		if(ret != wxID_YES) {
-			return false;
-		}
-
-		editor.CloseLiveServer();
-		return DoQuerySave(doclose);
-	} else if(g_gui.ShouldSave()) {
+	Editor &editor = *g_gui.GetCurrentEditor();
+	if(g_gui.ShouldSave()) {
 		long ret = g_gui.PopupDialog(
 			"Save changes",
 			"Do you want to save your changes to \"" + wxstr(g_gui.GetCurrentMap().getName()) + "\"?",

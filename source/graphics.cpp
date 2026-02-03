@@ -24,6 +24,7 @@
 #include "settings.h"
 #include "gui.h"
 #include "otml.h"
+#include "creature.h"
 
 #include <wx/mstream.h>
 #include <wx/stopwatch.h>
@@ -33,49 +34,38 @@
 
 // TODO(fusion): Adjust this for whatever format 7.7 uses.
 enum DatFlag: uint8_t {
-	DatFlagGround = 0,
-	DatFlagGroundBorder = 1,
-	DatFlagOnBottom = 2,
-	DatFlagOnTop = 3,
-	DatFlagContainer = 4,
-	DatFlagStackable = 5,
-	DatFlagForceUse = 6,
-	DatFlagMultiUse = 7,
-	DatFlagWritable = 8,
-	DatFlagWritableOnce = 9,
-	DatFlagFluidContainer = 10,
-	DatFlagSplash = 11,
-	DatFlagNotWalkable = 12,
-	DatFlagNotMoveable = 13,
-	DatFlagBlockProjectile = 14,
-	DatFlagNotPathable = 15,
-	DatFlagPickupable = 16,
-	DatFlagHangable = 17,
-	DatFlagHookSouth = 18,
-	DatFlagHookEast = 19,
-	DatFlagRotateable = 20,
-	DatFlagLight = 21,
-	DatFlagDontHide = 22,
-	DatFlagTranslucent = 23,
-	DatFlagDisplacement = 24,
-	DatFlagElevation = 25,
-	DatFlagLyingCorpse = 26,
-	DatFlagAnimateAlways = 27,
-	DatFlagMinimapColor = 28,
-	DatFlagLensHelp = 29,
-	DatFlagFullGround = 30,
-	DatFlagLook = 31,
-	DatFlagCloth = 32,
-	DatFlagMarket = 33,
-	DatFlagUsable = 34,
-	DatFlagWrappable = 35,
-	DatFlagUnwrappable = 36,
-	DatFlagTopEffect = 37,
-
-	DatFlagFloorChange = 252,
-	DatFlagNoMoveAnimation = 253, // 10.10: real value is 16, but we need to do this for backwards compatibility
-	DatFlagChargeable = 254,
-	DatFlagLast = 255
+	DatFlagBank             = 0,
+	DatFlagClip             = 1,
+	DatFlagBottom           = 2,
+	DatFlagTop              = 3,
+	DatFlagContainer        = 4,
+	DatFlagCumulative       = 5,
+	DatFlagForceUse         = 6,
+	DatFlagMultiUse         = 7,
+	DatFlagWrite            = 8,
+	DatFlagWriteOnce        = 9,
+	DatFlagLiquidContainer  = 10,
+	DatFlagLiquidPool       = 11,
+	DatFlagUnpass           = 12,
+	DatFlagUnmove           = 13,
+	DatFlagUnthrow          = 14,
+	DatFlagAvoid            = 15,
+	DatFlagTake             = 16,
+	DatFlagHang             = 17,
+	DatFlagHookSouth        = 18,
+	DatFlagHookEast         = 19,
+	DatFlagRotate           = 20,
+	DatFlagLight            = 21,
+	DatFlagDontHide         = 22,
+	DatFlagTeleportRelative = 23, // maybe?
+	DatFlagShift            = 24,
+	DatFlagHeight           = 25,
+	DatFlagLyingObject      = 26,
+	DatFlagAnimateAlways    = 27,
+	DatFlagAutomapColor     = 28,
+	DatFlagLensHelp         = 29,
+	DatFlagFullBank         = 30,
+	DatFlagLast             = 255,
 };
 
 // All 133 template colors
@@ -442,40 +432,25 @@ bool GraphicManager::loadSpriteMetadata(const FileName& datafile, wxString& erro
 		return false;
 	}
 
-	uint16_t effect_count, distance_count;
-
 	uint32_t datSignature;
 	file.getU32(datSignature);
-	//get max id
-	file.getU16(item_count);
-	file.getU16(creature_count);
-	file.getU16(effect_count);
-	file.getU16(distance_count);
 
-	uint32_t minID = 100; // items start with id 100
-	// We don't load distance/effects, if we would, just add effect_count & distance_count here
-	uint32_t maxID = item_count + creature_count;
+	uint16_t maxItemId, maxCreatureId, dummy;
+	file.getU16(maxItemId);
+	file.getU16(maxCreatureId);
+	file.skip(2); // max effect id, unused
+	file.skip(2); // max animation id, unused
 
-	dat_format = client_version->getDatFormatForSignature(datSignature);
-
-	if(dat_format == DAT_FORMAT_UNKNOWN) {
-		error += "Failed to open " + datafile.GetFullPath() + " for reading\nCould not locate datSignature (0x" << wxString::Format(wxT("%02x"), datSignature) << ") compatible with client version " << client_version->getName();
-		return false;
-	}
-
-	if(!otfi_found) {
-		is_extended = dat_format >= DAT_FORMAT_96;
-		has_frame_durations = dat_format >= DAT_FORMAT_1050;
-		has_frame_groups = dat_format >= DAT_FORMAT_1057;
-	}
-
-	uint16_t id = minID;
-	// loop through all ItemDatabase until we reach the end of file
-	while(id <= maxID) {
+	// NOTE(fusion): We're basically processing object types as a big single list,
+	// with items starting at 100, followed by creatures, effects, and animations.
+	int itemCount     = (maxItemId - 100 + 1);
+	int creatureCount = (maxCreatureId - 0 + 1);
+	int minTypeId     = 100;
+	int maxTypeId     = minTypeId + itemCount + creatureCount;
+	for(int typeId = minTypeId; typeId <= maxTypeId; typeId += 1){
 		GameSprite* sType = newd GameSprite();
-		sprite_space[id] = sType;
-
-		sType->id = id;
+		sprite_space[typeId] = sType;
+		sType->id = typeId;
 
 		// Load the sprite flags
 		if(!loadSpriteMetadataFlags(file, sType, error, warnings)) {
@@ -484,85 +459,45 @@ bool GraphicManager::loadSpriteMetadata(const FileName& datafile, wxString& erro
 			warnings.push_back(msg);
 		}
 
-		// Reads the group count
-		uint8_t group_count = 1;
-		if(has_frame_groups && id > item_count) {
-			file.getU8(group_count);
+		// Size and GameSprite data
+		file.getByte(sType->width);
+		file.getByte(sType->height);
+
+		// Skipping the exact size
+		if((sType->width > 1) || (sType->height > 1)){
+			file.skip(1);
 		}
 
-		for(uint32_t k = 0; k < group_count; ++k) {
-			// Skipping the group type
-			if(has_frame_groups && id > item_count) {
-				file.skip(1);
-			}
+		// NOTE(fusion): Some sprites (usually outfits) will have a second layer
+		// with the color mask for multi-colored sprites.
+		file.getU8(sType->layers);
+		file.getU8(sType->pattern_x);
+		file.getU8(sType->pattern_y);
+		file.getU8(sType->pattern_z);
+		file.getU8(sType->frames); // animation frames
 
-			// Size and GameSprite data
-			file.getByte(sType->width);
-			file.getByte(sType->height);
-
-			// Skipping the exact size
-			if((sType->width > 1) || (sType->height > 1)){
-				file.skip(1);
-			}
-
-			file.getU8(sType->layers); // Number of blendframes (some sprites consist of several merged sprites)
-			file.getU8(sType->pattern_x);
-			file.getU8(sType->pattern_y);
-			if(dat_format <= DAT_FORMAT_74)
-				sType->pattern_z = 1;
-			else
-				file.getU8(sType->pattern_z);
-			file.getU8(sType->frames); // Length of animation
-
-			if(sType->frames > 1) {
-				uint8_t async = 0;
-				int loop_count = 0;
-				int8_t start_frame = 0;
-				if(has_frame_durations) {
-					file.getByte(async);
-					file.get32(loop_count);
-					file.getSByte(start_frame);
-				}
-				sType->animator = newd Animator(sType->frames, start_frame, loop_count, async == 1);
-				if(has_frame_durations) {
-					for(int i = 0; i < sType->frames; i++) {
-						uint32_t min;
-						uint32_t max;
-						file.getU32(min);
-						file.getU32(max);
-						FrameDuration* frame_duration = sType->animator->getFrameDuration(i);
-						frame_duration->setValues(int(min), int(max));
-					}
-					sType->animator->reset();
-				}
-			}
-
-			sType->numsprites =
-				(int)sType->width * (int)sType->height *
-				(int)sType->layers *
-				(int)sType->pattern_x * (int)sType->pattern_y * sType->pattern_z *
-				(int)sType->frames;
-
-			// Read the sprite ids
-			for(uint32_t i = 0; i < sType->numsprites; ++i) {
-				uint32_t sprite_id;
-				if(is_extended) {
-					file.getU32(sprite_id);
-				} else {
-					uint16_t u16 = 0;
-					file.getU16(u16);
-					sprite_id = u16;
-				}
-
-				if(image_space[sprite_id] == nullptr) {
-					GameSprite::NormalImage* img = newd GameSprite::NormalImage();
-					img->id = sprite_id;
-					image_space[sprite_id] = img;
-				}
-				sType->spriteList.push_back(static_cast<GameSprite::NormalImage*>(image_space[sprite_id]));
-			}
+		if(sType->frames > 1) {
+			sType->animator = newd Animator(sType->frames, 0, 0, false);
 		}
-		++id;
+
+		sType->numsprites = (int)sType->width
+				* (int)sType->height
+				* (int)sType->layers
+				* (int)sType->pattern_x
+				* (int)sType->pattern_y
+				* (int)sType->pattern_z
+				* (int)sType->frames;
+
+		for(int i = 0; i < sType->numsprites; i += 1) {
+			uint16_t sprite_id;
+			file.getU16(sprite_id);
+			if(image_space[sprite_id] == nullptr) {
+				GameSprite::NormalImage* img = newd GameSprite::NormalImage();
+				img->id = sprite_id;
+				image_space[sprite_id] = img;
+			}
+			sType->spriteList.push_back(static_cast<GameSprite::NormalImage*>(image_space[sprite_id]));
+		}
 	}
 
 	return true;
@@ -572,170 +507,75 @@ bool GraphicManager::loadSpriteMetadataFlags(FileReadHandle& file, GameSprite* s
 {
 	uint8_t prev_flag = 0;
 	uint8_t flag = DatFlagLast;
-
-	for(int i = 0; i < DatFlagLast; ++i) {
+	for(int i = 0; i < UINT8_MAX; i += 1) {
 		prev_flag = flag;
 		file.getU8(flag);
-
 		if(flag == DatFlagLast) {
 			return true;
 		}
-		if(dat_format >= DAT_FORMAT_1010) {
-			/* In 10.10+ all attributes from 16 and up were
-			* incremented by 1 to make space for 16 as
-			* "No Movement Animation" flag.
-			*/
-			if(flag == 16)
-				flag = DatFlagNoMoveAnimation;
-			else if(flag > 16)
-				flag -= 1;
-		} else if(dat_format >= DAT_FORMAT_86) {
-			/* Default attribute values follow
-			* the format of 8.6-9.86.
-			* Therefore no changes here.
-			*/
-		} else if(dat_format >= DAT_FORMAT_78) {
-			/* In 7.80-8.54 all attributes from 8 and higher were
-			* incremented by 1 to make space for 8 as
-			* "Item Charges" flag.
-			*/
-			if(flag == 8) {
-				flag = DatFlagChargeable;
-			} else if(flag > 8)
-				flag -= 1;
-		} else if(dat_format >= DAT_FORMAT_755) {
-			/* In 7.55-7.72 attributes 23 is "Floor Change". */
-			if(flag == 23)
-				flag = DatFlagFloorChange;
-		} else if(dat_format >= DAT_FORMAT_74) {
-			/* In 7.4-7.5 attribute "Ground Border" did not exist
-			* attributes 1-15 have to be adjusted.
-			* Several other changes in the format.
-			*/
-			if(flag > 0 && flag <= 15)
-				flag += 1;
-			else if(flag == 16)
-				flag = DatFlagLight;
-			else if(flag == 17)
-				flag = DatFlagFloorChange;
-			else if(flag == 18)
-				flag = DatFlagFullGround;
-			else if(flag == 19)
-				flag = DatFlagElevation;
-			else if(flag == 20)
-				flag = DatFlagDisplacement;
-			else if(flag == 22)
-				flag = DatFlagMinimapColor;
-			else if(flag == 23)
-				flag = DatFlagRotateable;
-			else if(flag == 24)
-				flag = DatFlagLyingCorpse;
-			else if(flag == 25)
-				flag = DatFlagHangable;
-			else if(flag == 26)
-				flag = DatFlagHookSouth;
-			else if(flag == 27)
-				flag = DatFlagHookEast;
-			else if(flag == 28)
-				flag = DatFlagAnimateAlways;
-
-			/* "Multi Use" and "Force Use" are swapped */
-			if(flag == DatFlagMultiUse)
-				flag = DatFlagForceUse;
-			else if(flag == DatFlagForceUse)
-				flag = DatFlagMultiUse;
-		}
 
 		switch (flag) {
-			case DatFlagGroundBorder:
-			case DatFlagOnBottom:
-			case DatFlagOnTop:
+			case DatFlagClip:
+			case DatFlagBottom:
+			case DatFlagTop:
 			case DatFlagContainer:
-			case DatFlagStackable:
+			case DatFlagCumulative:
 			case DatFlagForceUse:
 			case DatFlagMultiUse:
-			case DatFlagFluidContainer:
-			case DatFlagSplash:
-			case DatFlagNotWalkable:
-			case DatFlagNotMoveable:
-			case DatFlagBlockProjectile:
-			case DatFlagNotPathable:
-			case DatFlagPickupable:
-			case DatFlagHangable:
+			case DatFlagLiquidContainer:
+			case DatFlagLiquidPool:
+			case DatFlagUnpass:
+			case DatFlagUnmove:
+			case DatFlagUnthrow:
+			case DatFlagAvoid:
+			case DatFlagTake:
+			case DatFlagHang:
 			case DatFlagHookSouth:
 			case DatFlagHookEast:
-			case DatFlagRotateable:
+			case DatFlagRotate:
 			case DatFlagDontHide:
-			case DatFlagTranslucent:
-			case DatFlagLyingCorpse:
-			case DatFlagAnimateAlways:
-			case DatFlagFullGround:
-			case DatFlagLook:
-			case DatFlagWrappable:
-			case DatFlagUnwrappable:
-			case DatFlagTopEffect:
-			case DatFlagFloorChange:
-			case DatFlagNoMoveAnimation:
-			case DatFlagChargeable:
+			//case DatFlagFullBank: // TODO?
 				break;
 
-			case DatFlagWritable:
-			case DatFlagWritableOnce:
-			case DatFlagCloth:
-			case DatFlagLensHelp:
-			case DatFlagUsable:
+			case DatFlagBank:
+			case DatFlagWrite:
+			case DatFlagWriteOnce:
+			//case DatFlagLensHelp: // TODO?
 				file.skip(2);
 				break;
 
-			case DatFlagGround:
-				uint16_t speed;
-				file.getU16(speed);
-                sType->ground_speed = speed;
-				break;
-
 			case DatFlagLight: {
-				SpriteLight light;
 				uint16_t intensity;
 				uint16_t color;
 				file.getU16(intensity);
 				file.getU16(color);
 				sType->has_light = true;
-                sType->light = SpriteLight{ static_cast<uint8_t>(intensity), static_cast<uint8_t>(color) };
+                sType->light = SpriteLight{
+					static_cast<uint8_t>(intensity),
+					static_cast<uint8_t>(color),
+				};
 				break;
 			}
 
-			case DatFlagDisplacement: {
-				if(dat_format >= DAT_FORMAT_755) {
-					uint16_t offset_x;
-					uint16_t offset_y;
-					file.getU16(offset_x);
-					file.getU16(offset_y);
-					sType->draw_offset = wxPoint(offset_x, offset_y);
-				} else {
-					sType->draw_offset = wxPoint(8, 8);
-				}
+			case DatFlagShift: {
+				uint16_t shiftX, shiftY;
+				file.getU16(shiftX);
+				file.getU16(shiftY);
+				sType->draw_offset = wxPoint(shiftX, shiftY);
 				break;
 			}
 
-			case DatFlagElevation: {
-				uint16_t draw_height;
-				file.getU16(draw_height);
-				sType->draw_height = draw_height;
+			case DatFlagHeight: {
+				uint16_t height;
+				file.getU16(height);
+				sType->draw_height = height;
 				break;
 			}
 
-			case DatFlagMinimapColor: {
-				uint16_t minimap_color;
-				file.getU16(minimap_color);
-				sType->minimap_color = minimap_color;
-				break;
-			}
-
-			case DatFlagMarket: {
-				file.skip(6);
-				std::string marketName;
-				file.getString(marketName);
-				file.skip(4);
+			case DatFlagAutomapColor: {
+				uint16_t automapColor;
+				file.getU16(automapColor);
+				sType->minimap_color = automapColor;
 				break;
 			}
 
@@ -937,7 +777,6 @@ GameSprite::GameSprite() :
 	frames(0),
 	numsprites(0),
 	animator(nullptr),
-	ground_speed(0),
 	draw_height(0),
 	minimap_color(0)
 {
