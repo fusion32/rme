@@ -71,7 +71,6 @@ public:
 	bool DoQueryClose();
 	bool DoQuerySave(bool doclose = true);
 	bool DoQueryImportCreatures();
-	bool LoadMap(FileName name);
 
 	void OnUpdateMenus(wxCommandEvent& event);
 	void OnUpdateActions(wxCommandEvent& event);
@@ -92,7 +91,7 @@ public:
 protected:
 
 	friend class Application;
-	friend class GUI;
+	friend class Editor;
 
 	DECLARE_EVENT_TABLE()
 };

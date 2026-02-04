@@ -16,6 +16,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "main.h"
+#include "iomap.h"
 #include "editor.h"
 
 void IOMap::error(const wxString format, ...)

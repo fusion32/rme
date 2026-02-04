@@ -22,8 +22,6 @@
 
 #include "position.h"
 
-class MapTab;
-
 class DuplicatedItemsWindow : public wxPanel
 {
 	struct DuplicatedItem {
@@ -39,9 +37,7 @@ public:
 	DuplicatedItemsWindow(wxWindow* parent);
 	virtual ~DuplicatedItemsWindow();
 
-	MapTab* GetMapTab() const noexcept { return map_tab; }
-
-	void StartSearch(MapTab* tab, bool selection);
+	void StartSearch(bool selection);
 	void Clear();
 	void UpdateButtons();
 
@@ -53,7 +49,6 @@ public:
 protected:
 	bool removeItem(DuplicatedItem* data, Action* action);
 
-	MapTab* map_tab;
 	wxListBox* items_list;
 	wxButton* remove_button;
 	wxButton* remove_all_button;

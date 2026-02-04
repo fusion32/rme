@@ -24,8 +24,7 @@
 #include "editor.h"
 #include "settings.h"
 
-Selection::Selection(Editor& editor) :
-	editor(editor),
+Selection::Selection(void) :
 	session(nullptr),
 	subsession(nullptr),
 	busy(false)
@@ -83,7 +82,7 @@ void Selection::add(const Tile* tile, Item* item)
 
 	// Make a copy of the tile with the item selected
 	item->select();
-	Tile* new_tile = tile->deepCopy(editor.getMap());
+	Tile* new_tile = tile->deepCopy(g_editor.map);
 	item->deselect();
 
 	if(g_settings.getInteger(Config::BORDER_IS_GROUND)) {
@@ -104,7 +103,7 @@ void Selection::add(const Tile* tile, Spawn* spawn)
 
 	// Make a copy of the tile with the item selected
 	spawn->select();
-	Tile* new_tile = tile->deepCopy(editor.getMap());
+	Tile* new_tile = tile->deepCopy(g_editor.map);
 	spawn->deselect();
 
 	subsession->addChange(newd Change(new_tile));
@@ -120,7 +119,7 @@ void Selection::add(const Tile* tile, Creature* creature)
 
 	// Make a copy of the tile with the item selected
 	creature->select();
-	Tile* new_tile = tile->deepCopy(editor.getMap());
+	Tile* new_tile = tile->deepCopy(g_editor.map);
 	creature->deselect();
 
 	subsession->addChange(newd Change(new_tile));
@@ -131,7 +130,7 @@ void Selection::add(const Tile* tile)
 	ASSERT(subsession);
 	ASSERT(tile);
 
-	Tile* new_tile = tile->deepCopy(editor.getMap());
+	Tile* new_tile = tile->deepCopy(g_editor.map);
 	new_tile->select();
 
 	subsession->addChange(newd Change(new_tile));
@@ -145,7 +144,7 @@ void Selection::remove(Tile* tile, Item* item)
 
 	bool selected = item->isSelected();
 	item->deselect();
-	Tile* new_tile = tile->deepCopy(editor.getMap());
+	Tile* new_tile = tile->deepCopy(g_editor.map);
 	if(selected) item->select();
 	if(item->getFlag(CLIP) && g_settings.getInteger(Config::BORDER_IS_GROUND)) new_tile->deselectGround();
 
@@ -160,7 +159,7 @@ void Selection::remove(Tile* tile, Spawn* spawn)
 
 	bool selected = spawn->isSelected();
 	spawn->deselect();
-	Tile* new_tile = tile->deepCopy(editor.getMap());
+	Tile* new_tile = tile->deepCopy(g_editor.map);
 	if(selected) spawn->select();
 
 	subsession->addChange(newd Change(new_tile));
@@ -174,7 +173,7 @@ void Selection::remove(Tile* tile, Creature* creature)
 
 	bool selected = creature->isSelected();
 	creature->deselect();
-	Tile* new_tile = tile->deepCopy(editor.getMap());
+	Tile* new_tile = tile->deepCopy(g_editor.map);
 	if(selected) creature->select();
 
 	subsession->addChange(newd Change(new_tile));
@@ -184,7 +183,7 @@ void Selection::remove(Tile* tile)
 {
 	ASSERT(subsession);
 
-	Tile* new_tile = tile->deepCopy(editor.getMap());
+	Tile* new_tile = tile->deepCopy(g_editor.map);
 	new_tile->deselect();
 
 	subsession->addChange(newd Change(new_tile));
@@ -207,7 +206,7 @@ void Selection::clear()
 {
 	if(session) {
 		for(Tile* tile : tiles) {
-			Tile* new_tile = tile->deepCopy(editor.getMap());
+			Tile* new_tile = tile->deepCopy(g_editor.map);
 			new_tile->deselect();
 			subsession->addChange(newd Change(new_tile));
 		}
@@ -223,9 +222,9 @@ void Selection::start(SessionFlags flags, ActionIdentifier identifier)
 {
 	if(!(flags & INTERNAL)) {
 		if(!(flags & SUBTHREAD)) {
-			session = editor.createBatch(identifier);
+			session = g_editor.createBatch(identifier);
 		}
-		subsession = editor.createAction(identifier);
+		subsession = g_editor.createAction(identifier);
 	}
 	busy = true;
 }
@@ -242,7 +241,7 @@ void Selection::commit()
 		batch->addAndCommitAction(subsession);
 
 		// Create a newd action for subsequent selects
-		subsession = editor.createAction(ACTION_SELECT);
+		subsession = g_editor.createAction(ACTION_SELECT);
 		session = batch;
 	}
 }
@@ -261,8 +260,8 @@ void Selection::finish(SessionFlags flags)
 			session = nullptr;
 
 			batch->addAndCommitAction(subsession);
-			editor.addBatch(batch, 2);
-			editor.updateActions();
+			g_editor.addBatch(batch, 2);
+			g_editor.updateActions();
 
 			session = nullptr;
 			subsession = nullptr;
@@ -295,12 +294,11 @@ void Selection::join(SelectionThread* thread)
 	delete thread;
 }
 
-SelectionThread::SelectionThread(Editor& editor, Position start, Position end) :
+SelectionThread::SelectionThread(Position start, Position end) :
 	wxThread(wxTHREAD_JOINABLE),
-	editor(editor),
 	start(start),
 	end(end),
-	selection(editor),
+	selection(),
 	result(nullptr)
 {
 	////
@@ -314,12 +312,14 @@ void SelectionThread::Execute()
 
 wxThread::ExitCode SelectionThread::Entry()
 {
+	// IMPORTANT(fusion): This can only work if the map is kept constant while
+	// we're reading from it, but I assume that should be the case?
 	selection.start(Selection::SUBTHREAD);
 	bool compesated = g_settings.getInteger(Config::COMPENSATED_SELECT);
 	for(int z = start.z; z >= end.z; --z) {
 		for(int x = start.x; x <= end.x; ++x) {
 			for(int y = start.y; y <= end.y; ++y) {
-				Tile* tile = editor.getMap().getTile(x, y, z);
+				Tile* tile = g_editor.map.getTile(x, y, z);
 				if(!tile)
 					continue;
 

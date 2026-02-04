@@ -24,7 +24,6 @@
 #include "positionctrl.h"
 
 class GameSprite;
-class MapTab;
 
 /**
  * A toggle button with an item on it.
@@ -55,14 +54,13 @@ public:
 class MapPropertiesWindow : public wxDialog
 {
 public:
-	MapPropertiesWindow(wxWindow* parent, MapTab* tab);
+	MapPropertiesWindow(wxWindow* parent);
 	virtual ~MapPropertiesWindow();
 
 	void OnClickOK(wxCommandEvent&);
 	void OnClickCancel(wxCommandEvent&);
 
 protected:
-	MapTab* view;
 	wxSpinCtrl* height_spin;
 	wxSpinCtrl* width_spin;
 	wxTextCtrl* description_ctrl;

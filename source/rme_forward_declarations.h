@@ -34,7 +34,6 @@ class Tileset;
 class Town;
 class Position;
 class Editor;
-class GUI;
 class Selection;
 class CopyBuffer;
 class ItemType;

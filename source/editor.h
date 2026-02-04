@@ -141,12 +141,13 @@ public:
 	void UpdateMenubar();
 	bool IsRenderingEnabled() const { return disabled_counter == 0; }
 
-	void EnableHotkeys();
-	void DisableHotkeys();
-	bool AreHotkeysEnabled() const;
+	// TODO(fusion): Use a counter here?
+	void EnableHotkeys() { hotkeys_enabled = true; }
+	void DisableHotkeys() { hotkeys_enabled = false; }
+	bool AreHotkeysEnabled() const { return hotkeys_enabled; }
 
-	// This sends the event to the main window (redirecting from other controls)
-	void AddPendingCanvasEvent(wxEvent& event);
+	void AddPendingMapEvent(wxEvent &event);
+	void AddPendingCanvasEvent(wxEvent &event);
 
     void OnWelcomeDialogClosed(wxCloseEvent &event);
     void OnWelcomeDialogAction(wxCommandEvent &event);
@@ -251,7 +252,6 @@ public:
 	void RefreshView();
 	// Fit all/specified current map view to map dimensions
 	void FitViewToMap();
-	void FitViewToMap(MapTab* mt);
 
 	void DoCut();
 	void DoCopy();
@@ -261,8 +261,8 @@ public:
 	void EndPasting();
 	bool IsPasting() const { return pasting; }
 
-	bool DoUndo(int numActions = 1);
-	bool DoRedo(int numActions = 1);
+	void DoUndo(int numActions = 1);
+	void DoRedo(int numActions = 1);
 
 	// TODO(fusion): Even before, there could only be a single "client version"
 	// loaded at any given time and it didn't make a lot of sense to have multiple
@@ -294,7 +294,7 @@ public:
 	// Rebuild forces palette to reload the entire contents
 	void RebuildPalettes();
 	// Refresh only updates the content (such as house/waypoint list)
-	void RefreshPalettes(Map* m = nullptr, bool usedfault = true);
+	void RefreshPalettes();
 	// Won't refresh the palette in the parameter
 	void RefreshOtherPalettes(PaletteWindow* p);
 	// If no palette is shown, this displays the primary palette
@@ -411,7 +411,7 @@ public:
 	wxAuiManager *aui_manager = NULL;
 	MainMenuBar *menubar = NULL;
 	MainToolBar *toolbar = NULL;
-	MapWindow *mapwindow = NULL;
+	MapWindow *mapWindow = NULL;
 	MinimapWindow *minimap = NULL;
 	DCButton *gem = NULL; // The small gem in the lower-right corner
 	SearchResultWindow *search_result_window = NULL;

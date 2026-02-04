@@ -602,19 +602,23 @@ void BrushListBox::OnKey(wxKeyEvent& event)
 		case WXK_UP:
 		case WXK_DOWN:
 		case WXK_LEFT:
-		case WXK_RIGHT:
+		case WXK_RIGHT:{
 			if(g_settings.getInteger(Config::LISTBOX_EATS_ALL_EVENTS)) {
+				event.Skip(true);
+				return;
+			}
+
+			break;
+		}
+
 		case WXK_PAGEUP:
 		case WXK_PAGEDOWN:
 		case WXK_HOME:
-		case WXK_END:
+		case WXK_END:{
 			event.Skip(true);
-			} else {
-			[[fallthrough]];
-		default:
-			if(g_editor.GetCurrentTab() != nullptr) {
-				g_editor.GetCurrentMapTab()->GetEventHandler()->AddPendingEvent(event);
-			}
+			return;
 		}
 	}
+
+	g_editor.AddPendingMapEvent(event);
 }

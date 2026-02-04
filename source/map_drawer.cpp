@@ -134,7 +134,7 @@ bool DrawingOptions::isDrawLight() const noexcept
 	return show_ingame_box && show_lights;
 }
 
-MapDrawer::MapDrawer(MapCanvas* canvas) : canvas(canvas), editor(canvas->editor)
+MapDrawer::MapDrawer(MapCanvas* canvas) : canvas(canvas)
 {
 	light_drawer = std::make_shared<LightDrawer>();
 }
@@ -320,7 +320,7 @@ void MapDrawer::DrawMap()
 
 			for(int nd_map_x = nd_start_x; nd_map_x <= nd_end_x; nd_map_x += 4) {
 				for(int nd_map_y = nd_start_y; nd_map_y <= nd_end_y; nd_map_y += 4) {
-					QTreeNode* nd = editor.getMap().getLeaf(nd_map_x, nd_map_y);
+					QTreeNode* nd = g_editor.map.getLeaf(nd_map_x, nd_map_y);
 					if(!nd){
 						continue;
 					}
@@ -378,7 +378,7 @@ void MapDrawer::DrawSecondaryMap(int map_z)
 	Position to_pos(mouse_map_x, mouse_map_y, floor);
 
 	if(canvas->isPasting()) {
-		normal_pos = editor.copybuffer.getPosition();
+		normal_pos = g_editor.copybuffer.getPosition();
 	} else {
 		Brush* brush = g_editor.GetCurrentBrush();
 		if(brush && brush->isDoodad()) {
@@ -550,12 +550,12 @@ void MapDrawer::DrawGrid()
 
 void MapDrawer::DrawDraggingShadow()
 {
-	if(!dragging || options.ingame || editor.getSelection().isBusy())
+	if(!dragging || options.ingame || g_editor.getSelection().isBusy())
 		return;
 
 	glEnable(GL_TEXTURE_2D);
 
-	for(Tile* tile : editor.getSelection()) {
+	for(Tile* tile : g_editor.getSelection()) {
 		int move_z = canvas->drag_start_z - floor;
 		int move_x = canvas->drag_start_x - mouse_map_x;
 		int move_y = canvas->drag_start_y - mouse_map_y;
@@ -578,7 +578,7 @@ void MapDrawer::DrawDraggingShadow()
 			int draw_x, draw_y;
 			getDrawPosition(pos, draw_x, draw_y);
 
-			Tile* dest_tile = editor.getMap().getTile(pos);
+			Tile* dest_tile = g_editor.map.getTile(pos);
 			for(Item *item = tile->items; item != NULL; item = item->next){
 				if(!item->isSelected()){
 					continue;
@@ -610,7 +610,7 @@ void MapDrawer::DrawHigherFloors()
 	int map_z = floor - 1;
 	for(int map_x = start_x; map_x <= end_x; map_x++) {
 		for(int map_y = start_y; map_y <= end_y; map_y++) {
-			Tile* tile = editor.getMap().getTile(map_x, map_y, map_z);
+			Tile* tile = g_editor.map.getTile(map_x, map_y, map_z);
 			if(!tile) continue;
 
 			int draw_x, draw_y;
@@ -940,7 +940,7 @@ void MapDrawer::DrawBrush()
 			int cy = (mouse_map_y) * rme::TileSize - view_scroll_y - adjustment;
 			int cx = (mouse_map_x) * rme::TileSize - view_scroll_x - adjustment;
 			CreatureBrush* creature_brush = brush->asCreature();
-			if(creature_brush->canDraw(&editor.getMap(), Position(mouse_map_x, mouse_map_y, floor)))
+			if(creature_brush->canDraw(&g_editor.map, Position(mouse_map_x, mouse_map_y, floor)))
 				BlitCreature(cx, cy, creature_brush->getType()->outfit, SOUTH, 255, 255, 255, 160);
 			else
 				BlitCreature(cx, cy, creature_brush->getType()->outfit, SOUTH, 255, 64, 64, 160);
@@ -1377,7 +1377,7 @@ void MapDrawer::DrawTile(TileLocation* location)
 	bool show_tooltips = options.isTooltips();
 
 	if(show_tooltips && location->getWaypointCount() > 0) {
-		Waypoint* waypoint = canvas->editor.getMap().waypoints.getWaypoint(position);
+		Waypoint* waypoint = g_editor.map.waypoints.getWaypoint(position);
 		if(waypoint)
 			WriteTooltip(waypoint, tooltip);
 	}
@@ -1808,7 +1808,7 @@ void MapDrawer::AddLight(TileLocation* location)
 
 void MapDrawer::getColor(Brush* brush, const Position& position, uint8_t &r, uint8_t &g, uint8_t &b)
 {
-	if(brush->canDraw(&editor.getMap(), position)) {
+	if(brush->canDraw(&g_editor.map, position)) {
 		if(brush->isWaypoint()) {
 			r = 0x00; g = 0xff, b = 0x00;
 		} else {
@@ -1944,7 +1944,7 @@ void MapDrawer::glColor(MapDrawer::BrushColor color)
 
 void MapDrawer::glColorCheck(Brush* brush, const Position& pos)
 {
-	if(brush->canDraw(&editor.getMap(), pos))
+	if(brush->canDraw(&g_editor.map, pos))
 		glColor(COLOR_VALID);
 	else
 		glColor(COLOR_INVALID);

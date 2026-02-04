@@ -22,6 +22,7 @@
 #include "map.h"
 #include "settings.h"
 
+#include "map_window.h"
 #include "map_display.h"
 #include "minimap_window.h"
 
@@ -81,15 +82,14 @@ void MinimapWindow::OnPaint(wxPaintEvent& event)
 	pdc.Clear();
 
 	if(!g_editor.IsProjectOpen()) return;
-	Editor& editor = *g_editor.GetCurrentEditor();
-	const Map& map = editor.getMap();
+	const Map &map = g_editor.map;
 
 	int window_width = GetSize().GetWidth();
 	int window_height = GetSize().GetHeight();
 	//printf("W:%d\tH:%d\n", window_width, window_height);
 	int center_x, center_y;
 
-	MapCanvas* canvas = g_editor.GetCurrentMapTab()->GetCanvas();
+	MapCanvas* canvas = g_editor.mapWindow->GetCanvas();
 	canvas->GetScreenCenter(&center_x, &center_y);
 
 	int start_x, start_y;
@@ -192,7 +192,5 @@ void MinimapWindow::OnMouseClick(wxMouseEvent& event)
 
 void MinimapWindow::OnKey(wxKeyEvent& event)
 {
-	if(g_editor.GetCurrentTab() != nullptr) {
-		g_editor.GetCurrentMapTab()->GetEventHandler()->AddPendingEvent(event);
-	}
+	g_editor.AddPendingMapEvent(event);
 }

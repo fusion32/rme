@@ -336,7 +336,8 @@ wxColor colorFromEightBit(int color)
 
 wxString GetExecDirectory(void)
 {
-	return wxStandardPaths::Get().GetExecutablePath();
+	wxFileName dir = wxStandardPaths::Get().GetExecutablePath();
+	return dir.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
 }
 
 void SetWindowToolTip(wxWindow *a, const wxString &tooltip)

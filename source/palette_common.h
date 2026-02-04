@@ -25,7 +25,6 @@
 #include "gui_ids.h"
 #include "common_windows.h"
 
-class GUI;
 class BrushButton;
 class TilesetCategory;
 class BrushSizePanel;

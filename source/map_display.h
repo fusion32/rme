@@ -184,8 +184,8 @@ private:
 // Right-click popup menu
 class MapPopupMenu : public wxMenu {
 public:
-	MapPopupMenu(void) : wxMenu("") {}
-	virtual ~MapPopupMenu();
+	MapPopupMenu(void) : wxMenu() {}
+	virtual ~MapPopupMenu(void) {}
 	void Update();
 };
 

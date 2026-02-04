@@ -92,7 +92,6 @@ class LightDrawer;
 class MapDrawer
 {
 	MapCanvas* canvas;
-	Editor& editor;
 	DrawingOptions options;
 	std::shared_ptr<LightDrawer> light_drawer;
 

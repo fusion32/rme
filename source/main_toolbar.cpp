@@ -196,19 +196,12 @@ MainToolBar::~MainToolBar()
 
 void MainToolBar::UpdateButtons()
 {
-	Editor* editor = g_editor.GetCurrentEditor();
-	if(editor) {
-		standard_toolbar->EnableTool(wxID_UNDO, editor->canUndo());
-		standard_toolbar->EnableTool(wxID_REDO, editor->canRedo());
-		standard_toolbar->EnableTool(wxID_PASTE, editor->copybuffer.canPaste());
-	} else {
-		standard_toolbar->EnableTool(wxID_UNDO, false);
-		standard_toolbar->EnableTool(wxID_REDO, false);
-		standard_toolbar->EnableTool(wxID_PASTE, false);
-	}
-
-	bool has_map = editor != nullptr;
+	bool has_map = g_editor.IsProjectOpen();
 	bool is_host = has_map;
+
+	standard_toolbar->EnableTool(wxID_UNDO, g_editor.canUndo());
+	standard_toolbar->EnableTool(wxID_REDO, g_editor.canRedo());
+	standard_toolbar->EnableTool(wxID_PASTE, g_editor.copybuffer.canPaste());
 
 	standard_toolbar->EnableTool(wxID_SAVE, is_host);
 	standard_toolbar->EnableTool(wxID_SAVEAS, is_host);
@@ -235,8 +228,8 @@ void MainToolBar::UpdateButtons()
 	z_control->Enable(has_map);
 
 	if(has_map) {
-		x_control->SetMaxValue(editor->getMapWidth());
-		y_control->SetMaxValue(editor->getMapHeight());
+		x_control->SetMaxValue(g_editor.map.getWidth());
+		y_control->SetMaxValue(g_editor.map.getHeight());
 	}
 
 	sizes_toolbar->EnableTool(TOOLBAR_SIZES_CIRCULAR, has_map);

@@ -45,9 +45,8 @@ BEGIN_EVENT_TABLE(MapPropertiesWindow, wxDialog)
 	EVT_BUTTON(wxID_CANCEL, MapPropertiesWindow::OnClickCancel)
 END_EVENT_TABLE()
 
-MapPropertiesWindow::MapPropertiesWindow(wxWindow* parent, MapTab* view) :
-	wxDialog(parent, wxID_ANY, "Map Properties", wxDefaultPosition, wxSize(300, 200), wxRESIZE_BORDER | wxCAPTION),
-	view(view)
+MapPropertiesWindow::MapPropertiesWindow(wxWindow* parent) :
+	wxDialog(parent, wxID_ANY, "Map Properties", wxDefaultPosition, wxSize(300, 200), wxRESIZE_BORDER | wxCAPTION)
 {
 	const Map &map = g_editor.map;
 	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
@@ -147,7 +146,7 @@ void MapPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 	if(new_map_width != map.getWidth() || new_map_height != map.getHeight()) {
 		map.setWidth(new_map_width);
 		map.setHeight(new_map_height);
-		g_editor.FitViewToMap(view);
+		g_editor.FitViewToMap();
 	}
 	g_editor.RefreshPalettes();
 

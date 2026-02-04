@@ -24,8 +24,7 @@
 #include "editor.h"
 
 DuplicatedItemsWindow::DuplicatedItemsWindow(wxWindow* parent) :
-	wxPanel(parent, wxID_ANY),
-	map_tab(nullptr)
+	wxPanel(parent, wxID_ANY)
 {
 	wxSize icon_size = FROM_DIP(parent, wxSize(16, 16));
 	wxBitmap save_bitmap = wxArtProvider::GetBitmap(wxART_FILE_SAVE, wxART_TOOLBAR, icon_size);
@@ -69,21 +68,16 @@ DuplicatedItemsWindow::~DuplicatedItemsWindow()
 	export_button->Unbind(wxEVT_BUTTON, &DuplicatedItemsWindow::OnClickExport, this);
 }
 
-void DuplicatedItemsWindow::StartSearch(MapTab* tab, bool selection)
+void DuplicatedItemsWindow::StartSearch(bool selection)
 {
 	Clear();
-
-	map_tab = tab;
-	if(!map_tab) {
-		return;
-	}
 
 	auto message = wxString::Format("Searching on %s...", selection ? "selected area" : "map");
 	g_editor.CreateLoadBar(message);
 
-	Map* map = map_tab->GetMap();
-	auto ibegin = map->begin();
-	auto iend = map->end();
+	Map &map = g_editor.map;
+	auto ibegin = map.begin();
+	auto iend = map.end();
 	long progress = 0;
 	std::vector<DuplicatedItem*> result;
 
@@ -96,7 +90,7 @@ void DuplicatedItemsWindow::StartSearch(MapTab* tab, bool selection)
 		}
 
 		if(progress % 0x8000 == 0) {
-			g_editor.SetLoadDone((int)(100 * progress / map->getTileCount()));
+			g_editor.SetLoadDone((int)(100 * progress / map.getTileCount()));
 		}
 
 		auto& position = tile->getPosition();
@@ -146,16 +140,10 @@ void DuplicatedItemsWindow::Clear()
 
 	items_list->Clear();
 	UpdateButtons();
-
-	map_tab = nullptr;
 }
 
 void DuplicatedItemsWindow::OnClickResult(wxCommandEvent& event)
 {
-	if(!map_tab || !map_tab->IsCurrent()) {
-		return;
-	}
-
 	DuplicatedItem* data = reinterpret_cast<DuplicatedItem*>(event.GetClientData());
 	if(data) {
 		g_editor.SetScreenCenterPosition(data->position);
@@ -167,26 +155,19 @@ void DuplicatedItemsWindow::OnClickResult(wxCommandEvent& event)
 
 void DuplicatedItemsWindow::OnClickRemove(wxCommandEvent& WXUNUSED(event))
 {
-	if(!map_tab || !map_tab->IsCurrent()) {
-		return;
-	}
-
 	int32_t index = items_list->GetSelection();
 	if (index == wxNOT_FOUND) {
 		return;
 	}
 
-	Editor* editor = map_tab->GetEditor();
-	ActionQueue* history = editor->getHistoryActions();
-	BatchAction* batch = history->createBatch(ACTION_DELETE_TILES);
-	Action* action = history->createAction(batch);
-
+	BatchAction* batch = g_editor.createBatch(ACTION_DELETE_TILES);
+	Action* action = g_editor.createAction(batch);
 	DuplicatedItem* data = reinterpret_cast<DuplicatedItem*>(items_list->GetClientData(index));
 	removeItem(data, action);
 
 	batch->addAndCommitAction(action);
-	editor->addBatch(batch);
-	editor->updateActions();
+	g_editor.addBatch(batch);
+	g_editor.updateActions();
 
 	items_list->Delete(index);
 	delete data;
@@ -196,10 +177,6 @@ void DuplicatedItemsWindow::OnClickRemove(wxCommandEvent& WXUNUSED(event))
 
 void DuplicatedItemsWindow::OnClickRemoveAll(wxCommandEvent& WXUNUSED(event))
 {
-	if(!map_tab || !map_tab->IsCurrent()) {
-		return;
-	}
-
 	uint32_t count = items_list->GetCount();
 	if (count == 0) {
 		return;
@@ -207,11 +184,8 @@ void DuplicatedItemsWindow::OnClickRemoveAll(wxCommandEvent& WXUNUSED(event))
 
 	g_editor.CreateLoadBar("Removing items...");
 
-	Map* map = map_tab->GetMap();
-	Editor* editor = map_tab->GetEditor();
-	ActionQueue* history = editor->getHistoryActions();
-	BatchAction* batch = history->createBatch(ACTION_DELETE_TILES);
-	Action* action = history->createAction(batch);
+	BatchAction* batch = g_editor.createBatch(ACTION_DELETE_TILES);
+	Action* action = g_editor.createAction(batch);
 
 	for(uint32_t i = 0; i < count; ++i) {
 		DuplicatedItem* data = reinterpret_cast<DuplicatedItem*>(items_list->GetClientData(i));
@@ -220,8 +194,8 @@ void DuplicatedItemsWindow::OnClickRemoveAll(wxCommandEvent& WXUNUSED(event))
 	}
 
 	batch->addAndCommitAction(action);
-	editor->addBatch(batch);
-	editor->updateActions();
+	g_editor.addBatch(batch);
+	g_editor.updateActions();
 
 	g_editor.DestroyLoadBar();
 	Clear();
@@ -256,7 +230,7 @@ void DuplicatedItemsWindow::UpdateButtons()
 		return;
 	}
 
-	bool enable = items_list->GetCount() != 0 && map_tab && map_tab->IsCurrent();
+	bool enable = items_list->GetCount() != 0;
 	remove_button->Enable(enable);
 	remove_all_button->Enable(enable);
 	export_button->Enable(enable);
@@ -264,14 +238,13 @@ void DuplicatedItemsWindow::UpdateButtons()
 
 bool DuplicatedItemsWindow::removeItem(DuplicatedItem* data, Action* action)
 {
-	Map* map = map_tab->GetMap();
-	Tile* tile = map->getTile(data->position);
+	Tile* tile = g_editor.map.getTile(data->position);
 	if(!tile) {
 		return false;
 	}
 
 	int count = 0;
-	Tile* new_tile = tile->deepCopy(*map);
+	Tile* new_tile = tile->deepCopy(g_editor.map);
 	new_tile->removeItems(
 		[&count, data](const Item *item){
 			return item->getID() == data->itemId && ++count > 1;

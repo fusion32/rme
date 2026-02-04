@@ -220,7 +220,7 @@ void Application::OnEventLoopEnter(wxEventLoopBase* loop) {
     if(m_file_to_open != wxEmptyString) {
         g_editor.OpenProject(FileName(m_file_to_open));
     } else if(!g_editor.IsWelcomeDialogShown()) {
-		g_editor.OpenProject(); //g_editor.NewProject();
+		g_editor.NewProject();
     }
 }
 
@@ -296,8 +296,8 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
 
 	g_editor.aui_manager = newd wxAuiManager(this);
 	g_editor.toolbar = newd MainToolBar(this, g_editor.aui_manager);
-	g_editor.mapwindow = newd MapWindow(this);
-	g_editor.aui_manager->AddPane(g_editor.mapwindow, wxAuiPaneInfo().CenterPane().Floatable(false).CloseButton(false).PaneBorder(false));
+	g_editor.mapWindow = newd MapWindow(this);
+	g_editor.aui_manager->AddPane(g_editor.mapWindow, wxAuiPaneInfo().CenterPane().Floatable(false).CloseButton(false).PaneBorder(false));
 
 	g_editor.aui_manager->Update();
 	g_editor.UpdateMenubar();

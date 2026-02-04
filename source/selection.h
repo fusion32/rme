@@ -97,13 +97,12 @@ private:
 class SelectionThread : public wxThread
 {
 public:
-	SelectionThread(Editor& editor, Position start, Position end);
+	SelectionThread(Position start, Position end);
 
 	void Execute(); // Calls "Create" and then "Run"
 
 protected:
 	virtual ExitCode Entry();
-	Editor& editor;
 	Position start, end;
 	Selection selection;
 	Action* result;

@@ -15,30 +15,32 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
-#include "gui_ids.h"
 #include "main.h"
+#include "editor.h"
 
 #include <wx/display.h>
 
-#include "main_menubar.h"
-
-#include "editor.h"
+#include "actions_history_window.h"
+#include "application.h"
 #include "brush.h"
-#include "map.h"
-#include "sprites.h"
-#include "materials.h"
-#include "doodad_brush.h"
-#include "spawn_brush.h"
-
 #include "common_windows.h"
-#include "result_window.h"
+#include "doodad_brush.h"
 #include "duplicated_items_window.h"
+#include "ground_brush.h"
+#include "gui_ids.h"
+#include "house_exit_brush.h"
+#include "main_menubar.h"
+#include "map.h"
+#include "map_display.h"
+#include "map_window.h"
+#include "materials.h"
 #include "minimap_window.h"
 #include "palette_window.h"
-#include "map_display.h"
-#include "application.h"
+#include "result_window.h"
+#include "spawn_brush.h"
+#include "sprites.h"
+#include "waypoint_brush.h"
 #include "welcome_dialog.h"
-#include "actions_history_window.h"
 
 #ifdef __WXOSX__
 #include <AGL/agl.h>
@@ -95,65 +97,74 @@ std::vector<wxString> Editor::GetRecentFiles()
     return files;
 }
 
-bool Editor::LoadVersion(wxString& error, wxArrayString& warnings, bool force)
+void Editor::NewProject(void)
 {
-#if 0
-	if(ClientVersion::get(version) == nullptr) {
-		error = "Unsupported client version! (8)";
-		return false;
+	// TODO(fusion): Create new project? Which doesn't make a lot of sense if
+	// a project also includes objects, materials, etc... so we might want to
+	// have some kind of project template?
+	OpenProject();
+}
+
+void Editor::OpenProject(void)
+{
+	wxDirDialog openDialog(root, "Select project directory...", wxEmptyString, wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+	if(openDialog.ShowModal() == wxID_OK){
+		OpenProject(openDialog.GetPath());
+	}
+}
+
+void Editor::OpenProject(FileName filename)
+{
+	if(IsProjectOpen()){
+		// Prompt for a save, then close?
 	}
 
-	if(version != loaded_version || force) {
-		if(getLoadedVersion() != nullptr)
-			// There is another version loaded right now, save window layout
-			SavePerspective();
+	FinishWelcomeDialog();
 
-		// Disable all rendering so the data is not accessed while reloading
-		UnnamedRenderingLock();
-		DestroyPalettes();
-		DestroyMinimap();
+	//Load everything here!
+	//CreateLoadBar();
+	//LoadItemTypes();
+	//LoadSprites();
+	//LoadMap();
+	//...
 
-		// Destroy the previous version
-		UnloadVersion();
+	SetStatusText("");
+	UpdateTitle();
+	RefreshPalettes();
+	UpdateMenubar();
+	root->Refresh();
+}
 
-		loaded_version = version;
-		if(!getLoadedVersion()->hasValidPaths()) {
-			if(!getLoadedVersion()->loadValidPaths()) {
-				error = "Couldn't load relevant asset files";
-				loaded_version = CLIENT_VERSION_NONE;
-				return false;
-			}
-		}
-
-		bool ret = LoadDataFiles(error, warnings);
-		if(ret)
-			LoadPerspective();
-		else
-			loaded_version = CLIENT_VERSION_NONE;
-
-		return ret;
+void Editor::CloseProject(void)
+{
+	if(!IsProjectOpen()){
+		return;
 	}
-	return true;
-#else
+}
+
+void Editor::SaveProject(void)
+{
+	if(!IsProjectOpen()){
+		return;
+	}
+}
+
+void Editor::SaveProjectAs(void)
+{
+	if(!IsProjectOpen()){
+		return;
+	}
+}
+
+bool Editor::IsProjectOpen(void) const {
 	return false;
-#endif
 }
 
-void Editor::EnableHotkeys()
-{
-	hotkeys_enabled = true;
+bool Editor::IsProjectDirty(void) const {
+	return false;
 }
 
-void Editor::DisableHotkeys()
-{
-	hotkeys_enabled = false;
-}
-
-bool Editor::AreHotkeysEnabled() const
-{
-	return hotkeys_enabled;
-}
-
+#if 0
 bool Editor::LoadDataFiles(wxString& error, wxArrayString& warnings)
 {
 	// TODO(fusion): We want to move all this loading to when the map is loaded.
@@ -212,9 +223,48 @@ bool Editor::LoadDataFiles(wxString& error, wxArrayString& warnings)
 	return true;
 }
 
+bool Editor::LoadVersion(wxString& error, wxArrayString& warnings, bool force)
+{
+	if(ClientVersion::get(version) == nullptr) {
+		error = "Unsupported client version! (8)";
+		return false;
+	}
+
+	if(version != loaded_version || force) {
+		if(getLoadedVersion() != nullptr)
+			// There is another version loaded right now, save window layout
+			SavePerspective();
+
+		// Disable all rendering so the data is not accessed while reloading
+		UnnamedRenderingLock();
+		DestroyPalettes();
+		DestroyMinimap();
+
+		// Destroy the previous version
+		UnloadVersion();
+
+		loaded_version = version;
+		if(!getLoadedVersion()->hasValidPaths()) {
+			if(!getLoadedVersion()->loadValidPaths()) {
+				error = "Couldn't load relevant asset files";
+				loaded_version = CLIENT_VERSION_NONE;
+				return false;
+			}
+		}
+
+		bool ret = LoadDataFiles(error, warnings);
+		if(ret)
+			LoadPerspective();
+		else
+			loaded_version = CLIENT_VERSION_NONE;
+
+		return ret;
+	}
+	return true;
+}
+
 void Editor::UnloadVersion()
 {
-#if 0
 	UnnamedRenderingLock();
 	gfx.clear();
 	current_brush = nullptr;
@@ -241,7 +291,6 @@ void Editor::UnloadVersion()
 
 		loaded_version = CLIENT_VERSION_NONE;
 	}
-#endif
 }
 
 void Editor::SaveCurrentMap(FileName filename, bool showdialog)
@@ -264,30 +313,6 @@ void Editor::SaveCurrentMap(FileName filename, bool showdialog)
 	UpdateTitle();
 	UpdateMenubar();
 	root->Refresh();
-}
-
-double Editor::GetCurrentZoom()
-{
-	MapTab* tab = GetCurrentMapTab();
-	if(tab)
-		return tab->GetCanvas()->GetZoom();
-	return 1.0;
-}
-
-void Editor::SetCurrentZoom(double zoom)
-{
-	MapTab* tab = GetCurrentMapTab();
-	if(tab)
-		tab->GetCanvas()->SetZoom(zoom);
-}
-
-void Editor::FitViewToMap()
-{
-	for(int index = 0; index < tabbook->GetTabCount(); ++index) {
-		if(auto *tab = dynamic_cast<MapTab*>(tabbook->GetTab(index))) {
-			tab->GetView()->FitToMap();
-		}
-	}
 }
 
 void Editor::FitViewToMap(MapTab* mt)
@@ -330,18 +355,15 @@ bool Editor::NewMap()
 
 void Editor::OpenMap()
 {
-#if 0
 	wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? MAP_LOAD_FILE_WILDCARD_OTGZ : MAP_LOAD_FILE_WILDCARD;
 	wxFileDialog dialog(root, "Open map file", wxEmptyString, wxEmptyString, wildcard, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 
 	if(dialog.ShowModal() == wxID_OK)
 		LoadMap(dialog.GetPath());
-#endif
 }
 
 void Editor::SaveMap()
 {
-#if 0
 	if(!IsProjectOpen())
 		return;
 
@@ -354,12 +376,10 @@ void Editor::SaveMap()
 		if(dialog.ShowModal() == wxID_OK)
 			SaveCurrentMap(dialog.GetPath(), true);
 	}
-#endif
 }
 
 void Editor::SaveMapAs()
 {
-#if 0
 	if(!IsProjectOpen())
 		return;
 
@@ -372,7 +392,6 @@ void Editor::SaveMapAs()
 		AddRecentFile(dialog.GetPath());
 		UpdateMenubar();
 	}
-#endif
 }
 
 bool Editor::LoadMap(const FileName& fileName)
@@ -419,61 +438,6 @@ bool Editor::LoadMap(const FileName& fileName)
 	return true;
 }
 
-void Editor::NewProject(void)
-{
-	if(IsProjectOpen()){
-		// Prompt for a save, then close?
-	}
-
-	// Create new project? Which doesn't make a lot of sense if a project also
-	// includes objects, materials, etc... so we might want to have some kind
-	// of project template?
-}
-
-void Editor::OpenProject(void)
-{
-	wxDirDialog openDialog(root, "Select project directory...", wxEmptyString, wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
-	if(openDialog.ShowModal() == wxID_OK){
-		OpenProject(openDialog.GetPath());
-	}
-}
-
-void Editor::OpenProject(FileName filename)
-{
-	if(IsProjectOpen()){
-		// Prompt for a save, then close?
-	}
-}
-
-void Editor::CloseProject(void)
-{
-	if(!IsProjectOpen()){
-		return;
-	}
-}
-
-void Editor::SaveProject(void)
-{
-	if(!IsProjectOpen()){
-		return;
-	}
-}
-
-void Editor::SaveProjectAs(void)
-{
-	if(!IsProjectOpen()){
-		return;
-	}
-}
-
-bool Editor::IsProjectOpen(void) const {
-	return false;
-}
-
-bool Editor::IsProjectDirty(void) const {
-	return false;
-}
-
 bool Editor::ShouldSave()
 {
 	Editor* editor = GetCurrentEditor();
@@ -481,64 +445,208 @@ bool Editor::ShouldSave()
 	return editor->hasChanges();
 }
 
-void Editor::AddPendingCanvasEvent(wxEvent& event)
-{
-	MapTab* mapTab = GetCurrentMapTab();
-	if(mapTab)
-		mapTab->GetCanvas()->GetEventHandler()->AddPendingEvent(event);
-}
 
-void Editor::CloseCurrentEditor()
+bool Editor::hasChanges() const
 {
-	RefreshPalettes();
-	tabbook->DeleteTab(tabbook->GetSelection());
-	UpdateMenubar();
-
-	if(duplicated_items_window) {
-		duplicated_items_window->Clear();
-	}
-}
-
-bool Editor::CloseAllEditors()
-{
-	for(int i = 0; i < tabbook->GetTabCount(); ++i) {
-		auto *mapTab = dynamic_cast<MapTab*>(tabbook->GetTab(i));
-		if(mapTab) {
-			if(mapTab->IsUniqueReference() && mapTab->GetMap() && mapTab->GetMap()->hasChanged()) {
-				tabbook->SetFocusedTab(i);
-				if(!root->DoQuerySave(false)) {
-					return false;
-				} else {
-					RefreshPalettes();
-					tabbook->DeleteTab(i--);
-				}
-			} else {
-				tabbook->DeleteTab(i--);
-			}
+	if(map.hasChanged()) {
+		if(map.getTileCount() == 0) {
+			return actionQueue->hasChanges();
 		}
+		return true;
 	}
-
-	UpdateMenubar();
-
-	if(duplicated_items_window) {
-		duplicated_items_window->Clear();
-	}
-	return true;
+	return false;
 }
 
-void Editor::NewMapView()
+void Editor::clearChanges()
 {
-	MapTab* mapTab = GetCurrentMapTab();
-	if(mapTab) {
-		auto *newMapTab = newd MapTab(mapTab);
-		newMapTab->OnSwitchEditorMode(mode);
+	map.clearChanges();
+}
 
-		SetStatusText("Created new view");
-		UpdateTitle();
-		RefreshPalettes();
-		UpdateMenubar();
-		root->Refresh();
+void Editor::saveMap(FileName filename, bool showdialog)
+{
+	std::string savefile = filename.GetFullPath().mb_str(wxConvUTF8).data();
+	bool save_as = false;
+
+	if(savefile.empty()) {
+		savefile = map.filename;
+
+		FileName c1(wxstr(savefile));
+		FileName c2(wxstr(map.filename));
+		save_as = c1 != c2;
 	}
+
+	// If not named yet, propagate the file name to the auxilliary files
+	if(map.unnamed) {
+		FileName _name(filename);
+		_name.SetExt("xml");
+
+		_name.SetName(filename.GetName() + "-spawn");
+		map.spawnfile = nstr(_name.GetFullName());
+		_name.SetName(filename.GetName() + "-house");
+		map.housefile = nstr(_name.GetFullName());
+
+		map.unnamed = false;
+	}
+
+	// File object to convert between local paths etc.
+	FileName converter;
+	converter.Assign(wxstr(savefile));
+	std::string map_path = nstr(converter.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME));
+
+	// Make temporary backups
+	//converter.Assign(wxstr(savefile));
+	std::string backup_otbm, backup_house, backup_spawn;
+
+	if(converter.FileExists()) {
+		backup_otbm = map_path + nstr(converter.GetName()) + ".otbm~";
+		std::remove(backup_otbm.c_str());
+		std::rename(savefile.c_str(), backup_otbm.c_str());
+	}
+
+	converter.SetFullName(wxstr(map.housefile));
+	if(converter.FileExists()) {
+		backup_house = map_path + nstr(converter.GetName()) + ".xml~";
+		std::remove(backup_house.c_str());
+		std::rename((map_path + map.housefile).c_str(), backup_house.c_str());
+	}
+
+	converter.SetFullName(wxstr(map.spawnfile));
+	if(converter.FileExists()) {
+		backup_spawn = map_path + nstr(converter.GetName()) + ".xml~";
+		std::remove(backup_spawn.c_str());
+		std::rename((map_path + map.spawnfile).c_str(), backup_spawn.c_str());
+	}
+
+	// Save the map
+	{
+		std::string n = nstr(GetLocalDataDirectory()) + ".saving.txt";
+		std::ofstream f(n.c_str(), std::ios::trunc | std::ios::out);
+		f <<
+			backup_otbm << std::endl <<
+			backup_house << std::endl <<
+			backup_spawn << std::endl;
+	}
+
+	{
+		// Set up the Map paths
+		wxFileName fn = wxstr(savefile);
+		map.filename = fn.GetFullPath().mb_str(wxConvUTF8);
+		map.name = fn.GetFullName().mb_str(wxConvUTF8);
+
+		if(showdialog)
+			CreateLoadBar("Saving OTBM map...");
+
+		// Perform the actual save
+		IOMapOTBM mapsaver(map.getVersion());
+		bool success = mapsaver.saveMap(map, fn);
+
+		if(showdialog)
+			DestroyLoadBar();
+
+		// Check for errors...
+		if(!success) {
+			// Rename the temporary backup files back to their previous names
+			if(!backup_otbm.empty()) {
+				converter.SetFullName(wxstr(savefile));
+				std::string otbm_filename = map_path + nstr(converter.GetName());
+				std::rename(backup_otbm.c_str(), std::string(otbm_filename + ".otbm").c_str());
+			}
+
+			if(!backup_house.empty()) {
+				converter.SetFullName(wxstr(map.housefile));
+				std::string house_filename = map_path + nstr(converter.GetName());
+				std::rename(backup_house.c_str(), std::string(house_filename + ".xml").c_str());
+			}
+
+			if(!backup_spawn.empty()) {
+				converter.SetFullName(wxstr(map.spawnfile));
+				std::string spawn_filename = map_path + nstr(converter.GetName());
+				std::rename(backup_spawn.c_str(), std::string(spawn_filename + ".xml").c_str());
+			}
+
+			// Display the error
+			PopupDialog("Error", "Could not save, unable to open target for writing.", wxOK);
+		}
+
+		// Remove temporary save runfile
+		{
+			std::string n = nstr(GetLocalDataDirectory()) + ".saving.txt";
+			std::remove(n.c_str());
+		}
+
+		if(!success)
+			return;
+	}
+
+	// Move to permanent backup
+	if(!save_as && g_settings.getInteger(Config::ALWAYS_MAKE_BACKUP)) {
+		// Move temporary backups to their proper files
+		time_t t = time(nullptr);
+		tm* current_time = localtime(&t);
+		ASSERT(current_time);
+
+		std::ostringstream date;
+		date << (1900 + current_time->tm_year);
+		if(current_time->tm_mon < 9)
+			date << "-" << "0" << current_time->tm_mon+1;
+		else
+			date << "-" << current_time->tm_mon+1;
+		date << "-" << current_time->tm_mday;
+		date << "-" << current_time->tm_hour;
+		date << "-" << current_time->tm_min;
+		date << "-" << current_time->tm_sec;
+
+		if(!backup_otbm.empty()) {
+			converter.SetFullName(wxstr(savefile));
+			std::string otbm_filename = map_path + nstr(converter.GetName());
+			std::rename(backup_otbm.c_str(), std::string(otbm_filename + "." + date.str() + ".otbm").c_str());
+		}
+
+		if(!backup_house.empty()) {
+			converter.SetFullName(wxstr(map.housefile));
+			std::string house_filename = map_path + nstr(converter.GetName());
+			std::rename(backup_house.c_str(), std::string(house_filename + "." + date.str() + ".xml").c_str());
+		}
+
+		if(!backup_spawn.empty()) {
+			converter.SetFullName(wxstr(map.spawnfile));
+			std::string spawn_filename = map_path + nstr(converter.GetName());
+			std::rename(backup_spawn.c_str(), std::string(spawn_filename + "." + date.str() + ".xml").c_str());
+		}
+	} else {
+		// Delete the temporary files
+		std::remove(backup_otbm.c_str());
+		std::remove(backup_house.c_str());
+		std::remove(backup_spawn.c_str());
+	}
+
+	clearChanges();
+}
+#endif
+
+double Editor::GetCurrentZoom()
+{
+	return mapWindow->GetCanvas()->GetZoom();
+}
+
+void Editor::SetCurrentZoom(double zoom)
+{
+	mapWindow->GetCanvas()->SetZoom(zoom);
+}
+
+void Editor::FitViewToMap()
+{
+	mapWindow->FitToMap();
+}
+
+void Editor::AddPendingMapEvent(wxEvent &event)
+{
+	mapWindow->GetEventHandler()->AddPendingEvent(event);
+}
+
+void Editor::AddPendingCanvasEvent(wxEvent &event)
+{
+	mapWindow->GetCanvas()->GetEventHandler()->AddPendingEvent(event);
 }
 
 void Editor::LoadPerspective()
@@ -754,10 +862,10 @@ PaletteWindow* Editor::NewPalette()
 	return CreatePalette();
 }
 
-void Editor::RefreshPalettes(Map* m, bool usedefault)
+void Editor::RefreshPalettes()
 {
 	for(auto&palette : palettes) {
-		palette->OnUpdate(m? m : (usedefault? (IsProjectOpen() ? &GetCurrentMap() : nullptr): nullptr));
+		palette->OnUpdate(&map);
 	}
 	SelectBrush();
 
@@ -772,7 +880,7 @@ void Editor::RefreshOtherPalettes(PaletteWindow* p)
 {
 	for(auto &palette : palettes) {
 		if(palette != p)
-			palette->OnUpdate(IsProjectOpen() ? &GetCurrentMap() : nullptr);
+			palette->OnUpdate(&map);
 	}
 	SelectBrush();
 }
@@ -817,7 +925,7 @@ void Editor::RebuildPalettes()
 	// Use a temporary list for iterating
 	std::list<PaletteWindow*> tmp = palettes;
 	for(auto &piter : tmp) {
-		piter->ReloadSettings(IsProjectOpen() ? &GetCurrentMap() : nullptr);
+		piter->ReloadSettings(&map);
 	}
 	aui_manager->Update();
 }
@@ -912,7 +1020,7 @@ bool Editor::IsMinimapVisible() const
 
 void Editor::RefreshView()
 {
-	mapwindow->Refresh();
+	mapWindow->Refresh();
 }
 
 void Editor::CreateLoadBar(wxString message, bool canCancel /* = false */ )
@@ -1014,9 +1122,9 @@ void Editor::OnWelcomeDialogClosed(wxCloseEvent &event)
 void Editor::OnWelcomeDialogAction(wxCommandEvent &event)
 {
     if(event.GetId() == wxID_NEW) {
-        NewMap();
+        NewProject();
     } else if(event.GetId() == wxID_OPEN) {
-        LoadMap(FileName(event.GetString()));
+        OpenProject(FileName(event.GetString()));
     }
 }
 
@@ -1028,9 +1136,7 @@ void Editor::UpdateMenubar()
 
 void Editor::SetScreenCenterPosition(const Position& position, bool showIndicator)
 {
-	MapTab* mapTab = GetCurrentMapTab();
-	if(mapTab)
-		mapTab->SetScreenCenterPosition(position, showIndicator);
+	mapWindow->SetScreenCenterPosition(position, showIndicator);
 }
 
 void Editor::DoCut()
@@ -1038,11 +1144,7 @@ void Editor::DoCut()
 	if(!IsSelectionMode())
 		return;
 
-	Editor* editor = GetCurrentEditor();
-	if(!editor)
-		return;
-
-	editor->copybuffer.cut(*editor, GetCurrentFloor());
+	copybuffer.cut(GetCurrentFloor());
 	RefreshView();
 	UpdateMenubar();
 }
@@ -1052,42 +1154,30 @@ void Editor::DoCopy()
 	if(!IsSelectionMode())
 		return;
 
-	Editor* editor = GetCurrentEditor();
-	if(!editor)
-		return;
-
-	editor->copybuffer.copy(*editor, GetCurrentFloor());
+	copybuffer.copy(GetCurrentFloor());
 	RefreshView();
 	UpdateMenubar();
 }
 
 void Editor::DoPaste()
 {
-	MapTab* mapTab = GetCurrentMapTab();
-	if(mapTab)
-		copybuffer.paste(*mapTab->GetEditor(), mapTab->GetCanvas()->GetCursorPosition());
+	copybuffer.paste(mapWindow->GetCanvas()->GetCursorPosition());
 }
 
 void Editor::PreparePaste()
 {
-	Editor* editor = GetCurrentEditor();
-	if(editor) {
-		SetSelectionMode();
-		Selection& selection = editor->getSelection();
-		selection.start();
-		selection.clear();
-		selection.finish();
-		StartPasting();
-		RefreshView();
-	}
+	SetSelectionMode();
+	selection.start();
+	selection.clear();
+	selection.finish();
+	StartPasting();
+	RefreshView();
 }
 
 void Editor::StartPasting()
 {
-	if(GetCurrentEditor()) {
-		pasting = true;
-		secondary_map = &copybuffer.getBufferMap();
-	}
+	pasting = true;
+	secondary_map = &copybuffer.getBufferMap();
 }
 
 void Editor::EndPasting()
@@ -1098,11 +1188,11 @@ void Editor::EndPasting()
 	}
 }
 
-bool Editor::DoUndo(int numActions /*= 1*/)
+void Editor::DoUndo(int numActions /*= 1*/)
 {
 	if(canUndo() && numActions > 0){
 		undo(numActions);
-		if(editor->hasSelection())
+		if(hasSelection())
 			SetSelectionMode();
 		SetStatusText("Undo action");
 		UpdateMinimap();
@@ -1111,11 +1201,11 @@ bool Editor::DoUndo(int numActions /*= 1*/)
 	}
 }
 
-bool Editor::DoRedo(int numActions /*= 1*/)
+void Editor::DoRedo(int numActions /*= 1*/)
 {
 	if(canRedo() && numActions > 0) {
-		editor->redo(numActions);
-		if(editor->hasSelection())
+		redo(numActions);
+		if(hasSelection())
 			SetSelectionMode();
 		SetStatusText("Redo action");
 		UpdateMinimap();
@@ -1126,22 +1216,17 @@ bool Editor::DoRedo(int numActions /*= 1*/)
 
 int Editor::GetCurrentFloor()
 {
-	MapTab* tab = GetCurrentMapTab();
-	ASSERT(tab);
-	return tab->GetCanvas()->GetFloor();
+	return mapWindow->GetCanvas()->GetFloor();
 }
 
 void Editor::ChangeFloor(int new_floor)
 {
-	MapTab* tab = GetCurrentMapTab();
-	if(tab) {
-		int old_floor = GetCurrentFloor();
-		if(new_floor < rme::MapMinLayer || new_floor > rme::MapMaxLayer)
-			return;
+	int old_floor = GetCurrentFloor();
+	if(new_floor < rme::MapMinLayer || new_floor > rme::MapMaxLayer)
+		return;
 
-		if(old_floor != new_floor)
-			tab->GetCanvas()->ChangeFloor(new_floor);
-	}
+	if(old_floor != new_floor)
+		mapWindow->GetCanvas()->ChangeFloor(new_floor);
 }
 
 void Editor::SetStatusText(wxString text)
@@ -1154,52 +1239,16 @@ void Editor::SetTitle(wxString title)
 	if(root == nullptr)
 		return;
 
-#ifdef NIGHTLY_BUILD
-#  ifdef SVN_BUILD
-#     define TITLE_APPEND (wxString(" (Nightly Build #") << i2ws(SVN_BUILD) << ")")
-#  else
-#     define TITLE_APPEND (wxString(" (Nightly Build)"))
-#  endif
-#else
-#  ifdef SVN_BUILD
-#     define TITLE_APPEND (wxString(" (Build #") << i2ws(SVN_BUILD) << ")")
-#  else
-#     define TITLE_APPEND (wxString(""))
-#  endif
-#endif
-#ifdef __EXPERIMENTAL__
-	if(title != "") {
-		root->SetTitle(title << " - Remere's Map Editor BETA" << TITLE_APPEND);
-	} else {
-		root->SetTitle(wxString("Remere's Map Editor BETA") << TITLE_APPEND);
-	}
-#elif __SNAPSHOT__
-	if(title != "") {
-		root->SetTitle(title << " - Remere's Map Editor - SNAPSHOT" << TITLE_APPEND);
-	}
-	else {
-		root->SetTitle(wxString("Remere's Map Editor - SNAPSHOT") << TITLE_APPEND);
-	}
-#else
 	if(!title.empty()) {
-		root->SetTitle(title << " - Remere's Map Editor" << TITLE_APPEND);
+		root->SetTitle(title << " - Remere's Map Editor");
 	} else {
-		root->SetTitle(wxString("Remere's Map Editor") << TITLE_APPEND);
+		root->SetTitle(wxString("Remere's Map Editor"));
 	}
-#endif
 }
 
 void Editor::UpdateTitle()
 {
-	if(tabbook->GetTabCount() > 0) {
-		SetTitle(tabbook->GetCurrentTab()->GetTitle());
-		for(int idx = 0; idx < tabbook->GetTabCount(); ++idx) {
-			if(tabbook->GetTab(idx))
-				tabbook->SetTabLabel(idx, tabbook->GetTab(idx)->GetTitle());
-		}
-	} else {
-		SetTitle("");
-	}
+	SetTitle(projectDir);
 }
 
 void Editor::UpdateMenus()
@@ -1244,7 +1293,7 @@ void Editor::SetSelectionMode()
 		secondary_map = nullptr;
 	}
 
-	mapwindow->OnSwitchEditorMode(SELECTION_MODE);
+	mapWindow->OnSwitchEditorMode(SELECTION_MODE);
 	mode = SELECTION_MODE;
 }
 
@@ -1263,7 +1312,7 @@ void Editor::SetDrawingMode()
 	selection.clear();
 	selection.finish();
 	selection.updateSelectionCount();
-	mapwindow->OnSwitchEditorMode(DRAWING_MODE);
+	mapWindow->OnSwitchEditorMode(DRAWING_MODE);
 	mode = DRAWING_MODE;
 }
 
@@ -1835,187 +1884,6 @@ void Editor::clearActions()
 {
 	actionQueue->clear();
 	UpdateActions();
-}
-
-bool Editor::hasChanges() const
-{
-	if(map.hasChanged()) {
-		if(map.getTileCount() == 0) {
-			return actionQueue->hasChanges();
-		}
-		return true;
-	}
-	return false;
-}
-
-void Editor::clearChanges()
-{
-	map.clearChanges();
-}
-
-void Editor::saveMap(FileName filename, bool showdialog)
-{
-	std::string savefile = filename.GetFullPath().mb_str(wxConvUTF8).data();
-	bool save_as = false;
-
-	if(savefile.empty()) {
-		savefile = map.filename;
-
-		FileName c1(wxstr(savefile));
-		FileName c2(wxstr(map.filename));
-		save_as = c1 != c2;
-	}
-
-	// If not named yet, propagate the file name to the auxilliary files
-	if(map.unnamed) {
-		FileName _name(filename);
-		_name.SetExt("xml");
-
-		_name.SetName(filename.GetName() + "-spawn");
-		map.spawnfile = nstr(_name.GetFullName());
-		_name.SetName(filename.GetName() + "-house");
-		map.housefile = nstr(_name.GetFullName());
-
-		map.unnamed = false;
-	}
-
-	// File object to convert between local paths etc.
-	FileName converter;
-	converter.Assign(wxstr(savefile));
-	std::string map_path = nstr(converter.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME));
-
-	// Make temporary backups
-	//converter.Assign(wxstr(savefile));
-	std::string backup_otbm, backup_house, backup_spawn;
-
-	if(converter.FileExists()) {
-		backup_otbm = map_path + nstr(converter.GetName()) + ".otbm~";
-		std::remove(backup_otbm.c_str());
-		std::rename(savefile.c_str(), backup_otbm.c_str());
-	}
-
-	converter.SetFullName(wxstr(map.housefile));
-	if(converter.FileExists()) {
-		backup_house = map_path + nstr(converter.GetName()) + ".xml~";
-		std::remove(backup_house.c_str());
-		std::rename((map_path + map.housefile).c_str(), backup_house.c_str());
-	}
-
-	converter.SetFullName(wxstr(map.spawnfile));
-	if(converter.FileExists()) {
-		backup_spawn = map_path + nstr(converter.GetName()) + ".xml~";
-		std::remove(backup_spawn.c_str());
-		std::rename((map_path + map.spawnfile).c_str(), backup_spawn.c_str());
-	}
-
-#if 0
-	// Save the map
-	{
-		std::string n = nstr(GetLocalDataDirectory()) + ".saving.txt";
-		std::ofstream f(n.c_str(), std::ios::trunc | std::ios::out);
-		f <<
-			backup_otbm << std::endl <<
-			backup_house << std::endl <<
-			backup_spawn << std::endl;
-	}
-
-	{
-		// Set up the Map paths
-		wxFileName fn = wxstr(savefile);
-		map.filename = fn.GetFullPath().mb_str(wxConvUTF8);
-		map.name = fn.GetFullName().mb_str(wxConvUTF8);
-
-		if(showdialog)
-			CreateLoadBar("Saving OTBM map...");
-
-		// Perform the actual save
-		IOMapOTBM mapsaver(map.getVersion());
-		bool success = mapsaver.saveMap(map, fn);
-
-		if(showdialog)
-			DestroyLoadBar();
-
-		// Check for errors...
-		if(!success) {
-			// Rename the temporary backup files back to their previous names
-			if(!backup_otbm.empty()) {
-				converter.SetFullName(wxstr(savefile));
-				std::string otbm_filename = map_path + nstr(converter.GetName());
-				std::rename(backup_otbm.c_str(), std::string(otbm_filename + ".otbm").c_str());
-			}
-
-			if(!backup_house.empty()) {
-				converter.SetFullName(wxstr(map.housefile));
-				std::string house_filename = map_path + nstr(converter.GetName());
-				std::rename(backup_house.c_str(), std::string(house_filename + ".xml").c_str());
-			}
-
-			if(!backup_spawn.empty()) {
-				converter.SetFullName(wxstr(map.spawnfile));
-				std::string spawn_filename = map_path + nstr(converter.GetName());
-				std::rename(backup_spawn.c_str(), std::string(spawn_filename + ".xml").c_str());
-			}
-
-			// Display the error
-			PopupDialog("Error", "Could not save, unable to open target for writing.", wxOK);
-		}
-
-		// Remove temporary save runfile
-		{
-			std::string n = nstr(GetLocalDataDirectory()) + ".saving.txt";
-			std::remove(n.c_str());
-		}
-
-		if(!success)
-			return;
-#else
-		return;
-#endif
-	}
-
-	// Move to permanent backup
-	if(!save_as && g_settings.getInteger(Config::ALWAYS_MAKE_BACKUP)) {
-		// Move temporary backups to their proper files
-		time_t t = time(nullptr);
-		tm* current_time = localtime(&t);
-		ASSERT(current_time);
-
-		std::ostringstream date;
-		date << (1900 + current_time->tm_year);
-		if(current_time->tm_mon < 9)
-			date << "-" << "0" << current_time->tm_mon+1;
-		else
-			date << "-" << current_time->tm_mon+1;
-		date << "-" << current_time->tm_mday;
-		date << "-" << current_time->tm_hour;
-		date << "-" << current_time->tm_min;
-		date << "-" << current_time->tm_sec;
-
-		if(!backup_otbm.empty()) {
-			converter.SetFullName(wxstr(savefile));
-			std::string otbm_filename = map_path + nstr(converter.GetName());
-			std::rename(backup_otbm.c_str(), std::string(otbm_filename + "." + date.str() + ".otbm").c_str());
-		}
-
-		if(!backup_house.empty()) {
-			converter.SetFullName(wxstr(map.housefile));
-			std::string house_filename = map_path + nstr(converter.GetName());
-			std::rename(backup_house.c_str(), std::string(house_filename + "." + date.str() + ".xml").c_str());
-		}
-
-		if(!backup_spawn.empty()) {
-			converter.SetFullName(wxstr(map.spawnfile));
-			std::string spawn_filename = map_path + nstr(converter.GetName());
-			std::rename(backup_spawn.c_str(), std::string(spawn_filename + "." + date.str() + ".xml").c_str());
-		}
-	} else {
-		// Delete the temporary files
-		std::remove(backup_otbm.c_str());
-		std::remove(backup_house.c_str());
-		std::remove(backup_spawn.c_str());
-	}
-
-	clearChanges();
 }
 
 bool Editor::importMiniMap(FileName filename, int import, int import_x_offset, int import_y_offset, int import_z_offset)

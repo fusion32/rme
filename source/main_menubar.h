@@ -239,7 +239,6 @@ public:
 
 	// View Menu
 	void OnToolbars(wxCommandEvent& event);
-	void OnNewView(wxCommandEvent& event);
 	void OnToggleFullscreen(wxCommandEvent& event);
 	void OnZoomIn(wxCommandEvent& event);
 	void OnZoomOut(wxCommandEvent& event);

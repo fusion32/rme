@@ -23,6 +23,7 @@
 #include "artprovider.h"
 #include "items.h"
 #include "settings.h"
+#include "map_window.h"
 
 // ============================================================================
 // ReplaceItemsButton
@@ -321,27 +322,21 @@ void ReplaceItemsDialog::OnExecuteButtonClicked(wxCommandEvent& WXUNUSED(event))
 	close_button->Enable(false);
 	progress->SetValue(0);
 
-	MapTab* tab = dynamic_cast<MapTab*>(GetParent());
-	if(!tab)
-		return;
-
-	Editor* editor = tab->GetEditor();
-
 	int done = 0;
 	for(const ReplacingItem& info : items) {
 		ItemFinder finder(info.replaceId, (uint32_t)g_settings.getInteger(Config::REPLACE_SIZE));
 
 		// search on map
-		foreach_ItemOnMap(editor->getMap(), finder, selectionOnly);
+		foreach_ItemOnMap(g_editor.map, finder, selectionOnly);
 
 		uint32_t total = 0;
 		const auto& result = finder.result;
 
 		if(!result.empty()) {
-			BatchAction* batch = editor->createBatch(ACTION_REPLACE_ITEMS);
-			Action* action = editor->createAction(batch);
+			BatchAction* batch = g_editor.createBatch(ACTION_REPLACE_ITEMS);
+			Action* action = g_editor.createAction(batch);
 			for(const auto& pair : result) {
-				Tile* new_tile = pair.first->deepCopy(editor->getMap());
+				Tile* new_tile = pair.first->deepCopy(g_editor.map);
 				int index = pair.first->getIndexOf(pair.second);
 				ASSERT(index != wxNOT_FOUND);
 				Item* item = new_tile->getItemAt(index);
@@ -351,8 +346,8 @@ void ReplaceItemsDialog::OnExecuteButtonClicked(wxCommandEvent& WXUNUSED(event))
 				total++;
 			}
 			batch->addAndCommitAction(action);
-			editor->addBatch(batch);
-			editor->updateActions();
+			g_editor.addBatch(batch);
+			g_editor.updateActions();
 		}
 
 		done++;
@@ -361,7 +356,7 @@ void ReplaceItemsDialog::OnExecuteButtonClicked(wxCommandEvent& WXUNUSED(event))
 		list->MarkAsComplete(info, total);
 	}
 
-	tab->Refresh();
+	g_editor.mapWindow->Refresh();
 	close_button->Enable(true);
 	replace_button->Enable(true);
 	with_button->Enable(true);

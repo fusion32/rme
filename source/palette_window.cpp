@@ -405,9 +405,7 @@ void PaletteWindow::OnUpdate(Map* map)
 
 void PaletteWindow::OnKey(wxKeyEvent& event)
 {
-	if(g_editor.GetCurrentTab() != nullptr) {
-		g_editor.GetCurrentMapTab()->GetEventHandler()->AddPendingEvent(event);
-	}
+	g_editor.AddPendingMapEvent(event);
 }
 
 void PaletteWindow::OnClose(wxCloseEvent& event)
