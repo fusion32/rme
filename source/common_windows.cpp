@@ -27,7 +27,6 @@
 #include "raw_brush.h"
 
 #include "palette_window.h"
-#include "gui.h"
 #include "application.h"
 #include "common_windows.h"
 #include "positionctrl.h"
@@ -46,14 +45,11 @@ BEGIN_EVENT_TABLE(MapPropertiesWindow, wxDialog)
 	EVT_BUTTON(wxID_CANCEL, MapPropertiesWindow::OnClickCancel)
 END_EVENT_TABLE()
 
-MapPropertiesWindow::MapPropertiesWindow(wxWindow* parent, MapTab* view, Editor& editor) :
+MapPropertiesWindow::MapPropertiesWindow(wxWindow* parent, MapTab* view) :
 	wxDialog(parent, wxID_ANY, "Map Properties", wxDefaultPosition, wxSize(300, 200), wxRESIZE_BORDER | wxCAPTION),
-	view(view),
-	editor(editor)
+	view(view)
 {
-	// Setup data variabels
-	const Map& map = editor.getMap();
-
+	const Map &map = g_editor.map;
 	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxFlexGridSizer* grid_sizer = newd wxFlexGridSizer(2, 10, 10);
@@ -140,7 +136,7 @@ struct MapConversionContext
 
 void MapPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 {
-	Map &map = editor.getMap();
+	Map &map = g_editor.map;
 	map.setMapDescription(nstr(description_ctrl->GetValue()));
 	map.setHouseFilename(nstr(house_filename_ctrl->GetValue()));
 	map.setSpawnFilename(nstr(spawn_filename_ctrl->GetValue()));
@@ -151,9 +147,9 @@ void MapPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 	if(new_map_width != map.getWidth() || new_map_height != map.getHeight()) {
 		map.setWidth(new_map_width);
 		map.setHeight(new_map_height);
-		g_gui.FitViewToMap(view);
+		g_editor.FitViewToMap(view);
 	}
-	g_gui.RefreshPalettes();
+	g_editor.RefreshPalettes();
 
 	EndModal(1);
 }
@@ -175,9 +171,8 @@ BEGIN_EVENT_TABLE(ImportMapWindow, wxDialog)
 	EVT_BUTTON(wxID_CANCEL, ImportMapWindow::OnClickCancel)
 END_EVENT_TABLE()
 
-ImportMapWindow::ImportMapWindow(wxWindow* parent, Editor& editor) :
-	wxDialog(parent, wxID_ANY, "Import Map", wxDefaultPosition, wxSize(420, 315)),
-	editor(editor)
+ImportMapWindow::ImportMapWindow(wxWindow* parent) :
+	wxDialog(parent, wxID_ANY, "Import Map", wxDefaultPosition, wxSize(420, 315))
 {
 	wxBoxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
 	wxStaticBoxSizer* tmpsizer;
@@ -256,7 +251,7 @@ void ImportMapWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 	if(Validate() && TransferDataFromWindow()) {
 		wxFileName fn = file_text_field->GetValue();
 		if(!fn.FileExists()) {
-			g_gui.PopupDialog(this, "Error", "The specified map file doesn't exist", wxOK);
+			g_editor.PopupDialog(this, "Error", "The specified map file doesn't exist", wxOK);
 			return;
 		}
 
@@ -277,7 +272,7 @@ void ImportMapWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 
 		EndModal(1);
 
-		editor.importMap(fn, x_offset_ctrl->GetValue(), y_offset_ctrl->GetValue(), z_offset_ctrl->GetValue(), house_import_type, spawn_import_type);
+		g_editor.importMap(fn, x_offset_ctrl->GetValue(), y_offset_ctrl->GetValue(), z_offset_ctrl->GetValue(), house_import_type, spawn_import_type);
 	}
 }
 
@@ -298,9 +293,8 @@ BEGIN_EVENT_TABLE(ExportMiniMapWindow, wxDialog)
 	EVT_CHOICE(wxID_ANY, ExportMiniMapWindow::OnExportTypeChange)
 END_EVENT_TABLE()
 
-ExportMiniMapWindow::ExportMiniMapWindow(wxWindow* parent, Editor& editor) :
-	wxDialog(parent, wxID_ANY, "Export Minimap", wxDefaultPosition, wxSize(400, 300)),
-	editor(editor)
+ExportMiniMapWindow::ExportMiniMapWindow(wxWindow* parent) :
+	wxDialog(parent, wxID_ANY, "Export Minimap", wxDefaultPosition, wxSize(400, 300))
 {
 	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
 	wxSizer* tmpsizer;
@@ -322,7 +316,7 @@ ExportMiniMapWindow::ExportMiniMapWindow(wxWindow* parent, Editor& editor) :
 	sizer->Add(tmpsizer, 0, wxALL | wxEXPAND, 5);
 
 	// File name
-	wxString mapName(editor.getMap().getName().c_str(), wxConvUTF8);
+	wxString mapName(g_editor.map.getName().c_str(), wxConvUTF8);
 	file_name_text_field = newd wxTextCtrl(this, wxID_ANY, mapName.BeforeLast('.'), wxDefaultPosition, wxDefaultSize);
 	file_name_text_field->Bind(wxEVT_KEY_UP, &ExportMiniMapWindow::OnFileNameChanged, this);
 	tmpsizer = newd wxStaticBoxSizer(wxHORIZONTAL, this, "File Name");
@@ -344,7 +338,7 @@ ExportMiniMapWindow::ExportMiniMapWindow(wxWindow* parent, Editor& editor) :
 	choices.Add("Ground Floor");
 	choices.Add("Specific Floor");
 
-	if(editor.hasSelection())
+	if(g_editor.hasSelection())
 		choices.Add("Selected Area");
 
 	// Area options
@@ -400,7 +394,7 @@ void ExportMiniMapWindow::OnFileNameChanged(wxKeyEvent& event)
 
 void ExportMiniMapWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 {
-	g_gui.CreateLoadBar("Exporting minimap...");
+	g_editor.CreateLoadBar("Exporting minimap...");
 
 	auto format = static_cast<MinimapExportFormat>(format_options->GetSelection());
 	auto mode = static_cast<MinimapExportMode>(floor_options->GetSelection());
@@ -410,12 +404,12 @@ void ExportMiniMapWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 
 	g_settings.setString(Config::MINIMAP_EXPORT_DIR, directory);
 
-	IOMinimap io(&editor, format, mode, true);
+	IOMinimap io(format, mode, true);
 	if (!io.saveMinimap(directory, file_name, floor)) {
-		g_gui.PopupDialog("Error", io.getError(), wxOK);
+		g_editor.PopupDialog("Error", io.getError(), wxOK);
 	}
 
-	g_gui.DestroyLoadBar();
+	g_editor.DestroyLoadBar();
 	EndModal(wxID_OK);
 }
 
@@ -488,7 +482,7 @@ BEGIN_EVENT_TABLE(FindDialog, wxDialog)
 END_EVENT_TABLE()
 
 FindDialog::FindDialog(wxWindow* parent, wxString title) :
-	wxDialog(g_gui.root, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, wxRESIZE_BORDER | wxCAPTION | wxCLOSE_BOX),
+	wxDialog(g_editor.root, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, wxRESIZE_BORDER | wxCAPTION | wxCLOSE_BOX),
 	idle_input_timer(this),
 	result_brush(nullptr),
 	result_id(0)
@@ -798,7 +792,7 @@ void FindDialogListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const
 		dc.DrawText("Please enter your search string.", rect.GetX() + 40, rect.GetY() + 6);
 	} else {
 		ASSERT(n < brushlist.size());
-		Sprite* spr = g_gui.gfx.getSprite(brushlist[n]->getLookID());
+		Sprite* spr = g_editor.gfx.getSprite(brushlist[n]->getLookID());
 		if(spr) {
 			spr->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetWidth(), rect.GetHeight());
 		} else {
@@ -807,7 +801,7 @@ void FindDialogListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const
 				return;
 			}
 
-			auto creatureSprite = g_gui.gfx.getCreatureSprite(creatureType->outfit.lookType);
+			auto creatureSprite = g_editor.gfx.getCreatureSprite(creatureType->outfit.lookType);
 			if (creatureSprite) {
 				creatureSprite->DrawTo(&dc, rect, creatureType->outfit);
 			}
@@ -959,11 +953,10 @@ BEGIN_EVENT_TABLE(EditTownsDialog, wxDialog)
 	EVT_BUTTON(wxID_CANCEL, EditTownsDialog::OnClickCancel)
 END_EVENT_TABLE()
 
-EditTownsDialog::EditTownsDialog(wxWindow* parent, Editor& editor) :
-	wxDialog(parent, wxID_ANY, "Towns", wxDefaultPosition, wxSize(280,330)),
-	editor(editor)
+EditTownsDialog::EditTownsDialog(wxWindow* parent) :
+	wxDialog(parent, wxID_ANY, "Towns", wxDefaultPosition, wxSize(280,330))
 {
-	const Map& map = editor.getMap();
+	const Map &map = g_editor.map;
 
 	// Create topsizer
 	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
@@ -1138,7 +1131,7 @@ void EditTownsDialog::OnListBoxChange(wxCommandEvent& event)
 void EditTownsDialog::OnClickSelectTemplePosition(wxCommandEvent& WXUNUSED(event))
 {
 	Position templepos = temple_position->GetPosition();
-	g_gui.SetScreenCenterPosition(templepos);
+	g_editor.SetScreenCenterPosition(templepos);
 }
 
 void EditTownsDialog::OnClickAdd(wxCommandEvent& WXUNUSED(event))
@@ -1174,10 +1167,10 @@ void EditTownsDialog::OnClickRemove(wxCommandEvent& WXUNUSED(event))
 		}
 		if(!town) return;
 
-		const Map& map = editor.getMap();
+		const Map &map = g_editor.map;
 		for(const auto& pair : map.houses) {
 			if(pair.second->townid == town->getID()) {
-				g_gui.PopupDialog(this, "Error", "You cannot delete a town which still has houses associated with it.", wxOK);
+				g_editor.PopupDialog(this, "Error", "You cannot delete a town which still has houses associated with it.", wxOK);
 				return;
 			}
 		}
@@ -1225,21 +1218,21 @@ void EditTownsDialog::OnClickOK(wxCommandEvent& WXUNUSED(event))
 			}
 		}
 
-		Towns& towns = editor.getMap().towns;
+		Towns &towns = g_editor.map.towns;
 
 		// Verify the newd information
 		for(std::vector<Town*>::iterator town_iter = town_list.begin(); town_iter != town_list.end(); ++town_iter) {
 			Town* town = *town_iter;
 			if(town->getName() == "") {
-				g_gui.PopupDialog(this, "Error", "You can't have a town with an empty name.", wxOK);
+				g_editor.PopupDialog(this, "Error", "You can't have a town with an empty name.", wxOK);
 				return;
 			}
 			if(!town->getTemplePosition().isValid() ||
-				town->getTemplePosition().x > editor.getMap().getWidth() ||
-				town->getTemplePosition().y > editor.getMap().getHeight()) {
+				town->getTemplePosition().x > g_editor.map.getWidth() ||
+				town->getTemplePosition().y > g_editor.map.getHeight()) {
 				wxString msg;
 				msg << "The town " << wxstr(town->getName()) << " has an invalid temple position.";
-				g_gui.PopupDialog(this, "Error", msg, wxOK);
+				g_editor.PopupDialog(this, "Error", msg, wxOK);
 				return;
 			}
 		}
@@ -1252,10 +1245,10 @@ void EditTownsDialog::OnClickOK(wxCommandEvent& WXUNUSED(event))
 			towns.addTown(*town_iter);
 		}
 		town_list.clear();
-		editor.getMap().doChange();
+		g_editor.map.doChange();
 
 		EndModal(1);
-		g_gui.RefreshPalettes();
+		g_editor.RefreshPalettes();
 	}
 }
 
@@ -1274,11 +1267,10 @@ BEGIN_EVENT_TABLE(GotoPositionDialog, wxDialog)
 	EVT_BUTTON(wxID_CANCEL, GotoPositionDialog::OnClickCancel)
 END_EVENT_TABLE()
 
-GotoPositionDialog::GotoPositionDialog(wxWindow* parent, Editor& editor) :
-	wxDialog(parent, wxID_ANY, "Go To Position", wxDefaultPosition, wxDefaultSize),
-	editor(editor)
+GotoPositionDialog::GotoPositionDialog(wxWindow* parent) :
+	wxDialog(parent, wxID_ANY, "Go To Position", wxDefaultPosition, wxDefaultSize)
 {
-	const Map& map = editor.getMap();
+	const Map &map = g_editor.map;
 
 	// create topsizer
 	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
@@ -1303,6 +1295,6 @@ void GotoPositionDialog::OnClickCancel(wxCommandEvent &)
 
 void GotoPositionDialog::OnClickOK(wxCommandEvent &)
 {
-	g_gui.SetScreenCenterPosition(posctrl->GetPosition());
+	g_editor.SetScreenCenterPosition(posctrl->GetPosition());
 	EndModal(1);
 }

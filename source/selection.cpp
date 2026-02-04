@@ -22,7 +22,6 @@
 #include "creature.h"
 #include "item.h"
 #include "editor.h"
-#include "gui.h"
 #include "settings.h"
 
 Selection::Selection(Editor& editor) :
@@ -281,7 +280,7 @@ void Selection::updateSelectionCount()
 		} else {
 			ss << size() << " tiles selected.";
 		}
-		g_gui.SetStatusText(ss);
+		g_editor.SetStatusText(ss);
 	}
 }
 

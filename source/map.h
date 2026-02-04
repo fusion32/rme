@@ -29,7 +29,6 @@
 class Map : public BaseMap
 {
 public:
-	// ctor and dtor
 	Map();
 	virtual ~Map();
 

@@ -333,3 +333,20 @@ wxColor colorFromEightBit(int color)
 	const uint8_t blue = (uint8_t)(color % 6 * 51);
 	return wxColor(red, green, blue);
 }
+
+wxString GetExecDirectory(void)
+{
+	return wxStandardPaths::Get().GetExecutablePath();
+}
+
+void SetWindowToolTip(wxWindow *a, const wxString &tooltip)
+{
+	a->SetToolTip(tooltip);
+}
+
+void SetWindowToolTip(wxWindow *a, wxWindow *b, const wxString &tooltip)
+{
+	a->SetToolTip(tooltip);
+	b->SetToolTip(tooltip);
+}
+

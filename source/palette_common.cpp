@@ -20,7 +20,7 @@
 #include "palette_common.h"
 #include "brush.h"
 #include "sprites.h"
-#include "gui.h"
+#include "editor.h"
 #include "common_windows.h"
 #include "application.h"
 #include "palette_waypoints.h"
@@ -147,13 +147,13 @@ void PalettePanel::OnSwitchIn()
 	for(ToolBarList::iterator iter = tool_bars.begin(); iter != tool_bars.end(); ++iter) {
 		(*iter)->OnSwitchIn();
 	}
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SetBrushSize(last_brush_size);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SetBrushSize(last_brush_size);
 }
 
 void PalettePanel::OnSwitchOut()
 {
-	last_brush_size = g_gui.GetBrushSize();
+	last_brush_size = g_editor.GetBrushSize();
 	for(ToolBarList::iterator iter = tool_bars.begin(); iter != tool_bars.end(); ++iter) {
 		(*iter)->OnSwitchOut();
 	}
@@ -173,7 +173,7 @@ void PalettePanel::RefreshOtherPalettes()
 
 void PalettePanel::OnRefreshTimer(wxTimerEvent&)
 {
-	g_gui.RefreshOtherPalettes(GetParentPalette());
+	g_editor.RefreshOtherPalettes(GetParentPalette());
 }
 
 // ============================================================================
@@ -359,20 +359,20 @@ void BrushSizePanel::OnUpdateBrushSize(BrushShape shape, int size)
 
 void BrushSizePanel::OnClickCircleBrush(wxCommandEvent &event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SetBrushShape(BRUSHSHAPE_CIRCLE);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SetBrushShape(BRUSHSHAPE_CIRCLE);
 }
 
 void BrushSizePanel::OnClickSquareBrush(wxCommandEvent &event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SetBrushShape(BRUSHSHAPE_SQUARE);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SetBrushShape(BRUSHSHAPE_SQUARE);
 }
 
 void BrushSizePanel::OnClickBrushSize(int which)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SetBrushSize(which);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SetBrushSize(which);
 }
 
 // ============================================================================
@@ -464,89 +464,89 @@ void BrushToolPanel::LoadAllContents()
 	if(large_icons) {
 		// Create the tool page with 32x32 icons
 
-		ASSERT(g_gui.optional_brush);
-		sub_sizer->Add(optionalBorderButton = newd BrushButton(this, g_gui.optional_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL));
+		ASSERT(g_editor.optional_brush);
+		sub_sizer->Add(optionalBorderButton = newd BrushButton(this, g_editor.optional_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL));
 			optionalBorderButton->SetToolTip("Optional Border Tool");
 
-		ASSERT(g_gui.eraser);
-		sub_sizer->Add(eraserButton = newd BrushButton(this, g_gui.eraser, RENDER_SIZE_32x32, PALETTE_TERRAIN_ERASER));
+		ASSERT(g_editor.eraser);
+		sub_sizer->Add(eraserButton = newd BrushButton(this, g_editor.eraser, RENDER_SIZE_32x32, PALETTE_TERRAIN_ERASER));
 			eraserButton->SetToolTip("Eraser");
 
-		ASSERT(g_gui.refresh_brush);
-		sub_sizer->Add(refreshBrushButton = newd BrushButton(this, g_gui.refresh_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_REFRESH_TOOL));
+		ASSERT(g_editor.refresh_brush);
+		sub_sizer->Add(refreshBrushButton = newd BrushButton(this, g_editor.refresh_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_REFRESH_TOOL));
 			refreshBrushButton->SetToolTip("Refresh Tool");
 
-		ASSERT(g_gui.nolog_brush);
-		sub_sizer->Add(nologBrushButton = newd BrushButton(this, g_gui.nolog_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_NOLOGOUT_TOOL));
+		ASSERT(g_editor.nolog_brush);
+		sub_sizer->Add(nologBrushButton = newd BrushButton(this, g_editor.nolog_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_NOLOGOUT_TOOL));
 			nologBrushButton->SetToolTip("No Logout Tool");
 
-		ASSERT(g_gui.pz_brush);
-		sub_sizer->Add(pzBrushButton = newd BrushButton(this, g_gui.pz_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_PZ_TOOL));
+		ASSERT(g_editor.pz_brush);
+		sub_sizer->Add(pzBrushButton = newd BrushButton(this, g_editor.pz_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_PZ_TOOL));
 			pzBrushButton->SetToolTip("PZ Tool");
 
 		// New row
 		size_sizer->Add(sub_sizer);
 		sub_sizer = newd wxBoxSizer(wxHORIZONTAL);
 
-		ASSERT(g_gui.normal_door_brush);
-		sub_sizer->Add(normalDoorButton = newd BrushButton(this, g_gui.normal_door_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_NORMAL_DOOR));
+		ASSERT(g_editor.normal_door_brush);
+		sub_sizer->Add(normalDoorButton = newd BrushButton(this, g_editor.normal_door_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_NORMAL_DOOR));
 			normalDoorButton->SetToolTip("Normal Door Tool");
 
-		ASSERT(g_gui.locked_door_brush);
-		sub_sizer->Add(lockedDoorButton = newd BrushButton(this, g_gui.locked_door_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_LOCKED_DOOR));
+		ASSERT(g_editor.locked_door_brush);
+		sub_sizer->Add(lockedDoorButton = newd BrushButton(this, g_editor.locked_door_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_LOCKED_DOOR));
 			lockedDoorButton->SetToolTip("Locked Door Tool");
 
-		ASSERT(g_gui.magic_door_brush);
-		sub_sizer->Add(magicDoorButton = newd BrushButton(this, g_gui.magic_door_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_MAGIC_DOOR));
+		ASSERT(g_editor.magic_door_brush);
+		sub_sizer->Add(magicDoorButton = newd BrushButton(this, g_editor.magic_door_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_MAGIC_DOOR));
 			magicDoorButton->SetToolTip("Magic Door Tool");
 
-		ASSERT(g_gui.quest_door_brush);
-		sub_sizer->Add(questDoorButton = newd BrushButton(this, g_gui.quest_door_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_QUEST_DOOR));
+		ASSERT(g_editor.quest_door_brush);
+		sub_sizer->Add(questDoorButton = newd BrushButton(this, g_editor.quest_door_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_QUEST_DOOR));
 			questDoorButton->SetToolTip("Quest Door Tool");
 
-		ASSERT(g_gui.hatch_door_brush);
-		sub_sizer->Add(hatchDoorButton = newd BrushButton(this, g_gui.hatch_door_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_HATCH_DOOR));
+		ASSERT(g_editor.hatch_door_brush);
+		sub_sizer->Add(hatchDoorButton = newd BrushButton(this, g_editor.hatch_door_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_HATCH_DOOR));
 			hatchDoorButton->SetToolTip("Hatch Window Tool");
 
-		ASSERT(g_gui.window_door_brush);
-		sub_sizer->Add(windowDoorButton = newd BrushButton(this, g_gui.window_door_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_WINDOW_DOOR));
+		ASSERT(g_editor.window_door_brush);
+		sub_sizer->Add(windowDoorButton = newd BrushButton(this, g_editor.window_door_brush, RENDER_SIZE_32x32, PALETTE_TERRAIN_WINDOW_DOOR));
 			windowDoorButton->SetToolTip("Window Tool");
 	} else {
 		// Create the tool page with 16x16 icons
 		// Create tool window #1
 
-		ASSERT(g_gui.optional_brush);
-		sub_sizer->Add(optionalBorderButton = newd BrushButton(this, g_gui.optional_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL));
+		ASSERT(g_editor.optional_brush);
+		sub_sizer->Add(optionalBorderButton = newd BrushButton(this, g_editor.optional_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL));
 			optionalBorderButton->SetToolTip("Optional Border Tool");
 
-		ASSERT(g_gui.eraser);
-		sub_sizer->Add(eraserButton = newd BrushButton(this, g_gui.eraser, RENDER_SIZE_16x16, PALETTE_TERRAIN_ERASER));
+		ASSERT(g_editor.eraser);
+		sub_sizer->Add(eraserButton = newd BrushButton(this, g_editor.eraser, RENDER_SIZE_16x16, PALETTE_TERRAIN_ERASER));
 			eraserButton->SetToolTip("Eraser");
 
 		sub_sizer->AddSpacer(20);
 
-		ASSERT(g_gui.normal_door_brush);
-		sub_sizer->Add(normalDoorButton = newd BrushButton(this, g_gui.normal_door_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_NORMAL_DOOR));
+		ASSERT(g_editor.normal_door_brush);
+		sub_sizer->Add(normalDoorButton = newd BrushButton(this, g_editor.normal_door_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_NORMAL_DOOR));
 			normalDoorButton->SetToolTip("Normal Door Tool");
 
-		ASSERT(g_gui.locked_door_brush);
-		sub_sizer->Add(lockedDoorButton = newd BrushButton(this, g_gui.locked_door_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_LOCKED_DOOR));
+		ASSERT(g_editor.locked_door_brush);
+		sub_sizer->Add(lockedDoorButton = newd BrushButton(this, g_editor.locked_door_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_LOCKED_DOOR));
 			lockedDoorButton->SetToolTip("Locked Door Tool");
 
-		ASSERT(g_gui.magic_door_brush);
-		sub_sizer->Add(magicDoorButton = newd BrushButton(this, g_gui.magic_door_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_MAGIC_DOOR));
+		ASSERT(g_editor.magic_door_brush);
+		sub_sizer->Add(magicDoorButton = newd BrushButton(this, g_editor.magic_door_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_MAGIC_DOOR));
 			magicDoorButton->SetToolTip("Magic Door Tool");
 
-		ASSERT(g_gui.quest_door_brush);
-		sub_sizer->Add(questDoorButton = newd BrushButton(this, g_gui.quest_door_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_QUEST_DOOR));
+		ASSERT(g_editor.quest_door_brush);
+		sub_sizer->Add(questDoorButton = newd BrushButton(this, g_editor.quest_door_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_QUEST_DOOR));
 			questDoorButton->SetToolTip("Quest Door Tool");
 
-		ASSERT(g_gui.hatch_door_brush);
-		sub_sizer->Add(hatchDoorButton = newd BrushButton(this, g_gui.hatch_door_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_HATCH_DOOR));
+		ASSERT(g_editor.hatch_door_brush);
+		sub_sizer->Add(hatchDoorButton = newd BrushButton(this, g_editor.hatch_door_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_HATCH_DOOR));
 			hatchDoorButton->SetToolTip("Hatch Window Tool");
 
-		ASSERT(g_gui.window_door_brush);
-		sub_sizer->Add(windowDoorButton = newd BrushButton(this, g_gui.window_door_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_WINDOW_DOOR));
+		ASSERT(g_editor.window_door_brush);
+		sub_sizer->Add(windowDoorButton = newd BrushButton(this, g_editor.window_door_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_WINDOW_DOOR));
 			windowDoorButton->SetToolTip("Window Tool");
 
 		// Next row
@@ -554,16 +554,16 @@ void BrushToolPanel::LoadAllContents()
 		sub_sizer = newd wxBoxSizer(wxHORIZONTAL);
 
 
-		ASSERT(g_gui.refresh_brush);
-		sub_sizer->Add(refreshBrushButton = newd BrushButton(this, g_gui.refresh_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_REFRESH_TOOL));
+		ASSERT(g_editor.refresh_brush);
+		sub_sizer->Add(refreshBrushButton = newd BrushButton(this, g_editor.refresh_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_REFRESH_TOOL));
 			refreshBrushButton->SetToolTip("Refresh Tool");
 
-		ASSERT(g_gui.nolog_brush);
-		sub_sizer->Add(nologBrushButton = newd BrushButton(this, g_gui.nolog_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_NOLOGOUT_TOOL));
+		ASSERT(g_editor.nolog_brush);
+		sub_sizer->Add(nologBrushButton = newd BrushButton(this, g_editor.nolog_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_NOLOGOUT_TOOL));
 			nologBrushButton->SetToolTip("No Logout Tool");
 
-		ASSERT(g_gui.pz_brush);
-		sub_sizer->Add(pzBrushButton = newd BrushButton(this, g_gui.pz_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_PZ_TOOL));
+		ASSERT(g_editor.pz_brush);
+		sub_sizer->Add(pzBrushButton = newd BrushButton(this, g_editor.pz_brush, RENDER_SIZE_16x16, PALETTE_TERRAIN_PZ_TOOL));
 			pzBrushButton->SetToolTip("PZ Tool");
 	}
 
@@ -604,54 +604,54 @@ void BrushToolPanel::DeselectAll()
 Brush* BrushToolPanel::GetSelectedBrush() const
 {
 	if(optionalBorderButton->GetValue())
-		return g_gui.optional_brush;
+		return g_editor.optional_brush;
 	if(eraserButton->GetValue())
-		return g_gui.eraser;
+		return g_editor.eraser;
 	if(normalDoorButton->GetValue())
-		return g_gui.normal_door_brush;
+		return g_editor.normal_door_brush;
 	if(lockedDoorButton->GetValue())
-		return g_gui.locked_door_brush;
+		return g_editor.locked_door_brush;
 	if(magicDoorButton->GetValue())
-		return g_gui.magic_door_brush;
+		return g_editor.magic_door_brush;
 	if(questDoorButton->GetValue())
-		return g_gui.quest_door_brush;
+		return g_editor.quest_door_brush;
 	if(hatchDoorButton->GetValue())
-		return g_gui.hatch_door_brush;
+		return g_editor.hatch_door_brush;
 	if(windowDoorButton->GetValue())
-		return g_gui.window_door_brush;
+		return g_editor.window_door_brush;
 	if(refreshBrushButton->GetValue())
-		return g_gui.refresh_brush;
+		return g_editor.refresh_brush;
 	if(nologBrushButton->GetValue())
-		return g_gui.nolog_brush;
+		return g_editor.nolog_brush;
 	if(pzBrushButton->GetValue())
-		return g_gui.pz_brush;
+		return g_editor.pz_brush;
 	return nullptr;
 }
 
 bool BrushToolPanel::SelectBrush(const Brush* whatbrush)
 {
 	BrushButton* button = nullptr;
-	if(whatbrush == g_gui.optional_brush) {
+	if(whatbrush == g_editor.optional_brush) {
 		button = optionalBorderButton;
-	} else if(whatbrush == g_gui.eraser) {
+	} else if(whatbrush == g_editor.eraser) {
 		button = eraserButton;
-	} else if(whatbrush == g_gui.normal_door_brush) {
+	} else if(whatbrush == g_editor.normal_door_brush) {
 		button = normalDoorButton;
-	} else if(whatbrush == g_gui.locked_door_brush) {
+	} else if(whatbrush == g_editor.locked_door_brush) {
 		button = lockedDoorButton;
-	} else if(whatbrush == g_gui.magic_door_brush) {
+	} else if(whatbrush == g_editor.magic_door_brush) {
 		button = magicDoorButton;
-	} else if(whatbrush == g_gui.quest_door_brush) {
+	} else if(whatbrush == g_editor.quest_door_brush) {
 		button = questDoorButton;
-	} else if(whatbrush == g_gui.hatch_door_brush) {
+	} else if(whatbrush == g_editor.hatch_door_brush) {
 		button = hatchDoorButton;
-	} else if(whatbrush == g_gui.window_door_brush) {
+	} else if(whatbrush == g_editor.window_door_brush) {
 		button = windowDoorButton;
-	} else if(whatbrush == g_gui.refresh_brush) {
+	} else if(whatbrush == g_editor.refresh_brush) {
 		button = refreshBrushButton;
-	} else if(whatbrush == g_gui.nolog_brush) {
+	} else if(whatbrush == g_editor.nolog_brush) {
 		button = nologBrushButton;
-	} else if(whatbrush == g_gui.pz_brush) {
+	} else if(whatbrush == g_editor.pz_brush) {
 		button = pzBrushButton;
 	}
 
@@ -671,68 +671,68 @@ void BrushToolPanel::OnSwitchIn()
 
 void BrushToolPanel::OnClickGravelButton(wxCommandEvent& event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush(g_gui.optional_brush);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush(g_editor.optional_brush);
 }
 
 void BrushToolPanel::OnClickEraserButton(wxCommandEvent& event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush(g_gui.eraser);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush(g_editor.eraser);
 }
 
 void BrushToolPanel::OnClickNormalDoorButton(wxCommandEvent& event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush(g_gui.normal_door_brush);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush(g_editor.normal_door_brush);
 }
 
 void BrushToolPanel::OnClickLockedDoorButton(wxCommandEvent& event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush(g_gui.locked_door_brush);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush(g_editor.locked_door_brush);
 }
 
 void BrushToolPanel::OnClickMagicDoorButton(wxCommandEvent& event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush(g_gui.magic_door_brush);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush(g_editor.magic_door_brush);
 }
 
 void BrushToolPanel::OnClickQuestDoorButton(wxCommandEvent& event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush(g_gui.quest_door_brush);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush(g_editor.quest_door_brush);
 }
 
 void BrushToolPanel::OnClickHatchDoorButton(wxCommandEvent& event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush(g_gui.hatch_door_brush);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush(g_editor.hatch_door_brush);
 }
 
 void BrushToolPanel::OnClickWindowDoorButton(wxCommandEvent& event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush(g_gui.window_door_brush);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush(g_editor.window_door_brush);
 }
 
 void BrushToolPanel::OnClickRefreshBrushButton(wxCommandEvent& event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush(g_gui.refresh_brush);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush(g_editor.refresh_brush);
 }
 
 void BrushToolPanel::OnClickNoLogoutBrushButton(wxCommandEvent& event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush(g_gui.nolog_brush);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush(g_editor.nolog_brush);
 }
 
 void BrushToolPanel::OnClickPZBrushButton(wxCommandEvent& event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush(g_gui.pz_brush);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush(g_editor.pz_brush);
 }
 
 // ============================================================================
@@ -759,7 +759,7 @@ BrushButton::~BrushButton()
 
 void BrushButton::OnKey(wxKeyEvent& event)
 {
-	g_gui.AddPendingCanvasEvent(event);
+	g_editor.AddPendingCanvasEvent(event);
 }
 
 // ============================================================================
@@ -818,20 +818,20 @@ void BrushThicknessPanel::OnScroll(wxScrollEvent& event)
 	ASSERT(event.GetPosition() <= 10);
 
 	//printf("SELECT[%d] = %d\n", event.GetPosition()-1, lookup_table[event.GetPosition()-1]);
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SetBrushThickness(true, lookup_table[event.GetPosition()-1], 100);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SetBrushThickness(true, lookup_table[event.GetPosition()-1], 100);
 }
 
 void BrushThicknessPanel::OnClickCustomThickness(wxCommandEvent& event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SetBrushThickness(event.IsChecked());
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SetBrushThickness(event.IsChecked());
 }
 
 void BrushThicknessPanel::OnSwitchIn()
 {
 	static const int lookup_table[10] = {1,2,3,5,8,13,23,35,50,80};
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SetBrushThickness(lookup_table[slider->GetValue()-1], 100);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SetBrushThickness(lookup_table[slider->GetValue()-1], 100);
 }
 

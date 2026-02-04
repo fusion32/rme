@@ -18,7 +18,7 @@
 #include "main.h"
 
 #include "creature_brush.h"
-#include "gui.h"
+#include "editor.h"
 #include "settings.h"
 #include "tile.h"
 #include "creature.h"
@@ -93,7 +93,7 @@ void CreatureBrush::draw_creature(BaseMap* map, Tile* tile)
 				tile->spawn = newd Spawn(1);
 			}
 			tile->creature = newd Creature(creature_type);
-			tile->creature->setSpawnTime(g_gui.GetSpawnTime());
+			tile->creature->setSpawnTime(g_editor.GetSpawnTime());
 		}
 	}
 }

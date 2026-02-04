@@ -18,7 +18,7 @@
 #include "main.h"
 
 #include "settings.h"
-#include "gui.h"
+#include "editor.h"
 #include "brush.h"
 #include "map_display.h"
 
@@ -378,7 +378,7 @@ void PaletteWindow::OnSwitchingPage(wxChoicebookEvent& event)
 void PaletteWindow::OnPageChanged(wxChoicebookEvent& event)
 {
 	if(!choicebook) return;
-	g_gui.SelectBrush();
+	g_editor.SelectBrush();
 }
 
 void PaletteWindow::OnUpdateBrushSize(BrushShape shape, int size)
@@ -405,8 +405,8 @@ void PaletteWindow::OnUpdate(Map* map)
 
 void PaletteWindow::OnKey(wxKeyEvent& event)
 {
-	if(g_gui.GetCurrentTab() != nullptr) {
-		g_gui.GetCurrentMapTab()->GetEventHandler()->AddPendingEvent(event);
+	if(g_editor.GetCurrentTab() != nullptr) {
+		g_editor.GetCurrentMapTab()->GetEventHandler()->AddPendingEvent(event);
 	}
 }
 

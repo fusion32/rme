@@ -21,7 +21,6 @@
 #include "settings.h"
 #include "map.h"
 #include "editor.h"
-#include "gui.h"
 
 Change::Change() : type(CHANGE_NONE), data(nullptr)
 {
@@ -93,9 +92,8 @@ uint32_t Change::memsize() const
 	return mem;
 }
 
-Action::Action(Editor& editor, ActionIdentifier ident) :
+Action::Action(ActionIdentifier ident) :
 	commited(false),
-	editor(editor),
 	type(ident)
 {
 }
@@ -131,8 +129,8 @@ size_t Action::memsize() const
 
 void Action::commit(DirtyList* dirty_list)
 {
-	Map& map = editor.getMap();
-	Selection& selection = editor.getSelection();
+	Map& map = g_editor.map;
+	Selection& selection = g_editor.selection;
 	selection.start(Selection::INTERNAL);
 
 	for (Change* change : changes) {
@@ -243,8 +241,8 @@ void Action::undo(DirtyList* dirty_list)
 	if(changes.empty())
 		return;
 
-	Map& map = editor.getMap();
-	Selection& selection = editor.getSelection();
+	Map& map = g_editor.map;
+	Selection& selection = g_editor.selection;
 	selection.start(Selection::INTERNAL);
 
 	for (Change* change : changes) {
@@ -336,8 +334,7 @@ void Action::undo(DirtyList* dirty_list)
 	commited = false;
 }
 
-BatchAction::BatchAction(Editor& editor, ActionIdentifier ident) :
-	editor(editor),
+BatchAction::BatchAction(ActionIdentifier ident) :
     timestamp(0),
     memory_size(0),
     type(ident)
@@ -444,8 +441,8 @@ void BatchAction::merge(BatchAction* other)
 	other->batch.clear();
 }
 
-ActionQueue::ActionQueue(Editor& editor) :
-	current(0), memory_size(0), editor(editor)
+ActionQueue::ActionQueue() :
+	current(0), memory_size(0)
 {
 	////
 }
@@ -460,17 +457,17 @@ ActionQueue::~ActionQueue()
 
 Action* ActionQueue::createAction(ActionIdentifier identifier) const
 {
-	return new Action(editor, identifier);
+	return new Action(identifier);
 }
 
 Action* ActionQueue::createAction(BatchAction* batch) const
 {
-	return new Action(editor, batch->getType());
+	return new Action(batch->getType());
 }
 
 BatchAction* ActionQueue::createBatch(ActionIdentifier identifier) const
 {
-	return new BatchAction(editor, identifier);
+	return new BatchAction(identifier);
 }
 
 void ActionQueue::resetTimer()
@@ -493,8 +490,8 @@ void ActionQueue::addBatch(BatchAction* batch, int stacking_delay)
 	batch->commit();
 
 	// Update title
-	if(batch->isNoSelection() && editor.getMap().doChange()) {
-		g_gui.UpdateTitle();
+	if(batch->isNoSelection() && g_editor.map.doChange()) {
+		g_editor.UpdateTitle();
 	}
 
 	if(batch->getType() == ACTION_REMOTE) {
@@ -582,8 +579,8 @@ bool ActionQueue::undo()
 		}
 
 		// Update title
-		if(batch->isNoSelection() && editor.getMap().doChange()) {
-			g_gui.UpdateTitle();
+		if(batch->isNoSelection() && g_editor.map.doChange()) {
+			g_editor.UpdateTitle();
 		}
 		return true;
 	}
@@ -600,8 +597,8 @@ bool ActionQueue::redo()
 		current++;
 
 		// Update title
-		if(batch->isNoSelection() && editor.getMap().doChange()) {
-			g_gui.UpdateTitle();
+		if(batch->isNoSelection() && g_editor.map.doChange()) {
+			g_editor.UpdateTitle();
 		}
 		return true;
 	}

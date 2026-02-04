@@ -28,7 +28,6 @@
 #include "editor.h"
 #include "creature.h"
 
-#include "gui.h"
 #include "application.h"
 #include "old_properties_window.h"
 #include "container_properties_window.h"
@@ -352,7 +351,7 @@ void OldPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 						? edit_item->getAttribute(MAXLENGTH)
 						: edit_item->getAttribute(MAXLENGTHONCE);
 				if((int)text.length() >= maxLength){
-					int ret = g_gui.PopupDialog(this, "Error", "Text is longer than the maximum supported length of this book type, do you still want to change it?", wxYES | wxNO);
+					int ret = g_editor.PopupDialog(this, "Error", "Text is longer than the maximum supported length of this book type, do you still want to change it?", wxYES | wxNO);
 					if(ret != wxID_YES) {
 						return;
 					}
@@ -374,7 +373,7 @@ void OldPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 				Position dest = destination_field->GetPosition();
 				const Tile *destTile = edit_map->getTile(dest);
 				if(!destTile || destTile->getFlag(UNPASS) || destTile->getFlag(AVOID)){
-					int ret = g_gui.PopupDialog(this, "Warning", "This teleport leads nowhere, or to an invalid location. Do you want to change the destination?", wxYES | wxNO);
+					int ret = g_editor.PopupDialog(this, "Warning", "This teleport leads nowhere, or to an invalid location. Do you want to change the destination?", wxYES | wxNO);
 					if(ret == wxID_YES) {
 						return;
 					}

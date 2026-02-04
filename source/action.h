@@ -21,8 +21,8 @@
 #include "position.h"
 
 #include <deque>
+#include <set>
 
-class Editor;
 class Tile;
 class House;
 class Waypoint;
@@ -148,11 +148,10 @@ public:
 	void redo(DirtyList* dirty_list) { commit(dirty_list); }
 
 protected:
-	Action(Editor& editor, ActionIdentifier ident);
+	Action(ActionIdentifier ident);
 
 	bool commited;
 	ChangeList changes;
-	Editor& editor;
 	ActionIdentifier type;
 
 	friend class ActionQueue;
@@ -179,7 +178,7 @@ public:
 	virtual void addAndCommitAction(Action* action);
 
 protected:
-	BatchAction(Editor& editor, ActionIdentifier ident);
+	BatchAction(ActionIdentifier ident);
 
 	virtual void commit();
 	virtual void undo();
@@ -187,7 +186,6 @@ protected:
 
 	void merge(BatchAction* other);
 
-	Editor& editor;
 	int timestamp;
 	uint32_t memory_size;
 	ActionIdentifier type;
@@ -200,7 +198,7 @@ protected:
 class ActionQueue
 {
 public:
-	ActionQueue(Editor& editor);
+	ActionQueue();
 	virtual ~ActionQueue();
 
 	typedef std::deque<BatchAction*> ActionList;
@@ -235,7 +233,6 @@ protected:
 
 	size_t current;
 	size_t memory_size;
-	Editor& editor;
 	ActionList actions;
 };
 

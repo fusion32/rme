@@ -30,7 +30,7 @@ class SelectionThread;
 class Selection
 {
 public:
-	Selection(Editor& editor);
+	Selection();
 	~Selection();
 
 	// Selects the items on the tile/tiles
@@ -86,7 +86,6 @@ public:
 	Tile* getSelectedTile() { ASSERT(size() == 1); return *tiles.begin(); }
 
 private:
-	Editor& editor;
 	BatchAction* session;
 	Action* subsession;
 	TileSet tiles;

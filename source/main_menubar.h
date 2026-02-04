@@ -283,10 +283,6 @@ protected:
 	bool checking_programmaticly;
 
 	std::map<MenuBar::ActionID, std::list<wxMenuItem*> > items;
-
-	// Hardcoded recent files
-	wxFileHistory recentFiles;
-
 	std::map<std::string, MenuBar::Action*> actions;
 
 	DECLARE_EVENT_TABLE();

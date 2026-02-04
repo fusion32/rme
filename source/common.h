@@ -29,11 +29,6 @@
 
 #define NARRAY(arr) (int)(sizeof(arr)/sizeof((arr)[0]))
 
-//
-inline bool testFlags(size_t flags, size_t test) noexcept {
-	return (flags & test) != 0;
-}
-
 int32_t uniform_random(int32_t minNumber, int32_t maxNumber);
 int32_t uniform_random(int32_t maxNumber);
 
@@ -83,5 +78,10 @@ bool posToClipboard(int fromx, int fromy, int fromz, int tox, int toy, int toz);
 wxString b2yn(bool v);
 
 wxColor colorFromEightBit(int color);
+
+wxString GetExecDirectory(void);
+void SetWindowToolTip(wxWindow *a, const wxString &tooltip);
+void SetWindowToolTip(wxWindow *a, wxWindow *b, const wxString &tooltip);
+
 
 #endif

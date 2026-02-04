@@ -21,7 +21,7 @@
 
 #include "dcbutton.h"
 #include "sprites.h"
-#include "gui.h"
+#include "editor.h"
 
 BEGIN_EVENT_TABLE(DCButton, wxPanel)
 	EVT_PAINT(DCButton::OnPaint)
@@ -60,7 +60,7 @@ DCButton::~DCButton()
 void DCButton::SetSprite(int _sprid)
 {
 	if(_sprid != 0) {
-		sprite = g_gui.gfx.getSprite(_sprid);
+		sprite = g_editor.gfx.getSprite(_sprid);
 	} else {
 		sprite = nullptr;
 	}
@@ -81,7 +81,7 @@ void DCButton::SetValue(bool val)
 	if(state == oldval) {
 		// Cheap to change value to the old one (which is done ALOT)
 		if(GetValue() && g_settings.getInteger(Config::USE_GUI_SELECTION_SHADOW)) {
-			SetOverlay(g_gui.gfx.getSprite(EDITOR_SPRITE_SELECTION_MARKER));
+			SetOverlay(g_editor.gfx.getSprite(EDITOR_SPRITE_SELECTION_MARKER));
 		} else {
 			SetOverlay(nullptr);
 		}
@@ -99,7 +99,7 @@ void DCButton::OnPaint(wxPaintEvent& event)
 {
 	wxBufferedPaintDC pdc(this);
 
-	if(g_gui.gfx.isUnloaded()) {
+	if(g_editor.gfx.isUnloaded()) {
 		return;
 	}
 

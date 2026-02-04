@@ -22,7 +22,6 @@
 #include "tile.h"
 #include "filehandle.h"
 #include "editor.h"
-#include "gui.h"
 
 #include <wx/image.h>
 #include <zlib.h>
@@ -32,8 +31,7 @@ void MinimapBlock::updateTile(int x, int y, const MinimapTile& tile)
 	m_tiles[getTileIndex(x, y)] = tile;
 }
 
-IOMinimap::IOMinimap(Editor* editor, MinimapExportFormat format, MinimapExportMode mode, bool updateLoadbar) :
-	m_editor(editor),
+IOMinimap::IOMinimap(MinimapExportFormat format, MinimapExportMode mode, bool updateLoadbar) :
 	m_format(format),
 	m_mode(mode),
 	m_updateLoadbar(updateLoadbar)
@@ -158,7 +156,7 @@ bool IOMinimap::saveImage(const std::string& directory, const std::string& name)
 
 bool IOMinimap::exportMinimap(const std::string& directory)
 {
-	auto& map = m_editor->getMap();
+	Map &map = g_editor.map;
 	if(map.size() == 0) {
 		return true;
 	}
@@ -264,8 +262,8 @@ bool IOMinimap::exportSelection(const std::string& directory, const std::string&
 	int min_z = rme::MapMaxLayer + 1;
 	int max_x = 0, max_y = 0, max_z = 0;
 
-	const auto& selection = m_editor->getSelection();
-	const auto& tiles = selection.getTiles();
+	const Selection &selection = g_editor.getSelection();
+	const auto &tiles = selection.getTiles();
 
 	for(auto tile : tiles) {
 		if(!tile || !tile->items){
@@ -303,7 +301,7 @@ bool IOMinimap::exportSelection(const std::string& directory, const std::string&
 	int image_width = max_x - min_x + 1;
 	int image_height = max_y - min_y + 1;
 	if(image_width > 2048 || image_height > 2048) {
-		g_gui.PopupDialog("Error", "Minimap size greater than 2048px.", wxOK);
+		g_editor.PopupDialog("Error", "Minimap size greater than 2048px.", wxOK);
 		return false;
 	}
 
@@ -323,7 +321,7 @@ bool IOMinimap::exportSelection(const std::string& directory, const std::string&
 			if (m_updateLoadbar) {
 				tiles_iterated++;
 				if(tiles_iterated % 8192 == 0) {
-					g_gui.SetLoadDone(int(tiles_iterated / double(tiles.size()) * 90.0));
+					g_editor.SetLoadDone(int(tiles_iterated / double(tiles.size()) * 90.0));
 				}
 			}
 
@@ -362,11 +360,11 @@ bool IOMinimap::exportSelection(const std::string& directory, const std::string&
 
 void IOMinimap::readBlocks()
 {
-	if (m_mode == MinimapExportMode::SelectedArea && !m_editor->hasSelection()) {
+	if (m_mode == MinimapExportMode::SelectedArea && !g_editor.hasSelection()) {
 		return;
 	}
 
-	auto& map = m_editor->getMap();
+	Map &map = g_editor.map;
 
 	int tiles_iterated = 0;
 	for(auto it = map.begin(); it != map.end(); ++it) {
@@ -375,7 +373,7 @@ void IOMinimap::readBlocks()
 		if (m_updateLoadbar) {
 			++tiles_iterated;
 			if (tiles_iterated % 8192 == 0) {
-				g_gui.SetLoadDone(int(tiles_iterated / double(map.size()) * 90.0));
+				g_editor.SetLoadDone(int(tiles_iterated / double(map.size()) * 90.0));
 			}
 		}
 

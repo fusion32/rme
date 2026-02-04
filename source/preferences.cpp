@@ -22,9 +22,6 @@
 
 #include "settings.h"
 #include "editor.h"
-
-#include "gui.h"
-
 #include "preferences.h"
 
 BEGIN_EVENT_TABLE(PreferencesWindow, wxDialog)
@@ -556,17 +553,17 @@ void PreferencesWindow::Apply()
 	g_settings.setInteger(Config::USE_MEMCACHED_SPRITES_TO_SAVE, use_memcached_chkbox->GetValue());
 	if(icon_background_choice->GetSelection() == 0) {
 		if(g_settings.getInteger(Config::ICON_BACKGROUND) != 0) {
-			g_gui.gfx.cleanSoftwareSprites();
+			g_editor.gfx.cleanSoftwareSprites();
 		}
 		g_settings.setInteger(Config::ICON_BACKGROUND, 0);
 	} else if(icon_background_choice->GetSelection() == 1) {
 		if(g_settings.getInteger(Config::ICON_BACKGROUND) != 88) {
-			g_gui.gfx.cleanSoftwareSprites();
+			g_editor.gfx.cleanSoftwareSprites();
 		}
 		g_settings.setInteger(Config::ICON_BACKGROUND, 88);
 	} else if(icon_background_choice->GetSelection() == 2) {
 		if(g_settings.getInteger(Config::ICON_BACKGROUND) != 255) {
-			g_gui.gfx.cleanSoftwareSprites();
+			g_editor.gfx.cleanSoftwareSprites();
 		}
 		g_settings.setInteger(Config::ICON_BACKGROUND, 255);
 	}
@@ -634,7 +631,7 @@ void PreferencesWindow::Apply()
 	g_settings.save();
 
 	if(must_restart) {
-		g_gui.PopupDialog(this, "Notice", "You must restart the editor for the changes to take effect.", wxOK);
+		g_editor.PopupDialog(this, "Notice", "You must restart the editor for the changes to take effect.", wxOK);
 	}
-	g_gui.RebuildPalettes();
+	g_editor.RebuildPalettes();
 }

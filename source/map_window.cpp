@@ -20,32 +20,25 @@
 
 #include "map_window.h"
 #include "map_display.h"
-#include "gui.h"
 #include "sprites.h"
 #include "editor.h"
 
-MapWindow::MapWindow(wxWindow* parent, Editor& editor) :
+MapWindow::MapWindow(wxWindow* parent) :
 	wxPanel(parent, PANE_MAIN),
-	editor(editor),
 	replaceItemsDialog(nullptr)
 {
-	canvas = newd MapCanvas(this, editor);
-
+	canvas = newd MapCanvas(this);
 	vScroll = newd MapScrollBar(this, MAP_WINDOW_VSCROLL, wxVERTICAL, canvas);
 	hScroll = newd MapScrollBar(this, MAP_WINDOW_HSCROLL, wxHORIZONTAL, canvas);
-
 	gem = newd DCButton(this, MAP_WINDOW_GEM, wxDefaultPosition, DC_BTN_NORMAL, RENDER_SIZE_16x16, EDITOR_SPRITE_SELECTION_GEM);
 
 	wxFlexGridSizer* topsizer = newd wxFlexGridSizer(2, 0, 0);
-
 	topsizer->AddGrowableCol(0);
 	topsizer->AddGrowableRow(0);
-
 	topsizer->Add(canvas, wxSizerFlags(1).Expand());
 	topsizer->Add(vScroll, wxSizerFlags(1).Expand());
 	topsizer->Add(hScroll, wxSizerFlags(1).Expand());
 	topsizer->Add(gem, wxSizerFlags(1));
-
 	SetSizerAndFit(topsizer);
 }
 
@@ -173,25 +166,25 @@ void MapWindow::Scroll(int x, int y, bool center)
 		int windowSizeX, windowSizeY;
 
 		canvas->GetSize(&windowSizeX, &windowSizeY);
-		x -= int((windowSizeX * g_gui.GetCurrentZoom()) / 2.0);
-		y -= int((windowSizeY * g_gui.GetCurrentZoom()) / 2.0);
+		x -= int((windowSizeX * g_editor.GetCurrentZoom()) / 2.0);
+		y -= int((windowSizeY * g_editor.GetCurrentZoom()) / 2.0);
 	}
 
 	hScroll->SetThumbPosition(x);
 	vScroll->SetThumbPosition(y);
-	g_gui.UpdateMinimap();
+	g_editor.UpdateMinimap();
 }
 
 void MapWindow::ScrollRelative(int x, int y)
 {
 	hScroll->SetThumbPosition(hScroll->GetThumbPosition()+x);
 	vScroll->SetThumbPosition(vScroll->GetThumbPosition()+y);
-	g_gui.UpdateMinimap();
+	g_editor.UpdateMinimap();
 }
 
 void MapWindow::OnGem(wxCommandEvent& WXUNUSED(event))
 {
-	g_gui.SwitchMode();
+	g_editor.SwitchMode();
 }
 
 void MapWindow::OnSize(wxSizeEvent& event)
@@ -240,3 +233,13 @@ void MapWindow::OnScrollPageUp(wxScrollEvent& event)
 		ScrollRelative(0,-5*96);
 	Refresh();
 }
+
+void MapWindow::OnSwitchEditorMode(EditorMode mode)
+{
+	gem->SetSprite(mode == DRAWING_MODE ? EDITOR_SPRITE_DRAWING_GEM : EDITOR_SPRITE_SELECTION_GEM);
+	if(mode == SELECTION_MODE)
+		canvas->EnterSelectionMode();
+	else
+		canvas->EnterDrawingMode();
+}
+

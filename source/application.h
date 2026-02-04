@@ -18,7 +18,7 @@
 #ifndef RME_APPLICATION_H_
 #define RME_APPLICATION_H_
 
-#include "gui.h"
+#include "editor.h"
 #include "main_toolbar.h"
 #include "action.h"
 #include "settings.h"

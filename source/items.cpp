@@ -18,7 +18,7 @@
 #include "main.h"
 
 #include "materials.h"
-#include "gui.h"
+#include "editor.h"
 #include "script.h"
 
 #include "items.h"

@@ -20,6 +20,7 @@
 #include "application.h"
 #include "sprites.h"
 #include "editor.h"
+#include "map_window.h"
 #include "common_windows.h"
 #include "palette_window.h"
 #include "preferences.h"
@@ -105,9 +106,6 @@ bool Application::OnInit()
 	mt_seed(time(nullptr));
 	srand(time(nullptr));
 
-	// Discover data directory
-	g_gui.discoverDataDirectory("clients.xml");
-
 	// Tell that we are the real thing
 	wxAppConsole::SetInstance(this);
 	wxArtProvider::Push(new ArtProvider());
@@ -122,7 +120,7 @@ bool Application::OnInit()
 	// Load some internal stuff
 	g_settings.load();
 	FixVersionDiscrapencies();
-	g_gui.LoadHotkeys();
+	g_editor.LoadHotkeys();
 
 #ifdef _USE_PROCESS_COM
 	m_single_instance_checker = newd wxSingleInstanceChecker; //Instance checker has to stay alive throughout the applications lifetime
@@ -153,7 +151,7 @@ bool Application::OnInit()
 	wxImage::AddHandler(newd wxJPEGHandler);
 	wxImage::AddHandler(newd wxTGAHandler);
 
-	g_gui.gfx.loadEditorSprites();
+	g_editor.gfx.loadEditorSprites();
 
 #ifndef __DEBUG_MODE__
 	//wxHandleFatalExceptions(true);
@@ -164,19 +162,19 @@ bool Application::OnInit()
 		m_file_to_open = argv[1];
 	}
 
-    g_gui.root = newd MainFrame(__W_RME_APPLICATION_NAME__, wxDefaultPosition, wxSize(700, 500));
-	SetTopWindow(g_gui.root);
-	g_gui.SetTitle("");
-	g_gui.LoadRecentFiles();
-	g_gui.LoadPerspective();
+    g_editor.root = newd MainFrame(__W_RME_APPLICATION_NAME__, wxDefaultPosition, wxSize(700, 500));
+	SetTopWindow(g_editor.root);
+	g_editor.SetTitle("");
+	g_editor.LoadRecentFiles();
+	g_editor.LoadPerspective();
 
     wxIcon icon(rme_icon);
-    g_gui.root->SetIcon(icon);
+    g_editor.root->SetIcon(icon);
 
     if(g_settings.getInteger(Config::WELCOME_DIALOG) == 1 && m_file_to_open == wxEmptyString) {
-        g_gui.ShowWelcomeDialog(icon);
+        g_editor.ShowWelcomeDialog(icon);
     } else {
-        g_gui.root->Show();
+        g_editor.root->Show();
     }
 
 	// Set idle event handling mode
@@ -191,7 +189,7 @@ bool Application::OnInit()
 	// Check for updates
 #ifdef _USE_UPDATER_
 	if(g_settings.getInteger(Config::USE_UPDATER) == -1) {
-		int ret = g_gui.PopupDialog(
+		int ret = g_editor.PopupDialog(
 			"Notice",
 			"Do you want the editor to automatically check for updates?\n"
 			"It will connect to the internet if you choose yes.\n"
@@ -204,82 +202,32 @@ bool Application::OnInit()
 	}
 	if(g_settings.getInteger(Config::USE_UPDATER) == 1) {
 		UpdateChecker updater;
-		updater.connect(g_gui.root);
+		updater.connect(g_editor.root);
 	}
 #endif
 
-	FileName save_failed_file = GUI::GetLocalDataDirectory();
-	save_failed_file.SetName(".saving.txt");
-	if(save_failed_file.FileExists()) {
-		std::ifstream f(nstr(save_failed_file.GetFullPath()).c_str(), std::ios::in);
-
-		std::string backup_otbm, backup_house, backup_spawn;
-
-		getline(f, backup_otbm);
-		getline(f, backup_house);
-		getline(f, backup_spawn);
-
-		// Remove the file
-		f.close();
-		std::remove(nstr(save_failed_file.GetFullPath()).c_str());
-
-		// Query file retrieval if possible
-		if(!backup_otbm.empty()) {
-            long ret = g_gui.PopupDialog(
-				"Editor Crashed",
-				wxString(
-					"IMPORTANT! THE EDITOR CRASHED WHILE SAVING!\n\n"
-					"Do you want to recover the lost map? (it will be opened immediately):\n") <<
-					wxstr(backup_otbm) << "\n" <<
-					wxstr(backup_house) << "\n" <<
-					wxstr(backup_spawn) << "\n",
-				wxYES | wxNO);
-
-			if(ret == wxID_YES) {
-				// Recover if the user so wishes
-				std::remove(backup_otbm.substr(0, backup_otbm.size() - 1).c_str());
-				std::rename(backup_otbm.c_str(), backup_otbm.substr(0, backup_otbm.size() - 1).c_str());
-
-				if(!backup_house.empty()) {
-					std::remove(backup_house.substr(0, backup_house.size() - 1).c_str());
-					std::rename(backup_house.c_str(), backup_house.substr(0, backup_house.size() - 1).c_str());
-				}
-				if(!backup_spawn.empty()) {
-					std::remove(backup_spawn.substr(0, backup_spawn.size() - 1).c_str());
-					std::rename(backup_spawn.c_str(), backup_spawn.substr(0, backup_spawn.size() - 1).c_str());
-				}
-
-				// Load the map
-				g_gui.LoadMap(wxstr(backup_otbm.substr(0, backup_otbm.size() - 1)));
-				return true;
-			}
-		}
-	}
     // Keep track of first event loop entry
     m_startup = true;
 	return true;
 }
 
 void Application::OnEventLoopEnter(wxEventLoopBase* loop) {
-
-    //First startup?
+	// TODO(fusion): Is this flag even required?
     if(!m_startup)
         return;
     m_startup = false;
 
-    //Open a map.
     if(m_file_to_open != wxEmptyString) {
-        g_gui.LoadMap(FileName(m_file_to_open));
-    } else if(!g_gui.IsWelcomeDialogShown() && g_gui.NewMap()) { //Open a new empty map
-        // You generally don't want to save this map...
-        g_gui.GetCurrentEditor()->clearChanges();
+        g_editor.OpenProject(FileName(m_file_to_open));
+    } else if(!g_editor.IsWelcomeDialogShown()) {
+		g_editor.OpenProject(); //g_editor.NewProject();
     }
 }
 
 void Application::MacOpenFiles(const wxArrayString& fileNames)
 {
 	if(!fileNames.IsEmpty()) {
-		g_gui.LoadMap(FileName(fileNames.Item(0)));
+		g_editor.OpenProject(FileName(fileNames.Item(0)));
 	}
 }
 
@@ -305,13 +253,12 @@ void Application::FixVersionDiscrapencies()
 
 void Application::Unload()
 {
-	g_gui.CloseAllEditors();
-	g_gui.UnloadVersion();
-	g_gui.SaveHotkeys();
-	g_gui.SavePerspective();
-	g_gui.SaveRecentFiles();
+	g_editor.CloseProject();
+	g_editor.SaveHotkeys();
+	g_editor.SavePerspective();
+	g_editor.SaveRecentFiles();
 	g_settings.save(true);
-	g_gui.root = nullptr;
+	g_editor.root = nullptr;
 }
 
 int Application::OnExit()
@@ -340,26 +287,20 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
     #endif
 
 	// Creates the file-dropdown menu
-	wxArrayString warnings;
-	wxString error;
-
-	wxFileName filename;
-	filename.Assign(g_gui.getFoundDataDirectory() + "menubar.xml");
-	if(!filename.FileExists())
-		filename = FileName(GUI::GetDataDirectory() + "menubar.xml");
-
-	g_gui.menubar = newd MainMenuBar(this);
-	if(!g_gui.menubar->Load(filename, warnings, error)) {
+	wxString error;         // unused?
+	wxArrayString warnings; // unused?
+	g_editor.menubar = newd MainMenuBar(this);
+	if(!g_editor.menubar->Load(GetExecDirectory() + "menubar.xml", warnings, error)) {
 		wxLogError(wxString() + "Could not load menubar.xml, editor will NOT be able to show the menu.\n");
 	}
 
-	g_gui.aui_manager = newd wxAuiManager(this);
-	g_gui.toolbar = newd MainToolBar(this, g_gui.aui_manager);
-	g_gui.mapwindow = newd MapWindow(this);
-	g_gui.aui_manager->AddPane(g_gui.mapwindow, wxAuiPaneInfo().CenterPane().Floatable(false).CloseButton(false).PaneBorder(false));
+	g_editor.aui_manager = newd wxAuiManager(this);
+	g_editor.toolbar = newd MainToolBar(this, g_editor.aui_manager);
+	g_editor.mapwindow = newd MapWindow(this);
+	g_editor.aui_manager->AddPane(g_editor.mapwindow, wxAuiPaneInfo().CenterPane().Floatable(false).CloseButton(false).PaneBorder(false));
 
-	g_gui.aui_manager->Update();
-	g_gui.UpdateMenubar();
+	g_editor.aui_manager->Update();
+	g_editor.UpdateMenubar();
 
 	wxStatusBar* statusbar = CreateStatusBar();
 	statusbar->SetFieldsCount(4);
@@ -389,7 +330,7 @@ void MainFrame::OnUpdateReceived(wxCommandEvent& event)
 	std::string url = (second_colon == data.size()? "" : data.substr(second_colon+1));
 
 	if(update == "yes") {
-		int ret = g_gui.PopupDialog(
+		int ret = g_editor.PopupDialog(
 			"Update Notice",
 			wxString("There is a newd update available (") << wxstr(verstr) <<
 			"). Do you want to go to the website and download it?",
@@ -405,21 +346,21 @@ void MainFrame::OnUpdateReceived(wxCommandEvent& event)
 
 void MainFrame::OnUpdateMenus(wxCommandEvent&)
 {
-	g_gui.UpdateMenubar();
-	g_gui.UpdateMinimap(true);
-	g_gui.UpdateTitle();
+	g_editor.UpdateMenubar();
+	g_editor.UpdateMinimap(true);
+	g_editor.UpdateTitle();
 }
 
 void MainFrame::OnUpdateActions(wxCommandEvent&)
 {
-	g_gui.toolbar->UpdateButtons();
-	g_gui.RefreshActions();
+	g_editor.toolbar->UpdateButtons();
+	g_editor.RefreshActions();
 }
 
 #ifdef __WINDOWS__
 bool MainFrame::MSWTranslateMessage(WXMSG *msg)
 {
-	if(g_gui.AreHotkeysEnabled()) {
+	if(g_editor.AreHotkeysEnabled()) {
 		if(wxFrame::MSWTranslateMessage(msg))
 			return true;
 	} else {
@@ -436,38 +377,27 @@ bool MainFrame::DoQueryClose() {
 
 bool MainFrame::DoQuerySave(bool doclose)
 {
-	if(!g_gui.IsProjectOpen()) {
+	if(!g_editor.IsProjectOpen()) {
 		return true;
 	}
 
-	Editor &editor = *g_gui.GetCurrentEditor();
-	if(g_gui.ShouldSave()) {
-		long ret = g_gui.PopupDialog(
+	if(g_editor.IsProjectDirty()) {
+		long ret = g_editor.PopupDialog(
 			"Save changes",
-			"Do you want to save your changes to \"" + wxstr(g_gui.GetCurrentMap().getName()) + "\"?",
+			"Do you want to save your changes to \"" + g_editor.projectDir + "\"?",
 			wxYES | wxNO | wxCANCEL
 		);
 
-		if(ret == wxID_YES) {
-			if(g_gui.GetCurrentMap().hasFile()) {
-				g_gui.SaveCurrentMap(true);
-			} else {
-				wxFileDialog file(this, "Save...", "", "", "*.otbm", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
-				int32_t result = file.ShowModal();
-				if(result == wxID_OK) {
-					g_gui.SaveCurrentMap(file.GetPath(), true);
-				} else {
-					return false;
-				}
-			}
-		} else if(ret == wxID_CANCEL) {
+		if(ret == wxID_CANCEL){
 			return false;
 		}
+
+		g_editor.SaveProject();
 	}
 
 	if(doclose) {
 		UnnamedRenderingLock();
-		g_gui.CloseCurrentEditor();
+		g_editor.CloseProject();
 	}
 
 	return true;
@@ -476,10 +406,10 @@ bool MainFrame::DoQuerySave(bool doclose)
 bool MainFrame::DoQueryImportCreatures()
 {
 	if(g_creatures.hasMissing()) {
-		long ret = g_gui.PopupDialog("Missing creatures", "There are missing creatures and/or NPC in the editor, do you want to load them from an OT monster/npc file?", wxYES | wxNO);
+		long ret = g_editor.PopupDialog("Missing creatures", "There are missing creatures and/or NPC in the editor, do you want to load them from an OT monster/npc file?", wxYES | wxNO);
 		if(ret == wxID_YES) {
 			do {
-				wxFileDialog dlg(g_gui.root, "Import monster/npc file", "","","*.xml", wxFD_OPEN | wxFD_MULTIPLE | wxFD_FILE_MUST_EXIST);
+				wxFileDialog dlg(g_editor.root, "Import monster/npc file", "","","*.xml", wxFD_OPEN | wxFD_MULTIPLE | wxFD_FILE_MUST_EXIST);
 				if(dlg.ShowModal() == wxID_OK) {
 					wxArrayString paths;
 					dlg.GetPaths(paths);
@@ -488,9 +418,9 @@ bool MainFrame::DoQueryImportCreatures()
 						wxArrayString warnings;
 						bool ok = g_creatures.importXMLFromOT(FileName(paths[i]), error, warnings);
 						if(ok)
-							g_gui.ListDialog("Monster loader errors", warnings);
+							g_editor.ListDialog("Monster loader errors", warnings);
 						else
-							wxMessageBox("Error OT data file \"" + paths[i] + "\".\n" + error, "Error", wxOK | wxICON_INFORMATION, g_gui.root);
+							wxMessageBox("Error OT data file \"" + paths[i] + "\".\n" + error, "Error", wxOK | wxICON_INFORMATION, g_editor.root);
 					}
 				} else {
 					break;
@@ -498,28 +428,23 @@ bool MainFrame::DoQueryImportCreatures()
 			} while(g_creatures.hasMissing());
 		}
 	}
-	g_gui.RefreshPalettes();
+	g_editor.RefreshPalettes();
 	return true;
 }
 
 void MainFrame::UpdateFloorMenu()
 {
-	g_gui.menubar->UpdateFloorMenu();
+	g_editor.menubar->UpdateFloorMenu();
 }
 
 void MainFrame::UpdateIndicatorsMenu()
 {
-	g_gui.menubar->UpdateIndicatorsMenu();
-}
-
-bool MainFrame::LoadMap(FileName name)
-{
-	return g_gui.LoadMap(name);
+	g_editor.menubar->UpdateIndicatorsMenu();
 }
 
 void MainFrame::OnExit(wxCloseEvent& event)
 {
-	while(g_gui.IsProjectOpen()) {
+	while(g_editor.IsProjectOpen()) {
 		if(!DoQuerySave()) {
 			if(event.CanVeto()) {
 				event.Veto();
@@ -529,7 +454,7 @@ void MainFrame::OnExit(wxCloseEvent& event)
 			}
 		}
 	}
-	g_gui.aui_manager->UnInit();
+	g_editor.aui_manager->UnInit();
 	((Application&)wxGetApp()).Unload();
 #ifdef __RELEASE__
 	// Hack, "crash" gracefully in release builds, let OS handle cleanup of windows

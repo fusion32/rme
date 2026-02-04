@@ -18,7 +18,7 @@
 #include "main.h"
 
 #include "palette_brushlist.h"
-#include "gui.h"
+#include "editor.h"
 #include "brush.h"
 #include "settings.h"
 
@@ -213,15 +213,15 @@ void BrushPalettePanel::OnPageChanged(wxChoicebookEvent& event)
 	if(!choicebook) {
 		return;
 	}
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush();
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush();
 }
 
 void BrushPalettePanel::OnSwitchIn() {
 	LoadCurrentContents();
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SetBrushSizeInternal(last_brush_size);
-	OnUpdateBrushSize(g_gui.GetBrushShape(), last_brush_size);
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SetBrushSizeInternal(last_brush_size);
+	OnUpdateBrushSize(g_editor.GetBrushShape(), last_brush_size);
 }
 
 // ============================================================================
@@ -372,9 +372,9 @@ void BrushPanel::OnClickListBoxRow(wxCommandEvent& event)
 	while((w = w->GetParent()) && dynamic_cast<PaletteWindow*>(w) == nullptr);
 
 	if(w)
-		g_gui.ActivatePalette(static_cast<PaletteWindow*>(w));
+		g_editor.ActivatePalette(static_cast<PaletteWindow*>(w));
 
-	g_gui.SelectBrush(tileset->brushlist[n], tileset->getType());
+	g_editor.SelectBrush(tileset->brushlist[n], tileset->getType());
 }
 
 // ============================================================================
@@ -517,8 +517,8 @@ void BrushIconBox::OnClickBrushButton(wxCommandEvent& event)
 		wxWindow* w = this;
 		while((w = w->GetParent()) && dynamic_cast<PaletteWindow*>(w) == nullptr);
 		if(w)
-			g_gui.ActivatePalette(static_cast<PaletteWindow*>(w));
-		g_gui.SelectBrush(btn->brush, tileset->getType());
+			g_editor.ActivatePalette(static_cast<PaletteWindow*>(w));
+		g_editor.SelectBrush(btn->brush, tileset->getType());
 	}
 }
 
@@ -576,7 +576,7 @@ bool BrushListBox::SelectBrush(const Brush* whatbrush)
 void BrushListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const
 {
 	ASSERT(n < tileset->size());
-	Sprite* spr = g_gui.gfx.getSprite(tileset->brushlist[n]->getLookID());
+	Sprite* spr = g_editor.gfx.getSprite(tileset->brushlist[n]->getLookID());
 	if(spr) {
 		spr->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetWidth(), rect.GetHeight());
 	}
@@ -612,8 +612,8 @@ void BrushListBox::OnKey(wxKeyEvent& event)
 			} else {
 			[[fallthrough]];
 		default:
-			if(g_gui.GetCurrentTab() != nullptr) {
-				g_gui.GetCurrentMapTab()->GetEventHandler()->AddPendingEvent(event);
+			if(g_editor.GetCurrentTab() != nullptr) {
+				g_editor.GetCurrentMapTab()->GetEventHandler()->AddPendingEvent(event);
 			}
 		}
 	}

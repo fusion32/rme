@@ -17,7 +17,7 @@
 
 #include "main.h"
 
-#include "gui.h"
+#include "editor.h"
 
 #include "about_window.h"
 #include <fstream>
@@ -249,7 +249,7 @@ void AboutWindow::OnClickLicense(wxCommandEvent& WXUNUSED(event))
 		gpl_str += ch;
 	}
 
-	g_gui.ShowTextBox(this, "License", wxstr(gpl_str.size()? gpl_str : "The COPYING.txt file is not available."));
+	g_editor.ShowTextBox(this, "License", wxstr(gpl_str.size()? gpl_str : "The COPYING.txt file is not available."));
 }
 
 void AboutWindow::OnTetris(wxCommandEvent&)
@@ -582,7 +582,7 @@ void TetrisPanel::MoveBlock(int x, int y)
 		if(y == 1) { // moving down...
 			if(block.y < 1) { // Out of bounds!
 				dead = true;
-				g_gui.PopupDialog("Game Over", "You reached a score of " + i2ws(score) + "!", wxOK);
+				g_editor.PopupDialog("Game Over", "You reached a score of " + i2ws(score) + "!", wxOK);
 				NewGame();
 				SetFocus();
 			} else {
@@ -849,7 +849,7 @@ void SnakePanel::Move(int dir)
 	if(map[nx][ny] > 0 || nx < 0 || ny < 0 || nx >= SNAKE_MAPWIDTH || ny >= SNAKE_MAPHEIGHT) {
 		// Crash
 		dead = true;
-		g_gui.PopupDialog("Game Over", "You reached a length of " + i2ws(length) + "!", wxOK);
+		g_editor.PopupDialog("Game Over", "You reached a length of " + i2ws(length) + "!", wxOK);
 		NewGame();
 		SetFocus();
 	} else {

@@ -19,7 +19,6 @@
 
 #include "copybuffer.h"
 #include "editor.h"
-#include "gui.h"
 #include "creature.h"
 #include "settings.h"
 
@@ -57,10 +56,10 @@ void CopyBuffer::clear()
 	tiles = nullptr;
 }
 
-void CopyBuffer::copy(Editor& editor, int floor)
+void CopyBuffer::copy(int floor)
 {
-	if(!editor.hasSelection()) {
-		g_gui.SetStatusText("No tiles to copy.");
+	if(!g_editor.hasSelection()) {
+		g_editor.SetStatusText("No tiles to copy.");
 		return;
 	}
 
@@ -71,7 +70,7 @@ void CopyBuffer::copy(Editor& editor, int floor)
 	int item_count = 0;
 	copyPos = Position(0xFFFF, 0xFFFF, floor);
 
-	for(Tile* tile : editor.getSelection()) {
+	for(Tile* tile : g_editor.getSelection()) {
 		++tile_count;
 
 		TileLocation* newlocation = tiles->createTileL(tile->getPosition());
@@ -110,30 +109,30 @@ void CopyBuffer::copy(Editor& editor, int floor)
 
 	std::ostringstream ss;
 	ss << "Copied " << tile_count << " tile" << (tile_count > 1 ? "s" : "") <<  " (" << item_count << " item" << (item_count > 1? "s" : "") << ")";
-	g_gui.SetStatusText(wxstr(ss.str()));
+	g_editor.SetStatusText(wxstr(ss.str()));
 }
 
-void CopyBuffer::cut(Editor& editor, int floor)
+void CopyBuffer::cut(int floor)
 {
-	if(!editor.hasSelection()) {
-		g_gui.SetStatusText("No tiles to cut.");
+	if(!g_editor.hasSelection()) {
+		g_editor.SetStatusText("No tiles to cut.");
 		return;
 	}
 
 	clear();
 	tiles = newd BaseMap();
 
-	Map& map = editor.getMap();
+	Map &map = g_editor.map;
 	int tile_count = 0;
 	int item_count = 0;
 	copyPos = Position(0xFFFF, 0xFFFF, floor);
 
-	BatchAction* batch = editor.createBatch(ACTION_CUT_TILES);
-	Action* action = editor.createAction(batch);
+	BatchAction* batch = g_editor.createBatch(ACTION_CUT_TILES);
+	Action* action = g_editor.createAction(batch);
 
 	PositionList tilestoborder;
 
-	for(Tile* tile : editor.getSelection()) {
+	for(Tile* tile : g_editor.getSelection()) {
 		tile_count++;
 
 		Tile* newtile = tile->deepCopy(map);
@@ -185,7 +184,7 @@ void CopyBuffer::cut(Editor& editor, int floor)
 	tilestoborder.unique();
 
 	if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-		action = editor.createAction(batch);
+		action = g_editor.createAction(batch);
 		for(PositionList::iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
 			TileLocation* location = map.createTileL(*it);
 			if(location->get()) {
@@ -207,24 +206,24 @@ void CopyBuffer::cut(Editor& editor, int floor)
 		batch->addAndCommitAction(action);
 	}
 
-	editor.addBatch(batch);
-	editor.updateActions();
+	g_editor.addBatch(batch);
+	g_editor.updateActions();
 
 	std::stringstream ss;
 	ss << "Cut out " << tile_count << " tile" << (tile_count > 1 ? "s" : "") <<  " (" << item_count << " item" << (item_count > 1? "s" : "") << ")";
-	g_gui.SetStatusText(wxstr(ss.str()));
+	g_editor.SetStatusText(wxstr(ss.str()));
 }
 
-void CopyBuffer::paste(Editor& editor, const Position& toPosition)
+void CopyBuffer::paste(const Position& toPosition)
 {
 	if(!tiles) {
 		return;
 	}
 
-	Map& map = editor.getMap();
+	Map &map = g_editor.map;
 
-	BatchAction* batchAction = editor.createBatch(ACTION_PASTE_TILES);
-	Action* action = editor.createAction(batchAction);
+	BatchAction* batchAction = g_editor.createBatch(ACTION_PASTE_TILES);
+	Action* action = g_editor.createAction(batchAction);
 	for(MapIterator it = tiles->begin(); it != tiles->end(); ++it) {
 		Tile* buffer_tile = (*it)->get();
 		Position pos = buffer_tile->getPosition() - copyPos + toPosition;
@@ -265,7 +264,7 @@ void CopyBuffer::paste(Editor& editor, const Position& toPosition)
 	batchAction->addAndCommitAction(action);
 
 	if(g_settings.getInteger(Config::USE_AUTOMAGIC) && g_settings.getInteger(Config::BORDERIZE_PASTE)) {
-		action = editor.createAction(batchAction);
+		action = g_editor.createAction(batchAction);
 		std::vector<Tile*> borderize_tiles;
 
 		// Go through all modified (selected) tiles (might be slow)
@@ -314,8 +313,8 @@ void CopyBuffer::paste(Editor& editor, const Position& toPosition)
 		batchAction->addAndCommitAction(action);
 	}
 
-	editor.addBatch(batchAction);
-	editor.updateActions();
+	g_editor.addBatch(batchAction);
+	g_editor.updateActions();
 }
 
 bool CopyBuffer::canPaste() const

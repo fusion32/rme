@@ -19,7 +19,6 @@
 #include "actions_history_window.h"
 #include "artprovider.h"
 #include "editor.h"
-#include "gui.h"
 
 HistoryListBox::HistoryListBox(wxWindow* parent) :
 	wxVListBox(parent, wxID_ANY)
@@ -45,15 +44,7 @@ HistoryListBox::HistoryListBox(wxWindow* parent) :
 
 void HistoryListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t index) const
 {
-	const Editor* editor = g_gui.GetCurrentEditor();
-	if(!editor) {
-		return;
-	}
-
-	const ActionQueue* actions = editor->getHistoryActions();
-	if(!actions) {
-		return;
-	}
+	ASSERT(g_editor.actionQueue != NULL);
 
 	if(IsSelected(index)) {
 		dc.SetTextForeground(*wxBLUE);
@@ -61,7 +52,7 @@ void HistoryListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t index) cons
 		dc.SetTextForeground(*wxBLACK);
 	}
 
-	const BatchAction* action = actions->getAction(index - 1);
+	const BatchAction* action = g_editor.actionQueue->getAction(index - 1);
 	if(action) {
 		const wxBitmap& bitmap = getIconBitmap(action->getType());
 		dc.DrawBitmap(bitmap, rect.GetX() + 4, rect.GetY() + 4, true);
@@ -144,24 +135,8 @@ void ActionsHistoryWindow::RefreshActions()
 	if(!IsShownOnScreen())
 		return;
 
-	const Editor* editor = g_gui.GetCurrentEditor();
-	if(!editor) {
-		list->SetItemCount(0);
-		list->Refresh();
-		return;
-	}
-
-	size_t count = 1;
-	int selection = 0;
-
-	const ActionQueue* actions = editor->getHistoryActions();
-	if(actions) {
-		count += actions->size();
-		selection += actions->getCurrentIndex();
-	}
-
-	list->SetItemCount(count);
-	list->SetSelection(selection);
+	list->SetItemCount(1 + g_editor.actionQueue->size());
+	list->SetSelection(g_editor.actionQueue->getCurrentIndex());
 	list->Refresh();
 }
 
@@ -171,13 +146,10 @@ void ActionsHistoryWindow::OnListSelected(wxCommandEvent& event)
 	if(index == wxNOT_FOUND)
 		return;
 
-	Editor* editor = g_gui.GetCurrentEditor();
-	if(editor && editor->getHistoryActions()) {
-		int current = editor->getHistoryActions()->getCurrentIndex();
-		if(index > current) {
-			editor->redo(index - current);
-		} else if (index < current) {
-			editor->undo(current - index);
-		}
+	int current = g_editor.actionQueue->getCurrentIndex();
+	if(index > current) {
+		g_editor.redo(index - current);
+	} else if (index < current) {
+		g_editor.undo(current - index);
 	}
 }

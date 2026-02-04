@@ -23,7 +23,6 @@
 #include "items.h"
 #include "creatures.h"
 
-#include "gui.h"
 #include "materials.h"
 #include "brush.h"
 #include "creature_brush.h"

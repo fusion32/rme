@@ -32,7 +32,7 @@ class DCButton;
 class MapWindow : public wxPanel
 {
 public:
-	MapWindow(wxWindow* parent, Editor& editor);
+	MapWindow(wxWindow *parent);
 	virtual ~MapWindow();
 
 	// Event handlers
@@ -78,6 +78,8 @@ public:
 	void CloseReplaceItemsDialog();
 	void OnReplaceItemsDialogClose(wxCloseEvent& event);
 
+	void OnSwitchEditorMode(EditorMode mode);
+
 protected:
 	// For internal use, call to resize the scrollbars with
 	// the newd dimensions of *this* window
@@ -85,14 +87,13 @@ protected:
 	void UpdateDialogs(bool show);
 
 protected:
-	Editor& editor;
-	DCButton* gem;
-	MapCanvas* canvas;
-	MapScrollBar* hScroll;
-	MapScrollBar* vScroll;
+	DCButton *gem;
+	MapCanvas *canvas;
+	MapScrollBar *hScroll;
+	MapScrollBar *vScroll;
 
 private:
-	ReplaceItemsDialog* replaceItemsDialog;
+	ReplaceItemsDialog *replaceItemsDialog;
 	Position previous_position;
 
 	friend class MainFrame;

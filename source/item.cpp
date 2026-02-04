@@ -20,7 +20,7 @@
 
 #include "brush.h"
 #include "graphics.h"
-#include "gui.h"
+#include "editor.h"
 #include "tile.h"
 #include "iomap.h"
 #include "item.h"
@@ -406,27 +406,27 @@ DoorBrush* Item::getDoorBrush() const
 	// Quite a horrible dependency on a global here, meh.
 	switch(door_type) {
 		case WALL_DOOR_NORMAL: {
-			door_brush = g_gui.normal_door_brush;
+			door_brush = g_editor.normal_door_brush;
 			break;
 		}
 		case WALL_DOOR_LOCKED: {
-			door_brush = g_gui.locked_door_brush;
+			door_brush = g_editor.locked_door_brush;
 			break;
 		}
 		case WALL_DOOR_QUEST: {
-			door_brush = g_gui.quest_door_brush;
+			door_brush = g_editor.quest_door_brush;
 			break;
 		}
 		case WALL_DOOR_MAGIC: {
-			door_brush = g_gui.magic_door_brush;
+			door_brush = g_editor.magic_door_brush;
 			break;
 		}
 		case WALL_WINDOW: {
-			door_brush = g_gui.window_door_brush;
+			door_brush = g_editor.window_door_brush;
 			break;
 		}
 		case WALL_HATCH_WINDOW: {
-			door_brush = g_gui.hatch_door_brush;
+			door_brush = g_editor.hatch_door_brush;
 			break;
 		}
 		default: {

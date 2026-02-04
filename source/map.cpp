@@ -17,8 +17,7 @@
 
 #include "main.h"
 
-#include "gui.h" // loadbar
-
+#include "editor.h"
 #include "map.h"
 
 Map::Map() : BaseMap(),
@@ -49,7 +48,7 @@ bool Map::open(const std::string file)
 void Map::cleanInvalidTiles(bool showdialog)
 {
 	if(showdialog)
-		g_gui.CreateLoadBar("Removing invalid tiles...");
+		g_editor.CreateLoadBar("Removing invalid tiles...");
 
 	uint64_t tiles_done = 0;
 
@@ -61,12 +60,12 @@ void Map::cleanInvalidTiles(bool showdialog)
 
 		++tiles_done;
 		if(showdialog && tiles_done % 0x10000 == 0) {
-			g_gui.SetLoadDone(int(tiles_done / double(getTileCount()) * 100.0));
+			g_editor.SetLoadDone(int(tiles_done / double(getTileCount()) * 100.0));
 		}
 	}
 
 	if(showdialog)
-		g_gui.DestroyLoadBar();
+		g_editor.DestroyLoadBar();
 }
 
 bool Map::doChange()
@@ -285,7 +284,7 @@ bool Map::exportMinimap(FileName filename, int floor /*= rme::MapGroundLayer*/, 
 			Tile* tile = (*mit)->get();
 			++tiles_iterated;
 			if(tiles_iterated % 8192 == 0 && displaydialog)
-				g_gui.SetLoadDone(int(tiles_iterated / double(tilecount) * 90.0));
+				g_editor.SetLoadDone(int(tiles_iterated / double(tilecount) * 90.0));
 
 			if(tile->empty() || tile->getZ() != floor)
 				continue;
@@ -362,7 +361,7 @@ bool Map::exportMinimap(FileName filename, int floor /*= rme::MapGroundLayer*/, 
 				fh.addU8(0);
 			}
 			if(y % 100 == 0 && displaydialog) {
-				g_gui.SetLoadDone(90 + int((minimap_height-y) / double(minimap_height) * 10.0));
+				g_editor.SetLoadDone(90 + int((minimap_height-y) / double(minimap_height) * 10.0));
 			}
 		}
 

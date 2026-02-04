@@ -55,7 +55,7 @@ public:
 class MapPropertiesWindow : public wxDialog
 {
 public:
-	MapPropertiesWindow(wxWindow* parent, MapTab* tab, Editor& editor);
+	MapPropertiesWindow(wxWindow* parent, MapTab* tab);
 	virtual ~MapPropertiesWindow();
 
 	void OnClickOK(wxCommandEvent&);
@@ -63,7 +63,6 @@ public:
 
 protected:
 	MapTab* view;
-	Editor& editor;
 	wxSpinCtrl* height_spin;
 	wxSpinCtrl* width_spin;
 	wxTextCtrl* description_ctrl;
@@ -80,15 +79,13 @@ protected:
 class ImportMapWindow : public wxDialog
 {
 public:
-	ImportMapWindow(wxWindow* parent, Editor& editor);
+	ImportMapWindow(wxWindow* parent);
 	virtual ~ImportMapWindow();
 
 	void OnClickBrowse(wxCommandEvent&);
 	void OnClickOK(wxCommandEvent&);
 	void OnClickCancel(wxCommandEvent&);
 protected:
-	Editor& editor;
-
 	wxTextCtrl* file_text_field;
 	wxSpinCtrl* x_offset_ctrl;
 	wxSpinCtrl* y_offset_ctrl;
@@ -106,7 +103,7 @@ protected:
 class ExportMiniMapWindow : public wxDialog
 {
 public:
-	ExportMiniMapWindow(wxWindow* parent, Editor& editor);
+	ExportMiniMapWindow(wxWindow* parent);
 	virtual ~ExportMiniMapWindow();
 
 	void OnClickBrowse(wxCommandEvent&);
@@ -118,8 +115,6 @@ public:
 
 protected:
 	void CheckValues();
-
-	Editor& editor;
 
 	wxChoice* format_options;
 	wxStaticText* error_field;
@@ -241,14 +236,13 @@ public:
 class GotoPositionDialog : public wxDialog
 {
 public:
-	GotoPositionDialog(wxWindow* parent, Editor& editor);
+	GotoPositionDialog(wxWindow* parent);
 	~GotoPositionDialog() {}
 
 	void OnClickOK(wxCommandEvent&);
 	void OnClickCancel(wxCommandEvent&);
 
 protected:
-	Editor& editor;
 	PositionCtrl* posctrl;
 
 	DECLARE_EVENT_TABLE();
@@ -293,7 +287,7 @@ protected:
 class EditTownsDialog : public wxDialog
 {
 public:
-	EditTownsDialog(wxWindow* parent, Editor& editor);
+	EditTownsDialog(wxWindow* parent);
 	virtual ~EditTownsDialog();
 
 	void OnListBoxChange(wxCommandEvent&);
@@ -306,8 +300,6 @@ protected:
 
 	void BuildListBox(bool doselect);
 	void UpdateSelection(int new_selection);
-
-	Editor& editor;
 
 	std::vector<Town*> town_list;
 	uint32_t max_town_id;

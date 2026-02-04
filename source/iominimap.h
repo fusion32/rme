@@ -69,7 +69,7 @@ private:
 class IOMinimap
 {
 public:
-	IOMinimap(Editor* editor, MinimapExportFormat format, MinimapExportMode mode, bool updateLoadbar);
+	IOMinimap(MinimapExportFormat format, MinimapExportMode mode, bool updateLoadbar);
 
 	bool saveMinimap(const std::string& directory, const std::string& name, int floor = -1);
 
@@ -85,7 +85,6 @@ private:
 		return ((pos.y / MMBLOCK_SIZE) * (65536 / MMBLOCK_SIZE)) + (pos.x / MMBLOCK_SIZE);
 	}
 
-	Editor* m_editor;
 	MinimapExportFormat m_format;
 	MinimapExportMode m_mode;
 	bool m_updateLoadbar = false;

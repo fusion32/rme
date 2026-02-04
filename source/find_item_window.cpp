@@ -18,7 +18,7 @@
 #include "main.h"
 #include "find_item_window.h"
 #include "common_windows.h"
-#include "gui.h"
+#include "editor.h"
 #include "items.h"
 #include "brush.h"
 #include "raw_brush.h"

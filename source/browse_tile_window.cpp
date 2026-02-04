@@ -18,11 +18,10 @@
 #include "main.h"
 
 #include "map.h"
-#include "gui.h"
+#include "editor.h"
 #include "raw_brush.h"
 #include "tile.h"
 #include "graphics.h"
-#include "gui.h"
 #include "browse_tile_window.h"
 
 // ============================================================================
@@ -61,7 +60,7 @@ void BrowseTileListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const
 		return;
 	}
 
-	Sprite* sprite = g_gui.gfx.getSprite(item->getID());
+	Sprite* sprite = g_editor.gfx.getSprite(item->getID());
 	if(sprite)
 		sprite->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetWidth(), rect.GetHeight());
 
@@ -186,7 +185,7 @@ void BrowseTileWindow::OnClickSelectRaw(wxCommandEvent& WXUNUSED(event))
 {
 	Item* item = item_list->GetSelectedItem();
 	if(item && item->getRAWBrush())
-		g_gui.SelectBrush(item->getRAWBrush(), TILESET_RAW);
+		g_editor.SelectBrush(item->getRAWBrush(), TILESET_RAW);
 
 	EndModal(1);
 }

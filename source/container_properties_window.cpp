@@ -22,7 +22,7 @@
 #include "old_properties_window.h"
 #include "properties_window.h"
 #include "find_item_window.h"
-#include "gui.h"
+#include "editor.h"
 #include "map.h"
 
 // ============================================================================
@@ -130,7 +130,7 @@ void ContainerItemButton::OnEditItem(wxCommandEvent& WXUNUSED(event))
 void ContainerItemButton::OnRemoveItem(wxCommandEvent& WXUNUSED(event))
 {
 	ASSERT(edit_item);
-	int32_t ret = g_gui.PopupDialog(GetParent(),
+	int32_t ret = g_editor.PopupDialog(GetParent(),
 		"Remove Item",
 		"Are you sure you want to remove this item from the container?",
 		wxYES | wxNO

@@ -25,7 +25,6 @@
 #endif
 
 #include "editor.h"
-#include "gui.h"
 #include "sprites.h"
 #include "creature.h"
 #include "map_drawer.h"
@@ -291,7 +290,7 @@ void MapDrawer::DrawMap()
 	int box_end_map_x = center_x + rme::ClientMapWidth;
 	int box_end_map_y = center_y + rme::ClientMapHeight + offset_y;
 
-	Brush* brush = g_gui.GetCurrentBrush();
+	Brush* brush = g_editor.GetCurrentBrush();
 
 	// The current house we're drawing
 	current_house_id = 0;
@@ -372,7 +371,7 @@ void MapDrawer::DrawSecondaryMap(int map_z)
 	if(options.ingame)
 		return;
 
-	BaseMap* secondary_map = g_gui.secondary_map;
+	BaseMap* secondary_map = g_editor.secondary_map;
 	if(!secondary_map) return;
 
 	Position normal_pos;
@@ -381,7 +380,7 @@ void MapDrawer::DrawSecondaryMap(int map_z)
 	if(canvas->isPasting()) {
 		normal_pos = editor.copybuffer.getPosition();
 	} else {
-		Brush* brush = g_gui.GetCurrentBrush();
+		Brush* brush = g_editor.GetCurrentBrush();
 		if(brush && brush->isDoodad()) {
 			normal_pos = Position(0x8000, 0x8000, 0x8);
 		}
@@ -694,11 +693,11 @@ void MapDrawer::DrawSelectionBox()
 
 void MapDrawer::DrawBrush()
 {
-	if(options.ingame || !g_gui.IsDrawingMode() || !g_gui.GetCurrentBrush()) {
+	if(options.ingame || !g_editor.IsDrawingMode() || !g_editor.GetCurrentBrush()) {
 		return;
 	}
 
-	Brush* brush = g_gui.GetCurrentBrush();
+	Brush* brush = g_editor.GetCurrentBrush();
 
 	BrushColor brushColor = COLOR_BLANK;
 	if(brush->isTerrain() || brush->isTable() || brush->isCarpet())
@@ -765,7 +764,7 @@ void MapDrawer::DrawBrush()
 			if(brush->isRaw())
 				glEnable(GL_TEXTURE_2D);
 
-			if(g_gui.GetBrushShape() == BRUSHSHAPE_SQUARE || brush->isSpawn() /* Spawn brush is always square */) {
+			if(g_editor.GetBrushShape() == BRUSHSHAPE_SQUARE || brush->isSpawn() /* Spawn brush is always square */) {
 				if(brush->isRaw() || brush->isOptionalBorder()) {
 					int start_x, end_x;
 					int start_y, end_y;
@@ -818,7 +817,7 @@ void MapDrawer::DrawBrush()
 						glVertex2f(last_click_start_sx, last_click_end_sy);
 					glEnd();
 				}
-			} else if(g_gui.GetBrushShape() == BRUSHSHAPE_CIRCLE) {
+			} else if(g_editor.GetBrushShape() == BRUSHSHAPE_CIRCLE) {
 				// Calculate drawing offsets
 				int start_x, end_x;
 				int start_y, end_y;
@@ -882,10 +881,10 @@ void MapDrawer::DrawBrush()
 		}
 	} else {
 		if(brush->isWall()) {
-			int start_map_x = mouse_map_x - g_gui.GetBrushSize();
-			int start_map_y = mouse_map_y - g_gui.GetBrushSize();
-			int end_map_x   = mouse_map_x + g_gui.GetBrushSize() + 1;
-			int end_map_y   = mouse_map_y + g_gui.GetBrushSize() + 1;
+			int start_map_x = mouse_map_x - g_editor.GetBrushSize();
+			int start_map_y = mouse_map_y - g_editor.GetBrushSize();
+			int end_map_x   = mouse_map_x + g_editor.GetBrushSize() + 1;
+			int end_map_y   = mouse_map_y + g_editor.GetBrushSize() + 1;
 
 			int start_sx = start_map_x * rme::TileSize - view_scroll_x - adjustment;
 			int start_sy = start_map_y * rme::TileSize - view_scroll_y - adjustment;
@@ -955,12 +954,12 @@ void MapDrawer::DrawBrush()
 				glDisable(GL_TEXTURE_2D);
 			}
 
-			for(int y = -g_gui.GetBrushSize()-1; y <= g_gui.GetBrushSize()+1; y++) {
+			for(int y = -g_editor.GetBrushSize()-1; y <= g_editor.GetBrushSize()+1; y++) {
 				int cy = (mouse_map_y + y) * rme::TileSize - view_scroll_y - adjustment;
-				for(int x = -g_gui.GetBrushSize()-1; x <= g_gui.GetBrushSize()+1; x++) {
+				for(int x = -g_editor.GetBrushSize()-1; x <= g_editor.GetBrushSize()+1; x++) {
 					int cx = (mouse_map_x + x) * rme::TileSize - view_scroll_x - adjustment;
-					if(g_gui.GetBrushShape() == BRUSHSHAPE_SQUARE) {
-						if(x >= -g_gui.GetBrushSize() && x <= g_gui.GetBrushSize() && y >= -g_gui.GetBrushSize() && y <= g_gui.GetBrushSize()) {
+					if(g_editor.GetBrushShape() == BRUSHSHAPE_SQUARE) {
+						if(x >= -g_editor.GetBrushSize() && x <= g_editor.GetBrushSize() && y >= -g_editor.GetBrushSize() && y <= g_editor.GetBrushSize()) {
 							if(brush->isRaw()) {
 								BlitSpriteType(cx, cy, raw_brush->getItemType()->sprite, 160, 160, 160, 160);
 							} else {
@@ -983,9 +982,9 @@ void MapDrawer::DrawBrush()
 								}
 							}
 						}
-					} else if(g_gui.GetBrushShape() == BRUSHSHAPE_CIRCLE) {
+					} else if(g_editor.GetBrushShape() == BRUSHSHAPE_CIRCLE) {
 						double distance = sqrt(double(x*x) + double(y*y));
-						if(distance < g_gui.GetBrushSize()+0.005) {
+						if(distance < g_editor.GetBrushSize()+0.005) {
 							if(brush->isRaw()) {
 								BlitSpriteType(cx, cy, raw_brush->getItemType()->sprite, 160, 160, 160, 160);
 							} else {
@@ -1293,7 +1292,7 @@ void MapDrawer::BlitCreature(int screenx, int screeny, const Outfit& outfit, Dir
 		const ItemType& type = GetItemType(outfit.lookItem);
 		BlitSpriteType(screenx, screeny, type.sprite, red, green, blue, alpha);
 	} else {
-		GameSprite* sprite = g_gui.gfx.getCreatureSprite(outfit.lookType);
+		GameSprite* sprite = g_editor.gfx.getCreatureSprite(outfit.lookType);
 		if(!sprite || outfit.lookType == 0) {
 			return;
 		}
@@ -1301,7 +1300,7 @@ void MapDrawer::BlitCreature(int screenx, int screeny, const Outfit& outfit, Dir
 		// mount and addon drawing thanks to otc code
 		int pattern_z = 0;
 		if(outfit.lookMount != 0) {
-			if(GameSprite* mountSpr = g_gui.gfx.getCreatureSprite(outfit.lookMount)) {
+			if(GameSprite* mountSpr = g_editor.gfx.getCreatureSprite(outfit.lookMount)) {
 				for(int cx = 0; cx != mountSpr->width; ++cx) {
 					for(int cy = 0; cy != mountSpr->height; ++cy) {
 						int texnum = mountSpr->getHardwareID(cx, cy, 0, 0, (int)dir, 0, 0, 0);
@@ -1630,7 +1629,7 @@ void MapDrawer::DrawTileIndicators(TileLocation* location)
 
 void MapDrawer::DrawIndicator(int x, int y, int indicator, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
-	GameSprite* sprite = g_gui.gfx.getEditorSprite(indicator);
+	GameSprite* sprite = g_editor.gfx.getEditorSprite(indicator);
 	if(sprite == nullptr)
 		return;
 

@@ -19,7 +19,7 @@
 #include "replace_items_window.h"
 #include "find_item_window.h"
 #include "graphics.h"
-#include "gui.h"
+#include "editor.h"
 #include "artprovider.h"
 #include "items.h"
 #include "settings.h"
@@ -115,8 +115,8 @@ void ReplaceItemsListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t index)
 	ASSERT(index < m_items.size());
 
 	const ReplacingItem &item = m_items.at(index);
-	Sprite *sprite1 = g_gui.gfx.getSprite(item.replaceId);
-	Sprite *sprite2 = g_gui.gfx.getSprite(item.withId);
+	Sprite *sprite1 = g_editor.gfx.getSprite(item.replaceId);
+	Sprite *sprite2 = g_editor.gfx.getSprite(item.withId);
 
 	if(sprite1 && sprite2) {
 		int x = rect.GetX();
@@ -306,7 +306,7 @@ void ReplaceItemsDialog::OnRemoveButtonClicked(wxCommandEvent& WXUNUSED(event))
 
 void ReplaceItemsDialog::OnExecuteButtonClicked(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsProjectOpen())
+	if(!g_editor.IsProjectOpen())
 		return;
 
 	const auto& items = list->GetItems();

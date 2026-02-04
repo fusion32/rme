@@ -16,7 +16,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "main.h"
-#include "gui.h"
+#include "editor.h"
 
 void IOMap::error(const wxString format, ...)
 {
@@ -38,5 +38,5 @@ void IOMap::warning(const wxString format, ...)
 
 bool IOMap::queryUser(const wxString& title, const wxString& text)
 {
-	return g_gui.PopupDialog(title, text, wxYES | wxNO) == wxID_YES;
+	return g_editor.PopupDialog(title, text, wxYES | wxNO) == wxID_YES;
 }

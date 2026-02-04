@@ -22,7 +22,7 @@
 #include "artprovider.h"
 #include "filehandle.h"
 #include "settings.h"
-#include "gui.h"
+#include "editor.h"
 #include "otml.h"
 #include "creature.h"
 
@@ -915,7 +915,7 @@ wxMemoryDC* GameSprite::getDC(SpriteSize size)
 
 		wxBitmap bmp(image);
 		dc[size] = newd wxMemoryDC(bmp);
-		g_gui.gfx.addSpriteToCleanup(this);
+		g_editor.gfx.addSpriteToCleanup(this);
 		image.Destroy();
 	}
 	return dc[size];
@@ -963,7 +963,7 @@ wxMemoryDC* GameSprite::getDC(const Outfit& outfit)
 	dc[SPRITE_SIZE_32x32] = new wxMemoryDC(bitmap);
 	image.Destroy();
 
-	g_gui.gfx.addSpriteToCleanup(this);
+	g_editor.gfx.addSpriteToCleanup(this);
 	return dc[SPRITE_SIZE_32x32];
 }
 
@@ -1017,7 +1017,7 @@ void GameSprite::Image::createGLTexture(GLuint textureId)
 	}
 
 	isGLLoaded = true;
-	g_gui.gfx.loaded_textures += 1;
+	g_editor.gfx.loaded_textures += 1;
 
 	glBindTexture(GL_TEXTURE_2D, textureId);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // Linear Filtering
@@ -1032,7 +1032,7 @@ void GameSprite::Image::createGLTexture(GLuint textureId)
 void GameSprite::Image::unloadGLTexture(GLuint textureId)
 {
 	isGLLoaded = false;
-	g_gui.gfx.loaded_textures -= 1;
+	g_editor.gfx.loaded_textures -= 1;
 	glDeleteTextures(1, &textureId);
 }
 
@@ -1077,14 +1077,14 @@ uint8_t* GameSprite::NormalImage::getRGBData()
 			return nullptr;
 		}
 
-		if(!g_gui.gfx.loadSpriteDump(dump, size, id)) {
+		if(!g_editor.gfx.loadSpriteDump(dump, size, id)) {
 			return nullptr;
 		}
 	}
 
 	const int pixels_data_size = rme::SpritePixels * rme::SpritePixels * 3;
 	uint8_t* data = newd uint8_t[pixels_data_size];
-	uint8_t bpp = g_gui.gfx.hasTransparency() ? 4 : 3;
+	uint8_t bpp = g_editor.gfx.hasTransparency() ? 4 : 3;
 	int write = 0;
 	int read = 0;
 
@@ -1127,14 +1127,14 @@ uint8_t* GameSprite::NormalImage::getRGBAData()
 			return nullptr;
 		}
 
-		if(!g_gui.gfx.loadSpriteDump(dump, size, id)) {
+		if(!g_editor.gfx.loadSpriteDump(dump, size, id)) {
 			return nullptr;
 		}
 	}
 
 	const int pixels_data_size = rme::SpritePixelsSize * 4;
 	uint8_t* data = newd uint8_t[pixels_data_size];
-	bool use_alpha = g_gui.gfx.hasTransparency();
+	bool use_alpha = g_editor.gfx.hasTransparency();
 	uint8_t bpp = use_alpha ? 4 : 3;
 	int write = 0;
 	int read = 0;
@@ -1240,8 +1240,8 @@ void GameSprite::EditorImage::createGLTexture(GLuint textureId)
 	}
 
 	isGLLoaded = true;
-	id = g_gui.gfx.getFreeTextureID();
-	g_gui.gfx.loaded_textures += 1;
+	id = g_editor.gfx.getFreeTextureID();
+	g_editor.gfx.loaded_textures += 1;
 
 	glBindTexture(GL_TEXTURE_2D, id);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // Linear Filtering
@@ -1394,7 +1394,7 @@ GLuint GameSprite::TemplateImage::getHardwareID()
 {
 	if(!isGLLoaded) {
 		if(gl_tid == 0) {
-			gl_tid = g_gui.gfx.getFreeTextureID();
+			gl_tid = g_editor.gfx.getFreeTextureID();
 		}
 		createGLTexture(gl_tid);
 		if(!isGLLoaded) {
@@ -1480,7 +1480,7 @@ FrameDuration* Animator::getFrameDuration(int frame)
 
 int Animator::getFrame()
 {
-	long time = g_gui.gfx.getElapsedTime();
+	long time = g_editor.gfx.getElapsedTime();
 	if(time != last_time && !is_complete) {
 		long elapsed = time - last_time;
 		if(elapsed >= current_duration) {
@@ -1528,7 +1528,7 @@ void Animator::setFrame(int frame)
 			current_frame = getStartFrame();
 
 		is_complete = false;
-		last_time = g_gui.gfx.getElapsedTime();
+		last_time = g_editor.gfx.getElapsedTime();
 		current_duration = getDuration(current_frame);
 		current_loop = 0;
 	} else {
@@ -1584,7 +1584,7 @@ int Animator::getLoopFrame()
 
 void Animator::calculateSynchronous()
 {
-	long time = g_gui.gfx.getElapsedTime();
+	long time = g_editor.gfx.getElapsedTime();
 	if(time > 0 && total_duration > 0) {
 		long elapsed = time % total_duration;
 		int total_time = 0;

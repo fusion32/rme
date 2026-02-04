@@ -22,7 +22,6 @@
 #include "map.h"
 #include "settings.h"
 
-#include "gui.h"
 #include "map_display.h"
 #include "minimap_window.h"
 
@@ -59,7 +58,7 @@ void MinimapWindow::OnSize(wxSizeEvent& event)
 
 void MinimapWindow::OnClose(wxCloseEvent&)
 {
-	g_gui.DestroyMinimap();
+	g_editor.DestroyMinimap();
 }
 
 void MinimapWindow::DelayedUpdate()
@@ -81,8 +80,8 @@ void MinimapWindow::OnPaint(wxPaintEvent& event)
 	pdc.SetBackground(*wxBLACK_BRUSH);
 	pdc.Clear();
 
-	if(!g_gui.IsProjectOpen()) return;
-	Editor& editor = *g_gui.GetCurrentEditor();
+	if(!g_editor.IsProjectOpen()) return;
+	Editor& editor = *g_editor.GetCurrentEditor();
 	const Map& map = editor.getMap();
 
 	int window_width = GetSize().GetWidth();
@@ -90,7 +89,7 @@ void MinimapWindow::OnPaint(wxPaintEvent& event)
 	//printf("W:%d\tH:%d\n", window_width, window_height);
 	int center_x, center_y;
 
-	MapCanvas* canvas = g_gui.GetCurrentMapTab()->GetCanvas();
+	MapCanvas* canvas = g_editor.GetCurrentMapTab()->GetCanvas();
 	canvas->GetScreenCenter(&center_x, &center_y);
 
 	int start_x, start_y;
@@ -124,11 +123,11 @@ void MinimapWindow::OnPaint(wxPaintEvent& event)
 	last_start_x = start_x;
 	last_start_y = start_y;
 
-	int floor = g_gui.GetCurrentFloor();
+	int floor = g_editor.GetCurrentFloor();
 
 	//printf("Draw from %d:%d to %d:%d\n", start_x, start_y, end_x, end_y);
 	uint8_t last = 0;
-	if(g_gui.IsRenderingEnabled()) {
+	if(g_editor.IsRenderingEnabled()) {
 		for(int y = start_y, window_y = 0; y <= end_y; ++y, ++window_y) {
 			for(int x = start_x, window_x = 0; x <= end_x; ++x, ++window_x) {
 				const Tile* tile = map.getTile(x, y, floor);
@@ -183,17 +182,17 @@ void MinimapWindow::OnPaint(wxPaintEvent& event)
 
 void MinimapWindow::OnMouseClick(wxMouseEvent& event)
 {
-	if(!g_gui.IsProjectOpen()) return;
+	if(!g_editor.IsProjectOpen()) return;
 	int new_map_x = last_start_x + event.GetX();
 	int new_map_y = last_start_y + event.GetY();
-	g_gui.SetScreenCenterPosition(Position(new_map_x, new_map_y, g_gui.GetCurrentFloor()));
+	g_editor.SetScreenCenterPosition(Position(new_map_x, new_map_y, g_editor.GetCurrentFloor()));
 	Refresh();
-	g_gui.RefreshView();
+	g_editor.RefreshView();
 }
 
 void MinimapWindow::OnKey(wxKeyEvent& event)
 {
-	if(g_gui.GetCurrentTab() != nullptr) {
-		g_gui.GetCurrentMapTab()->GetEventHandler()->AddPendingEvent(event);
+	if(g_editor.GetCurrentTab() != nullptr) {
+		g_editor.GetCurrentMapTab()->GetEventHandler()->AddPendingEvent(event);
 	}
 }

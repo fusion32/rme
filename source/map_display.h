@@ -32,7 +32,7 @@ class MapDrawer;
 class MapCanvas : public wxGLCanvas
 {
 public:
-	MapCanvas(MapWindow* parent, Editor& editor);
+	MapCanvas(MapWindow* parent);
 	virtual ~MapCanvas();
 	void Reset();
 
@@ -130,7 +130,6 @@ private:
 
 	static bool processed[BLOCK_SIZE*BLOCK_SIZE];
 
-	Editor& editor;
 	MapDrawer *drawer;
 	int keyCode;
 
@@ -146,7 +145,6 @@ private:
 	bool isPasting() const;
 	bool drawing;
 	bool dragging_draw;
-	bool replace_dragging;
 
 	uint8_t* screenshot_buffer;
 
@@ -186,13 +184,9 @@ private:
 // Right-click popup menu
 class MapPopupMenu : public wxMenu {
 public:
-	MapPopupMenu(Editor& editor);
+	MapPopupMenu(void) : wxMenu("") {}
 	virtual ~MapPopupMenu();
-
 	void Update();
-
-protected:
-	Editor& editor;
 };
 
 class AnimationTimer : public wxTimer

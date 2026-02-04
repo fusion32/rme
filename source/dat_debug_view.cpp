@@ -20,7 +20,7 @@
 #include "dat_debug_view.h"
 
 #include "graphics.h"
-#include "gui.h"
+#include "editor.h"
 
 // ============================================================================
 //
@@ -43,8 +43,8 @@ DatDebugViewListBox::DatDebugViewListBox(wxWindow* parent, wxWindowID id) :
 	wxVListBox(parent, id, wxDefaultPosition, wxDefaultSize, wxLB_SINGLE)
 {
 	int n = 0;
-	for(int id = 0; id < g_gui.gfx.getItemSpriteMaxID(); ++id) {
-		Sprite* spr = g_gui.gfx.getSprite(id);
+	for(int id = 0; id < g_editor.gfx.getItemSpriteMaxID(); ++id) {
+		Sprite* spr = g_editor.gfx.getSprite(id);
 		if(spr) {
 			sprites[n] = spr;
 			++n;

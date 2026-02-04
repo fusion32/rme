@@ -18,13 +18,6 @@
 #ifndef RME_MAP_IO_H_
 #define RME_MAP_IO_H_
 
-enum ImportType
-{
-	IMPORT_DONT,
-	IMPORT_MERGE,
-	IMPORT_SMART_MERGE,
-	IMPORT_INSERT,
-};
 
 class Map;
 

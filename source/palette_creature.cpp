@@ -19,7 +19,7 @@
 
 #include "settings.h"
 #include "brush.h"
-#include "gui.h"
+#include "editor.h"
 #include "palette_creature.h"
 #include "creature_brush.h"
 #include "spawn_brush.h"
@@ -104,13 +104,13 @@ Brush* CreaturePalettePanel::GetSelectedBrush() const
 		}
 		Brush* brush = reinterpret_cast<Brush*>(creature_list->GetClientData(creature_list->GetSelection()));
 		if(brush && brush->isCreature()) {
-			g_gui.SetSpawnTime(creature_spawntime_spin->GetValue());
+			g_editor.SetSpawnTime(creature_spawntime_spin->GetValue());
 			return brush;
 		}
 	} else if(spawn_brush_button->GetValue()) {
 		g_settings.setInteger(Config::CURRENT_SPAWN_RADIUS, spawn_size_spin->GetValue());
 		g_settings.setInteger(Config::DEFAULT_SPAWNTIME, creature_spawntime_spin->GetValue());
-		return g_gui.spawn_brush;
+		return g_editor.spawn_brush;
 	}
 	return nullptr;
 }
@@ -185,8 +185,8 @@ void CreaturePalettePanel::OnUpdateBrushSize(BrushShape shape, int size)
 
 void CreaturePalettePanel::OnSwitchIn()
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SetBrushSize(spawn_size_spin->GetValue());
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SetBrushSize(spawn_size_spin->GetValue());
 }
 
 void CreaturePalettePanel::SelectTileset(size_t index)
@@ -250,7 +250,7 @@ void CreaturePalettePanel::SelectCreatureBrush()
 
 void CreaturePalettePanel::SelectSpawnBrush()
 {
-	//g_gui.house_exit_brush->setHouse(house);
+	//g_editor.house_exit_brush->setHouse(house);
 	creature_brush_button->SetValue(false);
 	spawn_brush_button->SetValue(true);
 }
@@ -258,43 +258,43 @@ void CreaturePalettePanel::SelectSpawnBrush()
 void CreaturePalettePanel::OnTilesetChange(wxCommandEvent& event)
 {
 	SelectTileset(event.GetSelection());
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush();
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush();
 }
 
 void CreaturePalettePanel::OnListBoxChange(wxCommandEvent& event)
 {
 	SelectCreature(event.GetSelection());
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush();
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush();
 }
 
 void CreaturePalettePanel::OnClickCreatureBrushButton(wxCommandEvent& event)
 {
 	SelectCreatureBrush();
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush();
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush();
 }
 
 void CreaturePalettePanel::OnClickSpawnBrushButton(wxCommandEvent& event)
 {
 	SelectSpawnBrush();
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush();
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SelectBrush();
 }
 
 void CreaturePalettePanel::OnChangeSpawnTime(wxSpinEvent& event)
 {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SetSpawnTime(event.GetPosition());
+	g_editor.ActivatePalette(GetParentPalette());
+	g_editor.SetSpawnTime(event.GetPosition());
 }
 
 void CreaturePalettePanel::OnChangeSpawnSize(wxSpinEvent& event)
 {
 	if(!handling_event) {
 		handling_event = true;
-		g_gui.ActivatePalette(GetParentPalette());
-		g_gui.SetBrushSize(event.GetPosition());
+		g_editor.ActivatePalette(GetParentPalette());
+		g_editor.SetBrushSize(event.GetPosition());
 		handling_event = false;
 	}
 }

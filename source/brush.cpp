@@ -38,8 +38,7 @@
 #include "creatures.h"
 #include "creature.h"
 #include "map.h"
-
-#include "gui.h"
+#include "editor.h"
 
 Brushes g_brushes;
 
@@ -68,22 +67,22 @@ void Brushes::clear()
 
 void Brushes::init()
 {
-	addBrush(g_gui.optional_brush = newd OptionalBorderBrush());
-	addBrush(g_gui.eraser = newd EraserBrush());
-	addBrush(g_gui.spawn_brush = newd SpawnBrush());
-	addBrush(g_gui.normal_door_brush = newd DoorBrush(WALL_DOOR_NORMAL));
-	addBrush(g_gui.locked_door_brush = newd DoorBrush(WALL_DOOR_LOCKED));
-	addBrush(g_gui.magic_door_brush = newd DoorBrush(WALL_DOOR_MAGIC));
-	addBrush(g_gui.quest_door_brush = newd DoorBrush(WALL_DOOR_QUEST));
-	addBrush(g_gui.hatch_door_brush = newd DoorBrush(WALL_HATCH_WINDOW));
-	addBrush(g_gui.window_door_brush = newd DoorBrush(WALL_WINDOW));
-	addBrush(g_gui.house_brush = newd HouseBrush());
-	addBrush(g_gui.house_exit_brush = newd HouseExitBrush());
-	addBrush(g_gui.waypoint_brush = newd WaypointBrush());
+	addBrush(g_editor.optional_brush = newd OptionalBorderBrush());
+	addBrush(g_editor.eraser = newd EraserBrush());
+	addBrush(g_editor.spawn_brush = newd SpawnBrush());
+	addBrush(g_editor.normal_door_brush = newd DoorBrush(WALL_DOOR_NORMAL));
+	addBrush(g_editor.locked_door_brush = newd DoorBrush(WALL_DOOR_LOCKED));
+	addBrush(g_editor.magic_door_brush = newd DoorBrush(WALL_DOOR_MAGIC));
+	addBrush(g_editor.quest_door_brush = newd DoorBrush(WALL_DOOR_QUEST));
+	addBrush(g_editor.hatch_door_brush = newd DoorBrush(WALL_HATCH_WINDOW));
+	addBrush(g_editor.window_door_brush = newd DoorBrush(WALL_WINDOW));
+	addBrush(g_editor.house_brush = newd HouseBrush());
+	addBrush(g_editor.house_exit_brush = newd HouseExitBrush());
+	addBrush(g_editor.waypoint_brush = newd WaypointBrush());
 
-	addBrush(g_gui.refresh_brush = newd FlagBrush(TILE_FLAG_REFRESH));
-	addBrush(g_gui.nolog_brush = newd FlagBrush(TILE_FLAG_NOLOGOUT));
-	addBrush(g_gui.pz_brush = newd FlagBrush(TILE_FLAG_PROTECTIONZONE));
+	addBrush(g_editor.refresh_brush = newd FlagBrush(TILE_FLAG_REFRESH));
+	addBrush(g_editor.nolog_brush = newd FlagBrush(TILE_FLAG_NOLOGOUT));
+	addBrush(g_editor.pz_brush = newd FlagBrush(TILE_FLAG_PROTECTIONZONE));
 
 	GroundBrush::init();
 	WallBrush::init();
