@@ -102,7 +102,7 @@ END_EVENT_TABLE()
 
 bool MapCanvas::processed[] = {0};
 
-MapCanvas::MapCanvas(MapWindow* parent, Editor& editor, int* attriblist) :
+MapCanvas::MapCanvas(MapWindow* parent, Editor& editor) :
 	wxGLCanvas(parent, wxID_ANY, nullptr, wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS),
 	editor(editor),
 	floor(rme::MapGroundLayer),

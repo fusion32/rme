@@ -306,7 +306,7 @@ void ReplaceItemsDialog::OnRemoveButtonClicked(wxCommandEvent& WXUNUSED(event))
 
 void ReplaceItemsDialog::OnExecuteButtonClicked(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	const auto& items = list->GetItems();

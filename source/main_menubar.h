@@ -165,11 +165,6 @@ public:
 	void UpdateFloorMenu(); // Only concerns the floor menu
 	void UpdateIndicatorsMenu();
 
-	void AddRecentFile(FileName file);
-	void LoadRecentFiles();
-	void SaveRecentFiles();
-	std::vector<wxString> GetRecentFiles();
-
 	// Interface
 	void EnableItem(MenuBar::ActionID id, bool enable);
 	void CheckItem(MenuBar::ActionID id, bool enable);

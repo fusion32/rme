@@ -441,35 +441,11 @@ void MainMenuBar::LoadValues()
 	CheckItem(SHOW_MOVEABLES, g_settings.getBoolean(Config::SHOW_MOVEABLES));
 }
 
-void MainMenuBar::LoadRecentFiles()
-{
-	recentFiles.Load(g_settings.getConfigObject());
-}
-
-void MainMenuBar::SaveRecentFiles()
-{
-	recentFiles.Save(g_settings.getConfigObject());
-}
-
-void MainMenuBar::AddRecentFile(FileName file)
-{
-	recentFiles.AddFileToHistory(file.GetFullPath());
-}
-
-std::vector<wxString> MainMenuBar::GetRecentFiles()
-{
-    std::vector<wxString> files(recentFiles.GetCount());
-    for(size_t i = 0; i < recentFiles.GetCount(); ++i) {
-        files[i] = recentFiles.GetHistoryFile(i);
-    }
-    return files;
-}
-
 void MainMenuBar::UpdateFloorMenu()
 {
 	using namespace MenuBar;
 
-	if(!g_gui.IsEditorOpen()) {
+	if(!g_gui.IsProjectOpen()) {
 		return;
 	}
 
@@ -483,7 +459,7 @@ void MainMenuBar::UpdateIndicatorsMenu()
 {
 	using namespace MenuBar;
 
-	if(!g_gui.IsEditorOpen()) {
+	if(!g_gui.IsProjectOpen()) {
 		return;
 	}
 
@@ -514,11 +490,10 @@ bool MainMenuBar::Load(const FileName& path, wxArrayString& warnings, wxString& 
 	}
 
 	// Load succeded
-	for(pugi::xml_node menuNode = node.first_child(); menuNode; menuNode = menuNode.next_sibling()) {
+	for(pugi::xml_node menuNode: node.children()){
 		// For each child node, load it
-		wxObject* i = LoadItem(menuNode, nullptr, warnings, error);
-		wxMenu* m = dynamic_cast<wxMenu*>(i);
-		if(m) {
+		wxObject *i = LoadItem(menuNode, nullptr, warnings, error);
+		if (wxMenu *m = dynamic_cast<wxMenu*>(i)) {
 			menubar->Append(m, m->GetTitle());
 #ifdef __APPLE__
 			m->SetTitle(m->GetTitle());
@@ -708,7 +683,7 @@ void MainMenuBar::OnGenerateMap(wxCommandEvent& WXUNUSED(event))
 	g_gui.RefreshPalettes();
 	g_gui.UpdateMinimap();
 	g_gui.FitViewToMap();
-	UpdateMenubar();
+	g_gui.UpdateMenubar();
 	Refresh();
 	*/
 }
@@ -749,7 +724,7 @@ void MainMenuBar::OnPreferences(wxCommandEvent& WXUNUSED(event))
 void MainMenuBar::OnQuit(wxCommandEvent& WXUNUSED(event))
 {
 	/*
-	while(g_gui.IsEditorOpen())
+	while(g_gui.IsProjectOpen())
 		if(!frame->DoQuerySave(true))
 			return;
 			*/
@@ -784,14 +759,14 @@ void MainMenuBar::OnImportMonsterData(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnImportMinimap(wxCommandEvent& WXUNUSED(event))
 {
-	ASSERT(g_gui.IsEditorOpen());
+	ASSERT(g_gui.IsProjectOpen());
 	//wxDialog* importmap = newd ImportMapWindow();
 	//importmap->ShowModal();
 }
 
 void MainMenuBar::OnExportMinimap(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen()) {
+	if(!g_gui.IsProjectOpen()) {
 		return;
 	}
 
@@ -865,7 +840,7 @@ namespace OnSearchForItem
 
 void MainMenuBar::OnSearchForItem(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	FindItemDialog dialog(frame, "Search for Item");
@@ -1008,7 +983,7 @@ void MainMenuBar::OnSearchForWritableOnSelection(wxCommandEvent& WXUNUSED(event)
 
 void MainMenuBar::OnSearchForItemOnSelection(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	FindItemDialog dialog(frame, "Search on Selection");
@@ -1061,7 +1036,7 @@ void MainMenuBar::OnReplaceItemsOnSelection(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnRemoveItemOnSelection(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	FindItemDialog dialog(frame, "Remove Item on Selection");
@@ -1120,7 +1095,7 @@ void MainMenuBar::OnToggleAutomagic(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnBorderizeSelection(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	g_gui.GetCurrentEditor()->borderizeSelection();
@@ -1129,7 +1104,7 @@ void MainMenuBar::OnBorderizeSelection(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnBorderizeMap(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	int ret = g_gui.PopupDialog("Borderize Map", "Are you sure you want to borderize the entire map (this action cannot be undone)?", wxYES | wxNO);
@@ -1141,7 +1116,7 @@ void MainMenuBar::OnBorderizeMap(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnRandomizeSelection(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	g_gui.GetCurrentEditor()->randomizeSelection();
@@ -1150,7 +1125,7 @@ void MainMenuBar::OnRandomizeSelection(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnRandomizeMap(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	int ret = g_gui.PopupDialog("Randomize Map", "Are you sure you want to randomize the entire map (this action cannot be undone)?", wxYES | wxNO);
@@ -1206,7 +1181,7 @@ void MainMenuBar::OnGotoPreviousPosition(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnGotoPosition(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	// Display dialog, it also controls the actual jump
@@ -1216,7 +1191,7 @@ void MainMenuBar::OnGotoPosition(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnMapRemoveItems(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	FindItemDialog dialog(frame, "Item Type to Remove");
@@ -1260,7 +1235,7 @@ namespace OnMapRemoveCorpses
 
 void MainMenuBar::OnMapRemoveCorpses(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	int ok = g_gui.PopupDialog("Remove Corpses", "Do you want to remove all corpses from the map?", wxYES | wxNO);
@@ -1330,7 +1305,7 @@ namespace OnMapRemoveUnreachable
 
 void MainMenuBar::OnMapRemoveUnreachable(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	int ok = g_gui.PopupDialog("Remove Unreachable Tiles", "Do you want to remove all unreachable items from the map?", wxYES | wxNO);
@@ -1357,7 +1332,7 @@ void MainMenuBar::OnMapRemoveUnreachable(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnMapRemoveEmptySpawns(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen()) {
+	if(!g_gui.IsProjectOpen()) {
 		return;
 	}
 
@@ -1510,7 +1485,7 @@ void MainMenuBar::OnMapEditMonsters(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnMapStatistics(wxCommandEvent& WXUNUSED(event))
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	g_gui.CreateLoadBar("Collecting data...");
@@ -1839,7 +1814,7 @@ void MainMenuBar::OnChangeViewSettings(wxCommandEvent& event)
 	g_settings.setInteger(Config::SHOW_MOVEABLES, IsItemChecked(MenuBar::SHOW_MOVEABLES));
 
 	g_gui.RefreshView();
-	g_gui.root->GetAuiToolBar()->UpdateIndicators();
+	g_gui.toolbar->UpdateIndicators();
 }
 
 void MainMenuBar::OnChangeFloor(wxCommandEvent& event)
@@ -1910,7 +1885,7 @@ void MainMenuBar::SearchItems(bool container, bool writable, bool onSelection/* 
 	if(!container && !writable)
 		return;
 
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	if(onSelection)
@@ -1937,7 +1912,7 @@ void MainMenuBar::SearchItems(bool container, bool writable, bool onSelection/* 
 
 void MainMenuBar::SearchDuplicatedItems(bool selection)
 {
-	if(!g_gui.IsEditorOpen()) {
+	if(!g_gui.IsProjectOpen()) {
 		return;
 	}
 

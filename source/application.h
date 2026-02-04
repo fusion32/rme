@@ -68,18 +68,10 @@ public:
 		const wxPoint& pos, const wxSize& size);
 	~MainFrame();
 
-	void UpdateMenubar();
 	bool DoQueryClose();
 	bool DoQuerySave(bool doclose = true);
 	bool DoQueryImportCreatures();
 	bool LoadMap(FileName name);
-
-	void AddRecentFile(const FileName& file);
-	void LoadRecentFiles();
-	void SaveRecentFiles();
-	std::vector<wxString> GetRecentFiles();
-
-	MainToolBar* GetAuiToolBar() const { return tool_bar; }
 
 	void OnUpdateMenus(wxCommandEvent& event);
 	void OnUpdateActions(wxCommandEvent& event);
@@ -98,8 +90,6 @@ public:
 
 	void PrepareDC(wxDC& dc);
 protected:
-	MainMenuBar* menu_bar;
-	MainToolBar* tool_bar;
 
 	friend class Application;
 	friend class GUI;

@@ -23,7 +23,6 @@ ${CMAKE_CURRENT_LIST_DIR}/definitions.h
 ${CMAKE_CURRENT_LIST_DIR}/doodad_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/duplicated_items_window.h
 ${CMAKE_CURRENT_LIST_DIR}/editor.h
-${CMAKE_CURRENT_LIST_DIR}/editor_tabs.h
 ${CMAKE_CURRENT_LIST_DIR}/find_item_window.h
 ${CMAKE_CURRENT_LIST_DIR}/filehandle.h
 ${CMAKE_CURRENT_LIST_DIR}/graphics.h
@@ -46,7 +45,6 @@ ${CMAKE_CURRENT_LIST_DIR}/map_allocator.h
 ${CMAKE_CURRENT_LIST_DIR}/map_display.h
 ${CMAKE_CURRENT_LIST_DIR}/map_drawer.h
 ${CMAKE_CURRENT_LIST_DIR}/map_region.h
-${CMAKE_CURRENT_LIST_DIR}/map_tab.h
 ${CMAKE_CURRENT_LIST_DIR}/map_window.h
 ${CMAKE_CURRENT_LIST_DIR}/materials.h
 ${CMAKE_CURRENT_LIST_DIR}/minimap_window.h
@@ -114,7 +112,6 @@ ${CMAKE_CURRENT_LIST_DIR}/dcbutton.cpp
 ${CMAKE_CURRENT_LIST_DIR}/doodad_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/duplicated_items_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/editor.cpp
-${CMAKE_CURRENT_LIST_DIR}/editor_tabs.cpp
 ${CMAKE_CURRENT_LIST_DIR}/eraser_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/find_item_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/filehandle.cpp
@@ -135,7 +132,6 @@ ${CMAKE_CURRENT_LIST_DIR}/map.cpp
 ${CMAKE_CURRENT_LIST_DIR}/map_display.cpp
 ${CMAKE_CURRENT_LIST_DIR}/map_drawer.cpp
 ${CMAKE_CURRENT_LIST_DIR}/map_region.cpp
-${CMAKE_CURRENT_LIST_DIR}/map_tab.cpp
 ${CMAKE_CURRENT_LIST_DIR}/map_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/materials.cpp
 ${CMAKE_CURRENT_LIST_DIR}/minimap_window.cpp

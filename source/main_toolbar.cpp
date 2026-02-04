@@ -280,7 +280,7 @@ void MainToolBar::UpdateBrushButtons()
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_HATCH_DOOR, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_WINDOW_DOOR, false);
 	}
-	g_gui.GetAuiManager()->Update();
+	g_gui.aui_manager->Update();
 }
 
 void MainToolBar::UpdateBrushSize(BrushShape shape, int size)
@@ -319,7 +319,7 @@ void MainToolBar::UpdateBrushSize(BrushShape shape, int size)
 	sizes_toolbar->ToggleTool(TOOLBAR_SIZES_6, size == 8);
 	sizes_toolbar->ToggleTool(TOOLBAR_SIZES_7, size == 11);
 
-	g_gui.GetAuiManager()->Update();
+	g_gui.aui_manager->Update();
 }
 
 void MainToolBar::UpdateIndicators()
@@ -328,115 +328,106 @@ void MainToolBar::UpdateIndicators()
 	indicators_toolbar->ToggleTool(TOOLBAR_PICKUPABLES, g_settings.getBoolean(Config::SHOW_PICKUPABLES));
 	indicators_toolbar->ToggleTool(TOOLBAR_MOVEABLES, g_settings.getBoolean(Config::SHOW_MOVEABLES));
 
-	g_gui.GetAuiManager()->Update();
+	g_gui.aui_manager->Update();
 }
 
 void MainToolBar::Show(ToolBarID id, bool show)
 {
-	wxAuiManager* manager = g_gui.GetAuiManager();
-	if(manager) {
-		wxAuiPaneInfo& pane = GetPane(id);
-		if(pane.IsOk()) {
-			pane.Show(show);
-			manager->Update();
-		}
+	ASSERT(g_gui.aui_manager != NULL);
+	wxAuiPaneInfo &pane = GetPane(id);
+	if(pane.IsOk()) {
+		pane.Show(show);
+		g_gui.aui_manager->Update();
 	}
 }
 
 void MainToolBar::HideAll(bool update)
 {
-	wxAuiManager* manager = g_gui.GetAuiManager();
-	if(!manager)
-		return;
-
-	wxAuiPaneInfoArray& panes = manager->GetAllPanes();
+	ASSERT(g_gui.aui_manager != NULL);
+	wxAuiPaneInfoArray &panes = g_gui.aui_manager->GetAllPanes();
 	for(int i = 0, count = panes.GetCount(); i < count; ++i) {
 		if(!panes.Item(i).IsToolbar())
 			panes.Item(i).Hide();
 	}
 
 	if(update)
-		manager->Update();
+		g_gui.aui_manager->Update();
 }
 
 void MainToolBar::LoadPerspective()
 {
-	wxAuiManager* manager = g_gui.GetAuiManager();
-	if(!manager)
-		return;
+	ASSERT(g_gui.aui_manager != NULL);
 
 	if(g_settings.getBoolean(Config::SHOW_TOOLBAR_STANDARD)) {
-		std::string info = g_settings.getString(Config::TOOLBAR_STANDARD_LAYOUT);
-		if(!info.empty())
-			manager->LoadPaneInfo(wxString(info), GetPane(TOOLBAR_STANDARD));
+		std::string layout = g_settings.getString(Config::TOOLBAR_STANDARD_LAYOUT);
+		if(!layout.empty())
+			g_gui.aui_manager->LoadPaneInfo(wxString(layout), GetPane(TOOLBAR_STANDARD));
 		GetPane(TOOLBAR_STANDARD).Show();
 	} else
 		GetPane(TOOLBAR_STANDARD).Hide();
 
 	if(g_settings.getBoolean(Config::SHOW_TOOLBAR_BRUSHES)) {
-		std::string info = g_settings.getString(Config::TOOLBAR_BRUSHES_LAYOUT);
-		if(!info.empty())
-			manager->LoadPaneInfo(wxString(info), GetPane(TOOLBAR_BRUSHES));
+		std::string layout = g_settings.getString(Config::TOOLBAR_BRUSHES_LAYOUT);
+		if(!layout.empty())
+			g_gui.aui_manager->LoadPaneInfo(wxString(layout), GetPane(TOOLBAR_BRUSHES));
 		GetPane(TOOLBAR_BRUSHES).Show();
 	} else
 		GetPane(TOOLBAR_BRUSHES).Hide();
 
 	if(g_settings.getBoolean(Config::SHOW_TOOLBAR_POSITION)) {
-		std::string info = g_settings.getString(Config::TOOLBAR_POSITION_LAYOUT);
-		if(!info.empty())
-			manager->LoadPaneInfo(wxString(info), GetPane(TOOLBAR_POSITION));
+		std::string layout = g_settings.getString(Config::TOOLBAR_POSITION_LAYOUT);
+		if(!layout.empty())
+			g_gui.aui_manager->LoadPaneInfo(wxString(layout), GetPane(TOOLBAR_POSITION));
 		GetPane(TOOLBAR_POSITION).Show();
 	} else
 		GetPane(TOOLBAR_POSITION).Hide();
 
 	if(g_settings.getBoolean(Config::SHOW_TOOLBAR_SIZES)) {
-		std::string info = g_settings.getString(Config::TOOLBAR_SIZES_LAYOUT);
-		if(!info.empty())
-			manager->LoadPaneInfo(wxString(info), GetPane(TOOLBAR_SIZES));
+		std::string layout = g_settings.getString(Config::TOOLBAR_SIZES_LAYOUT);
+		if(!layout.empty())
+			g_gui.aui_manager->LoadPaneInfo(wxString(layout), GetPane(TOOLBAR_SIZES));
 		GetPane(TOOLBAR_SIZES).Show();
 	} else
 		GetPane(TOOLBAR_SIZES).Hide();
 
 	if(g_settings.getBoolean(Config::SHOW_TOOLBAR_INDICATORS)) {
-		std::string info = g_settings.getString(Config::TOOLBAR_INDICATORS_LAYOUT);
-		if(!info.empty())
-			manager->LoadPaneInfo(wxString(info), GetPane(TOOLBAR_INDICATORS));
+		std::string layout = g_settings.getString(Config::TOOLBAR_INDICATORS_LAYOUT);
+		if(!layout.empty())
+			g_gui.aui_manager->LoadPaneInfo(wxString(layout), GetPane(TOOLBAR_INDICATORS));
 		GetPane(TOOLBAR_INDICATORS).Show();
 	} else
 		GetPane(TOOLBAR_INDICATORS).Hide();
 
-	manager->Update();
+	g_gui.aui_manager->Update();
 }
 
 void MainToolBar::SavePerspective()
 {
-	wxAuiManager* manager = g_gui.GetAuiManager();
-	if(!manager)
-		return;
+	ASSERT(g_gui.aui_manager != NULL);
 
 	if(g_settings.getBoolean(Config::SHOW_TOOLBAR_STANDARD)) {
-		wxString info = manager->SavePaneInfo(GetPane(TOOLBAR_STANDARD));
-		g_settings.setString(Config::TOOLBAR_STANDARD_LAYOUT, info.ToStdString());
+		wxString layout = g_gui.aui_manager->SavePaneInfo(GetPane(TOOLBAR_STANDARD));
+		g_settings.setString(Config::TOOLBAR_STANDARD_LAYOUT, layout.ToStdString());
 	}
 
 	if(g_settings.getBoolean(Config::SHOW_TOOLBAR_BRUSHES)) {
-		wxString info = manager->SavePaneInfo(GetPane(TOOLBAR_BRUSHES));
-		g_settings.setString(Config::TOOLBAR_BRUSHES_LAYOUT, info.ToStdString());
+		wxString layout = g_gui.aui_manager->SavePaneInfo(GetPane(TOOLBAR_BRUSHES));
+		g_settings.setString(Config::TOOLBAR_BRUSHES_LAYOUT, layout.ToStdString());
 	}
 
 	if(g_settings.getBoolean(Config::SHOW_TOOLBAR_POSITION)) {
-		wxString info = manager->SavePaneInfo(GetPane(TOOLBAR_POSITION));
-		g_settings.setString(Config::TOOLBAR_POSITION_LAYOUT, info.ToStdString());
+		wxString layout = g_gui.aui_manager->SavePaneInfo(GetPane(TOOLBAR_POSITION));
+		g_settings.setString(Config::TOOLBAR_POSITION_LAYOUT, layout.ToStdString());
 	}
 
 	if(g_settings.getBoolean(Config::SHOW_TOOLBAR_SIZES)) {
-		wxString info = manager->SavePaneInfo(GetPane(TOOLBAR_SIZES));
-		g_settings.setString(Config::TOOLBAR_SIZES_LAYOUT, info.ToStdString());
+		wxString layout = g_gui.aui_manager->SavePaneInfo(GetPane(TOOLBAR_SIZES));
+		g_settings.setString(Config::TOOLBAR_SIZES_LAYOUT, layout.ToStdString());
 	}
 
 	if(g_settings.getBoolean(Config::SHOW_TOOLBAR_INDICATORS)) {
-		wxString info = manager->SavePaneInfo(GetPane(TOOLBAR_INDICATORS));
-		g_settings.setString(Config::SHOW_TOOLBAR_INDICATORS, info.ToStdString());
+		wxString layout = g_gui.aui_manager->SavePaneInfo(GetPane(TOOLBAR_INDICATORS));
+		g_settings.setString(Config::SHOW_TOOLBAR_INDICATORS, layout.ToStdString());
 	}
 }
 
@@ -444,16 +435,16 @@ void MainToolBar::OnStandardButtonClick(wxCommandEvent& event)
 {
 	switch (event.GetId()) {
 		case wxID_NEW:
-			g_gui.NewMap();
+			g_gui.NewProject();
 			break;
 		case wxID_OPEN:
-			g_gui.OpenMap();
+			g_gui.OpenProject();
 			break;
 		case wxID_SAVE:
-			g_gui.SaveMap();
+			g_gui.SaveProject();
 			break;
 		case wxID_SAVEAS:
-			g_gui.SaveMapAs();
+			g_gui.SaveProjectAs();
 			break;
 		case wxID_UNDO:
 			g_gui.DoUndo();
@@ -477,7 +468,7 @@ void MainToolBar::OnStandardButtonClick(wxCommandEvent& event)
 
 void MainToolBar::OnBrushesButtonClick(wxCommandEvent& event)
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	switch (event.GetId()) {
@@ -521,7 +512,7 @@ void MainToolBar::OnBrushesButtonClick(wxCommandEvent& event)
 
 void MainToolBar::OnPositionButtonClick(wxCommandEvent& event)
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	if(event.GetId() == TOOLBAR_POSITION_GO) {
@@ -564,7 +555,7 @@ void MainToolBar::OnPastePositionText(wxClipboardTextEvent& event)
 
 void MainToolBar::OnSizesButtonClick(wxCommandEvent& event)
 {
-	if(!g_gui.IsEditorOpen())
+	if(!g_gui.IsProjectOpen())
 		return;
 
 	switch (event.GetId()) {
@@ -626,21 +617,18 @@ void MainToolBar::OnIndicatorsButtonClick(wxCommandEvent& event)
 
 wxAuiPaneInfo& MainToolBar::GetPane(ToolBarID id)
 {
-	wxAuiManager* manager = g_gui.GetAuiManager();
-	if(!manager)
-		return wxAuiNullPaneInfo;
-
+	ASSERT(g_gui.aui_manager != NULL);
 	switch (id) {
 		case TOOLBAR_STANDARD:
-			return manager->GetPane(STANDARD_BAR_NAME);
+			return g_gui.aui_manager->GetPane(STANDARD_BAR_NAME);
 		case TOOLBAR_BRUSHES:
-			return manager->GetPane(BRUSHES_BAR_NAME);
+			return g_gui.aui_manager->GetPane(BRUSHES_BAR_NAME);
 		case TOOLBAR_POSITION:
-			return manager->GetPane(POSITION_BAR_NAME);
+			return g_gui.aui_manager->GetPane(POSITION_BAR_NAME);
 		case TOOLBAR_SIZES:
-			return manager->GetPane(SIZES_BAR_NAME);
+			return g_gui.aui_manager->GetPane(SIZES_BAR_NAME);
 		case TOOLBAR_INDICATORS:
-			return manager->GetPane(INDICATORS_BAR_NAME);
+			return g_gui.aui_manager->GetPane(INDICATORS_BAR_NAME);
 		default:
 			return wxAuiNullPaneInfo;
 	}

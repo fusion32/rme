@@ -101,6 +101,31 @@ GUI::~GUI()
 	delete OGLContext;
 }
 
+
+void GUI::LoadRecentFiles()
+{
+	recentFiles.Load(g_settings.getConfigObject());
+}
+
+void GUI::SaveRecentFiles()
+{
+	recentFiles.Save(g_settings.getConfigObject());
+}
+
+void GUI::AddRecentFile(FileName file)
+{
+	recentFiles.AddFileToHistory(file.GetFullPath());
+}
+
+std::vector<wxString> GUI::GetRecentFiles()
+{
+    std::vector<wxString> files(recentFiles.GetCount());
+    for(size_t i = 0; i < recentFiles.GetCount(); ++i) {
+        files[i] = recentFiles.GetHistoryFile(i);
+    }
+    return files;
+}
+
 wxGLContext* GUI::GetGLContext(wxGLCanvas* win)
 {
 	if(OGLContext == nullptr) {
@@ -404,13 +429,8 @@ void GUI::SaveCurrentMap(FileName filename, bool showdialog)
 	}
 
 	UpdateTitle();
-	root->UpdateMenubar();
+	UpdateMenubar();
 	root->Refresh();
-}
-
-bool GUI::IsEditorOpen() const
-{
-	return tabbook != nullptr && GetCurrentMapTab();
 }
 
 double GUI::GetCurrentZoom()
@@ -470,23 +490,26 @@ bool GUI::NewMap()
 	SetStatusText("Created new map");
 	UpdateTitle();
 	RefreshPalettes();
-	root->UpdateMenubar();
+	UpdateMenubar();
 	root->Refresh();
 	return true;
 }
 
 void GUI::OpenMap()
 {
+#if 0
 	wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? MAP_LOAD_FILE_WILDCARD_OTGZ : MAP_LOAD_FILE_WILDCARD;
 	wxFileDialog dialog(root, "Open map file", wxEmptyString, wxEmptyString, wildcard, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 
 	if(dialog.ShowModal() == wxID_OK)
 		LoadMap(dialog.GetPath());
+#endif
 }
 
 void GUI::SaveMap()
 {
-	if(!IsEditorOpen())
+#if 0
+	if(!IsProjectOpen())
 		return;
 
 	if(GetCurrentMap().hasFile()) {
@@ -498,11 +521,13 @@ void GUI::SaveMap()
 		if(dialog.ShowModal() == wxID_OK)
 			SaveCurrentMap(dialog.GetPath(), true);
 	}
+#endif
 }
 
 void GUI::SaveMapAs()
 {
-	if(!IsEditorOpen())
+#if 0
+	if(!IsProjectOpen())
 		return;
 
 	wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? MAP_SAVE_FILE_WILDCARD_OTGZ : MAP_SAVE_FILE_WILDCARD;
@@ -511,9 +536,10 @@ void GUI::SaveMapAs()
 	if(dialog.ShowModal() == wxID_OK) {
 		SaveCurrentMap(dialog.GetPath(), true);
 		UpdateTitle();
-		root->menu_bar->AddRecentFile(dialog.GetPath());
-		root->UpdateMenubar();
+		AddRecentFile(dialog.GetPath());
+		UpdateMenubar();
 	}
+#endif
 }
 
 bool GUI::LoadMap(const FileName& fileName)
@@ -537,7 +563,7 @@ bool GUI::LoadMap(const FileName& fileName)
 	auto *mapTab = newd MapTab(tabbook, editor);
 	mapTab->OnSwitchEditorMode(mode);
 
-	root->AddRecentFile(fileName);
+	AddRecentFile(fileName);
 
 	mapTab->GetView()->FitToMap();
 	UpdateTitle();
@@ -545,7 +571,7 @@ bool GUI::LoadMap(const FileName& fileName)
 	root->DoQueryImportCreatures();
 
 	FitViewToMap(mapTab);
-	root->UpdateMenubar();
+	UpdateMenubar();
 
 	std::string path = g_settings.getString(Config::RECENT_EDITED_MAP_PATH);
 	if(!path.empty()) {
@@ -560,58 +586,55 @@ bool GUI::LoadMap(const FileName& fileName)
 	return true;
 }
 
-Editor* GUI::GetCurrentEditor()
+void GUI::NewProject(void)
 {
-	MapTab* mapTab = GetCurrentMapTab();
-	if(mapTab)
-		return mapTab->GetEditor();
-	return nullptr;
-}
-
-EditorTab* GUI::GetTab(int idx)
-{
-	return tabbook->GetTab(idx);
-}
-
-int GUI::GetTabCount() const
-{
-	return tabbook->GetTabCount();
-}
-
-EditorTab* GUI::GetCurrentTab()
-{
-	return tabbook->GetCurrentTab();
-}
-
-MapTab* GUI::GetCurrentMapTab() const
-{
-	if(tabbook && tabbook->GetTabCount() > 0) {
-		EditorTab* editorTab = tabbook->GetCurrentTab();
-		auto *mapTab = dynamic_cast<MapTab*>(editorTab);
-		return mapTab;
-	}
-	return nullptr;
-}
-
-Map& GUI::GetCurrentMap()
-{
-	Editor* editor = GetCurrentEditor();
-	ASSERT(editor);
-	return editor->getMap();
-}
-
-int GUI::GetOpenMapCount()
-{
-	std::set<Map*> open_maps;
-
-	for(int i = 0; i < tabbook->GetTabCount(); ++i) {
-		auto *tab = dynamic_cast<MapTab*>(tabbook->GetTab(i));
-		if(tab)
-			open_maps.insert(open_maps.begin(), tab->GetMap());
-
+	if(IsProjectOpen()){
+		// Prompt for a save, then close?
 	}
 
-	return static_cast<int>(open_maps.size());
+	// Create new project? Which doesn't make a lot of sense if a project also
+	// includes objects, materials, etc... so we might want to have some kind
+	// of project template?
+}
+
+void GUI::OpenProject(void)
+{
+	wxDirDialog openDialog(root, "Select project directory...", wxEmptyString, wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+	if(openDialog.ShowModal() == wxID_OK){
+		OpenProject(openDialog.GetPath());
+	}
+}
+
+void GUI::OpenProject(FileName filename)
+{
+	if(IsProjectOpen()){
+		// Prompt for a save, then close?
+	}
+}
+
+void GUI::CloseProject(void)
+{
+	if(!IsProjectOpen()){
+		return;
+	}
+}
+
+void GUI::SaveProject(void)
+{
+	if(!IsProjectOpen()){
+		return;
+	}
+}
+
+void GUI::SaveProjectAs(void)
+{
+	if(!IsProjectOpen()){
+		return;
+	}
+}
+
+bool GUI::IsProjectOpen(void) const {
+	return false;
 }
 
 bool GUI::ShouldSave()
@@ -632,7 +655,7 @@ void GUI::CloseCurrentEditor()
 {
 	RefreshPalettes();
 	tabbook->DeleteTab(tabbook->GetSelection());
-	root->UpdateMenubar();
+	UpdateMenubar();
 
 	if(duplicated_items_window) {
 		duplicated_items_window->Clear();
@@ -658,8 +681,7 @@ bool GUI::CloseAllEditors()
 		}
 	}
 
-	if(root)
-		root->UpdateMenubar();
+	UpdateMenubar();
 
 	if(duplicated_items_window) {
 		duplicated_items_window->Clear();
@@ -677,7 +699,7 @@ void GUI::NewMapView()
 		SetStatusText("Created new view");
 		UpdateTitle();
 		RefreshPalettes();
-		root->UpdateMenubar();
+		UpdateMenubar();
 		root->Refresh();
 	}
 }
@@ -704,97 +726,88 @@ void GUI::LoadPerspective()
 
 	for(const std::string& name : palette_list) {
 		PaletteWindow* palette = CreatePalette();
-
-		wxAuiPaneInfo& info = aui_manager->GetPane(palette);
-		aui_manager->LoadPaneInfo(wxstr(name), info);
-
-		if(info.IsFloatable()) {
+		wxAuiPaneInfo &pane = aui_manager->GetPane(palette);
+		aui_manager->LoadPaneInfo(wxstr(name), pane);
+		if(pane.IsFloatable()) {
 			bool offscreen = true;
 			for(uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
 				wxDisplay display(index);
 				wxRect rect = display.GetClientArea();
-				if(rect.Contains(info.floating_pos)) {
+				if(rect.Contains(pane.floating_pos)) {
 					offscreen = false;
 					break;
 				}
 			}
 
 			if(offscreen) {
-				info.Dock();
+				pane.Dock();
 			}
 		}
 	}
 
 	if(g_settings.getInteger(Config::MINIMAP_VISIBLE)) {
+		wxString layout = wxstr(g_settings.getString(Config::MINIMAP_LAYOUT));
 		if(!minimap) {
-			wxAuiPaneInfo info;
-
-			const wxString& data = wxstr(g_settings.getString(Config::MINIMAP_LAYOUT));
-			aui_manager->LoadPaneInfo(data, info);
-
+			wxAuiPaneInfo pane;
+			aui_manager->LoadPaneInfo(layout, pane);
 			minimap = newd MinimapWindow(root);
-			aui_manager->AddPane(minimap, info);
+			aui_manager->AddPane(minimap, pane);
 		} else {
-			wxAuiPaneInfo& info = aui_manager->GetPane(minimap);
-
-			const wxString& data = wxstr(g_settings.getString(Config::MINIMAP_LAYOUT));
-			aui_manager->LoadPaneInfo(data, info);
+			wxAuiPaneInfo &pane = aui_manager->GetPane(minimap);
+			aui_manager->LoadPaneInfo(layout, pane);
 		}
 
-		wxAuiPaneInfo& info = aui_manager->GetPane(minimap);
-		if(info.IsFloatable()) {
+		wxAuiPaneInfo &pane = aui_manager->GetPane(minimap);
+		if(pane.IsFloatable()) {
 			bool offscreen = true;
 			for(uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
 				wxDisplay display(index);
 				wxRect rect = display.GetClientArea();
-				if(rect.Contains(info.floating_pos)) {
+				if(rect.Contains(pane.floating_pos)) {
 					offscreen = false;
 					break;
 				}
 			}
 
 			if(offscreen) {
-				info.Dock();
+				pane.Dock();
 			}
 		}
 	}
 
 	if(g_settings.getInteger(Config::ACTIONS_HISTORY_VISIBLE)) {
+		wxString layout = wxstr(g_settings.getString(Config::ACTIONS_HISTORY_LAYOUT));
 		if(!actions_history_window) {
-			wxAuiPaneInfo info;
-
-			const wxString& data = wxstr(g_settings.getString(Config::ACTIONS_HISTORY_LAYOUT));
-			aui_manager->LoadPaneInfo(data, info);
-
+			wxAuiPaneInfo pane;
+			aui_manager->LoadPaneInfo(layout, pane);
 			actions_history_window = new ActionsHistoryWindow(root);
-			aui_manager->AddPane(actions_history_window, info);
+			aui_manager->AddPane(actions_history_window, pane);
 		} else {
-			wxAuiPaneInfo& info = aui_manager->GetPane(actions_history_window);
-			const wxString& data = wxstr(g_settings.getString(Config::ACTIONS_HISTORY_LAYOUT));
-			aui_manager->LoadPaneInfo(data, info);
+			wxAuiPaneInfo &pane = aui_manager->GetPane(actions_history_window);
+			aui_manager->LoadPaneInfo(layout, pane);
 		}
 
-		wxAuiPaneInfo& info = aui_manager->GetPane(actions_history_window);
-		if(info.IsFloatable()) {
+		wxAuiPaneInfo& pane = aui_manager->GetPane(actions_history_window);
+		if(pane.IsFloatable()) {
 			bool offscreen = true;
 			for(uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
 				wxDisplay display(index);
 				wxRect rect = display.GetClientArea();
-				if(rect.Contains(info.floating_pos)) {
+				if(rect.Contains(pane.floating_pos)) {
 					offscreen = false;
 					break;
 				}
 			}
 
 			if(offscreen) {
-				info.Dock();
+				pane.Dock();
 			}
 		}
 	}
 
 	aui_manager->Update();
-	root->UpdateMenubar();
-	root->GetAuiToolBar()->LoadPerspective();
+	UpdateMenubar();
+	toolbar->LoadPerspective();
 }
 
 void GUI::SavePerspective()
@@ -805,24 +818,26 @@ void GUI::SavePerspective()
 	g_settings.setInteger(Config::MINIMAP_VISIBLE, minimap? 1: 0);
 	g_settings.setInteger(Config::ACTIONS_HISTORY_VISIBLE, actions_history_window ? 1 : 0);
 
-	wxString pinfo;
-	for(auto &palette : palettes) {
-		if(aui_manager->GetPane(palette).IsShown())
-			pinfo << aui_manager->SavePaneInfo(aui_manager->GetPane(palette)) << "|";
+	{
+		wxString layout;
+		for(auto &palette : palettes) {
+			if(aui_manager->GetPane(palette).IsShown())
+				layout << aui_manager->SavePaneInfo(aui_manager->GetPane(palette)) << "|";
+		}
+		g_settings.setString(Config::PALETTE_LAYOUT, nstr(layout));
 	}
-	g_settings.setString(Config::PALETTE_LAYOUT, nstr(pinfo));
 
 	if(minimap) {
-		wxString s = aui_manager->SavePaneInfo(aui_manager->GetPane(minimap));
-		g_settings.setString(Config::MINIMAP_LAYOUT, nstr(s));
+		wxString layout = aui_manager->SavePaneInfo(aui_manager->GetPane(minimap));
+		g_settings.setString(Config::MINIMAP_LAYOUT, nstr(layout));
 	}
 
 	if(actions_history_window) {
-		wxString info = aui_manager->SavePaneInfo(aui_manager->GetPane(actions_history_window));
-		g_settings.setString(Config::ACTIONS_HISTORY_LAYOUT, nstr(info));
+		wxString layout = aui_manager->SavePaneInfo(aui_manager->GetPane(actions_history_window));
+		g_settings.setString(Config::ACTIONS_HISTORY_LAYOUT, nstr(layout));
 	}
 
-	root->GetAuiToolBar()->SavePerspective();
+	toolbar->SavePerspective();
 }
 
 void GUI::HideSearchWindow()
@@ -905,7 +920,7 @@ PaletteWindow* GUI::NewPalette()
 void GUI::RefreshPalettes(Map* m, bool usedefault)
 {
 	for(auto&palette : palettes) {
-		palette->OnUpdate(m? m : (usedefault? (IsEditorOpen()? &GetCurrentMap() : nullptr): nullptr));
+		palette->OnUpdate(m? m : (usedefault? (IsProjectOpen() ? &GetCurrentMap() : nullptr): nullptr));
 	}
 	SelectBrush();
 
@@ -920,7 +935,7 @@ void GUI::RefreshOtherPalettes(PaletteWindow* p)
 {
 	for(auto &palette : palettes) {
 		if(palette != p)
-			palette->OnUpdate(IsEditorOpen()? &GetCurrentMap() : nullptr);
+			palette->OnUpdate(IsProjectOpen() ? &GetCurrentMap() : nullptr);
 	}
 	SelectBrush();
 }
@@ -965,7 +980,7 @@ void GUI::RebuildPalettes()
 	// Use a temporary list for iterating
 	PaletteList tmp = palettes;
 	for(auto &piter : tmp) {
-		piter->ReloadSettings(IsEditorOpen()? &GetCurrentMap() : nullptr);
+		piter->ReloadSettings(IsProjectOpen() ? &GetCurrentMap() : nullptr);
 	}
 	aui_manager->Update();
 }
@@ -1152,7 +1167,7 @@ void GUI::DestroyLoadBar()
 }
 
 void GUI::ShowWelcomeDialog(const wxBitmap &icon) {
-    std::vector<wxString> recent_files = root->GetRecentFiles();
+    std::vector<wxString> recent_files = GetRecentFiles();
     welcomeDialog = newd WelcomeDialog(__W_RME_APPLICATION_NAME__, "Version " + __W_RME_VERSION__, FROM_DIP(root, wxSize(800, 480)), icon, recent_files);
     welcomeDialog->Bind(wxEVT_CLOSE_WINDOW, &GUI::OnWelcomeDialogClosed, this);
     welcomeDialog->Bind(WELCOME_DIALOG_ACTION, &GUI::OnWelcomeDialogAction, this);
@@ -1190,7 +1205,8 @@ void GUI::OnWelcomeDialogAction(wxCommandEvent &event)
 
 void GUI::UpdateMenubar()
 {
-	root->UpdateMenubar();
+	menubar->Update();
+	toolbar->UpdateButtons();
 }
 
 void GUI::SetScreenCenterPosition(const Position& position, bool showIndicator)
@@ -1211,7 +1227,7 @@ void GUI::DoCut()
 
 	editor->copybuffer.cut(*editor, GetCurrentFloor());
 	RefreshView();
-	root->UpdateMenubar();
+	UpdateMenubar();
 }
 
 void GUI::DoCopy()
@@ -1225,7 +1241,7 @@ void GUI::DoCopy()
 
 	editor->copybuffer.copy(*editor, GetCurrentFloor());
 	RefreshView();
-	root->UpdateMenubar();
+	UpdateMenubar();
 }
 
 void GUI::DoPaste()
@@ -1286,7 +1302,7 @@ bool GUI::DoUndo()
 			SetSelectionMode();
 		SetStatusText("Undo action");
 		UpdateMinimap();
-		root->UpdateMenubar();
+		UpdateMenubar();
 		root->Refresh();
 		return true;
 	}
@@ -1302,7 +1318,7 @@ bool GUI::DoRedo()
 			SetSelectionMode();
 		SetStatusText("Redo action");
 		UpdateMinimap();
-		root->UpdateMenubar();
+		UpdateMenubar();
 		root->Refresh();
 		return true;
 	}
@@ -1407,8 +1423,8 @@ void GUI::RefreshActions()
 
 void GUI::ShowToolbar(ToolBarID id, bool show)
 {
-	if(root && root->GetAuiToolBar())
-		root->GetAuiToolBar()->Show(id, show);
+	if(toolbar) // ?
+		toolbar->Show(id, show);
 }
 
 void GUI::SwitchMode()
@@ -1484,7 +1500,7 @@ void GUI::SetBrushSize(int nz)
 		palette->OnUpdateBrushSize(brush_shape, brush_size);
 	}
 
-	root->GetAuiToolBar()->UpdateBrushSize(brush_shape, brush_size);
+	toolbar->UpdateBrushSize(brush_shape, brush_size);
 }
 
 void GUI::SetBrushVariation(int nz)
@@ -1511,7 +1527,7 @@ void GUI::SetBrushShape(BrushShape bs)
 		palette->OnUpdateBrushSize(brush_shape, brush_size);
 	}
 
-	root->GetAuiToolBar()->UpdateBrushSize(brush_shape, brush_size);
+	toolbar->UpdateBrushSize(brush_shape, brush_size);
 }
 
 void GUI::SetBrushThickness(bool on, int x, int y)
@@ -1672,7 +1688,7 @@ bool GUI::SelectBrush(const Brush* whatbrush, PaletteType primary)
 		return false;
 
 	SelectBrushInternal(const_cast<Brush*>(whatbrush));
-	root->GetAuiToolBar()->UpdateBrushButtons();
+	toolbar->UpdateBrushButtons();
 	return true;
 }
 

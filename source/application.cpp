@@ -167,10 +167,7 @@ bool Application::OnInit()
     g_gui.root = newd MainFrame(__W_RME_APPLICATION_NAME__, wxDefaultPosition, wxSize(700, 500));
 	SetTopWindow(g_gui.root);
 	g_gui.SetTitle("");
-
-	g_gui.root->LoadRecentFiles();
-
-	// Load palette
+	g_gui.LoadRecentFiles();
 	g_gui.LoadPerspective();
 
     wxIcon icon(rme_icon);
@@ -312,7 +309,7 @@ void Application::Unload()
 	g_gui.UnloadVersion();
 	g_gui.SaveHotkeys();
 	g_gui.SavePerspective();
-	g_gui.root->SaveRecentFiles();
+	g_gui.SaveRecentFiles();
 	g_settings.save(true);
 	g_gui.root = nullptr;
 }
@@ -343,7 +340,6 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
     #endif
 
 	// Creates the file-dropdown menu
-	menu_bar = newd MainMenuBar(this);
 	wxArrayString warnings;
 	wxString error;
 
@@ -352,24 +348,22 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
 	if(!filename.FileExists())
 		filename = FileName(GUI::GetDataDirectory() + "menubar.xml");
 
-	if(!menu_bar->Load(filename, warnings, error)) {
-		wxLogError(wxString() + "Could not load menubar.xml, editor will NOT be able to show its menu.\n");
+	g_gui.menubar = newd MainMenuBar(this);
+	if(!g_gui.menubar->Load(filename, warnings, error)) {
+		wxLogError(wxString() + "Could not load menubar.xml, editor will NOT be able to show the menu.\n");
 	}
+
+	g_gui.aui_manager = newd wxAuiManager(this);
+	g_gui.toolbar = newd MainToolBar(this, g_gui.aui_manager);
+	g_gui.mapwindow = newd MapWindow(this);
+	g_gui.aui_manager->AddPane(g_gui.mapwindow, wxAuiPaneInfo().CenterPane().Floatable(false).CloseButton(false).PaneBorder(false));
+
+	g_gui.aui_manager->Update();
+	g_gui.UpdateMenubar();
 
 	wxStatusBar* statusbar = CreateStatusBar();
 	statusbar->SetFieldsCount(4);
 	SetStatusText(wxString("Welcome to ") << __W_RME_APPLICATION_NAME__ << " " << __W_RME_VERSION__);
-
-	// Le sizer
-	g_gui.aui_manager = newd wxAuiManager(this);
-	g_gui.tabbook = newd MapTabbook(this, wxID_ANY);
-
-	tool_bar = newd MainToolBar(this, g_gui.aui_manager);
-
-	g_gui.aui_manager->AddPane(g_gui.tabbook, wxAuiPaneInfo().CenterPane().Floatable(false).CloseButton(false).PaneBorder(false));
-	g_gui.aui_manager->Update();
-
-	UpdateMenubar();
 }
 
 MainFrame::~MainFrame() = default;
@@ -411,14 +405,14 @@ void MainFrame::OnUpdateReceived(wxCommandEvent& event)
 
 void MainFrame::OnUpdateMenus(wxCommandEvent&)
 {
-	UpdateMenubar();
+	g_gui.UpdateMenubar();
 	g_gui.UpdateMinimap(true);
 	g_gui.UpdateTitle();
 }
 
 void MainFrame::OnUpdateActions(wxCommandEvent&)
 {
-	tool_bar->UpdateButtons();
+	g_gui.toolbar->UpdateButtons();
 	g_gui.RefreshActions();
 }
 
@@ -436,19 +430,13 @@ bool MainFrame::MSWTranslateMessage(WXMSG *msg)
 }
 #endif
 
-void MainFrame::UpdateMenubar()
-{
-	menu_bar->Update();
-	tool_bar->UpdateButtons();
-}
-
 bool MainFrame::DoQueryClose() {
 	return true;
 }
 
 bool MainFrame::DoQuerySave(bool doclose)
 {
-	if(!g_gui.IsEditorOpen()) {
+	if(!g_gui.IsProjectOpen()) {
 		return true;
 	}
 
@@ -516,12 +504,12 @@ bool MainFrame::DoQueryImportCreatures()
 
 void MainFrame::UpdateFloorMenu()
 {
-	menu_bar->UpdateFloorMenu();
+	g_gui.menubar->UpdateFloorMenu();
 }
 
 void MainFrame::UpdateIndicatorsMenu()
 {
-	menu_bar->UpdateIndicatorsMenu();
+	g_gui.menubar->UpdateIndicatorsMenu();
 }
 
 bool MainFrame::LoadMap(FileName name)
@@ -531,7 +519,7 @@ bool MainFrame::LoadMap(FileName name)
 
 void MainFrame::OnExit(wxCloseEvent& event)
 {
-	while(g_gui.IsEditorOpen()) {
+	while(g_gui.IsProjectOpen()) {
 		if(!DoQuerySave()) {
 			if(event.CanVeto()) {
 				event.Veto();
@@ -548,26 +536,6 @@ void MainFrame::OnExit(wxCloseEvent& event)
 	exit(0);
 #endif
 	Destroy();
-}
-
-void MainFrame::AddRecentFile(const FileName& file)
-{
-	menu_bar->AddRecentFile(file);
-}
-
-void MainFrame::LoadRecentFiles()
-{
-	menu_bar->LoadRecentFiles();
-}
-
-void MainFrame::SaveRecentFiles()
-{
-	menu_bar->SaveRecentFiles();
-}
-
-std::vector<wxString> MainFrame::GetRecentFiles()
-{
-    return menu_bar->GetRecentFiles();
 }
 
 void MainFrame::PrepareDC(wxDC& dc)

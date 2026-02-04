@@ -34,7 +34,7 @@ public:
             const std::vector<wxString> &recentFiles);
     void OnButtonClicked(const wxMouseEvent& event);
     void OnCheckboxClicked(const wxCommandEvent& event);
-    void OnRecentItemClicked(const wxMouseEvent& event);
+    void OnRecentProjectClicked(const wxMouseEvent& event);
 private:
     WelcomeDialogPanel* m_welcome_dialog_panel;
 };
@@ -78,19 +78,19 @@ private:
     bool m_is_hover;
 };
 
-class RecentMapsPanel : public wxPanel
+class RecentProjectsPanel : public wxPanel
 {
 public:
-    RecentMapsPanel(wxWindow* parent,
+    RecentProjectsPanel(wxWindow* parent,
             WelcomeDialog* dialog,
             const wxColour& base_colour,
             const std::vector<wxString> &recent_files);
 };
 
-class RecentItem : public wxPanel
+class RecentProject : public wxPanel
 {
 public:
-    RecentItem(wxWindow* parent, const wxColour& base_colour, const wxString &item_name);
+    RecentProject(wxWindow* parent, const wxColour& base_colour, const wxString &item_name);
     void OnMouseEnter(const wxMouseEvent& event);
     void OnMouseLeave(const wxMouseEvent& event);
     void PropagateItemClicked(wxMouseEvent& event);

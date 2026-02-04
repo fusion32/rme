@@ -21,12 +21,12 @@
 #include "graphics.h"
 #include "position.h"
 
+#include "main_menubar.h"
+#include "main_toolbar.h"
 #include "copybuffer.h"
 #include "dcbutton.h"
 #include "brush_enums.h"
 #include "gui_ids.h"
-#include "editor_tabs.h"
-#include "map_tab.h"
 #include "palette_window.h"
 
 class BaseMap;
@@ -118,6 +118,11 @@ private:
 	bool operator==(const GUI& g_gui); // Don't compare me
 
 public:
+	void AddRecentFile(FileName file);
+	void LoadRecentFiles();
+	void SaveRecentFiles();
+	std::vector<wxString> GetRecentFiles();
+
 	/**
 	 * Saves the perspective to the configuration file
 	 * This is the position of all windows etc. in the editor
@@ -299,32 +304,6 @@ public:
 	bool DoUndo();
 	bool DoRedo();
 
-	// Editor interface
-	wxAuiManager* GetAuiManager() const { return aui_manager; }
-	EditorTab* GetCurrentTab();
-	EditorTab* GetTab(int idx);
-	int GetTabCount() const;
-	bool IsAnyEditorOpen() const;
-	bool IsEditorOpen() const;
-	void CloseCurrentEditor();
-	Editor* GetCurrentEditor();
-	MapTab* GetCurrentMapTab() const;
-	void CycleTab(bool forward = true);
-	bool CloseAllEditors();
-	void NewMapView();
-
-	// Map
-	Map& GetCurrentMap();
-	int GetOpenMapCount();
-	bool ShouldSave();
-	void SaveCurrentMap(FileName filename, bool showdialog); // "" means default filename
-	void SaveCurrentMap(bool showdialog = true) { SaveCurrentMap(wxString(""), showdialog); }
-	bool NewMap();
-	void OpenMap();
-	void SaveMap();
-	void SaveMapAs();
-	bool LoadMap(const FileName& fileName);
-
 	// TODO(fusion): Even before, there could only be a single "client version"
 	// loaded at any given time and it didn't make a lot of sense to have multiple
 	// maps loaded at the same time, unless you were trying to copy and paste stuff
@@ -333,11 +312,12 @@ public:
 	// keep tabs tho, as they could be used to edit other aspects of a project but
 	// that's for a later stage.
 	void NewProject(void);
+	void OpenProject(void);
 	void OpenProject(FileName filename);
 	void CloseProject(void);
-	//void SaveProject(void);
-	//void SaveProjectAs(void);
-	bool IsProjectOpen(void) const { return false; }
+	void SaveProject(void);
+	void SaveProjectAs(void);
+	bool IsProjectOpen(void) const;
 
 protected:
 	bool LoadDataFiles(wxString& error, wxArrayString& warnings);
@@ -375,18 +355,24 @@ protected:
 	// Public members
 	//=========================================================================
 public:
+	wxFileHistory recentFiles;
+	//wxString m_projectDir;
 	wxString m_dataDirectory;
-	wxAuiManager* aui_manager;
-	MapTabbook* tabbook;
-	MainFrame* root; // The main frame
-	WelcomeDialog* welcomeDialog;
-	CopyBuffer copybuffer;
+
+	WelcomeDialog *welcomeDialog;
+	MainFrame *root;
+	MainMenuBar *menubar;
+	wxAuiManager *aui_manager;
+	MainToolBar *toolbar;
+	MapWindow *mapwindow;
 
 	MinimapWindow* minimap;
 	DCButton* gem; // The small gem in the lower-right corner
 	SearchResultWindow* search_result_window;
 	DuplicatedItemsWindow* duplicated_items_window;
 	ActionsHistoryWindow* actions_history_window;
+
+	CopyBuffer copybuffer;
 	GraphicManager gfx;
 
 	BaseMap* secondary_map; // A buffer map
@@ -455,8 +441,6 @@ protected:
 	int disabled_counter;
 
 	friend class RenderingLock;
-	friend MapTab::MapTab(MapTabbook*, Editor*);
-	friend MapTab::MapTab(const MapTab*);
 };
 
 extern GUI g_gui;

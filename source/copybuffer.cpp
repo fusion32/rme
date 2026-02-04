@@ -26,7 +26,7 @@
 CopyBuffer::CopyBuffer() :
 	tiles(newd BaseMap())
 {
-	;
+	// no-op
 }
 
 size_t CopyBuffer::GetTileCount()

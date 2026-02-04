@@ -22,6 +22,7 @@
 #include "replace_items_window.h"
 
 class MapCanvas;
+class MapScrollBar;
 class DCButton;
 
 // Map window, a window displaying a map, complete with scrollbars
@@ -87,8 +88,8 @@ protected:
 	Editor& editor;
 	DCButton* gem;
 	MapCanvas* canvas;
-	wxScrollBar* hScroll;
-	wxScrollBar* vScroll;
+	MapScrollBar* hScroll;
+	MapScrollBar* vScroll;
 
 private:
 	ReplaceItemsDialog* replaceItemsDialog;

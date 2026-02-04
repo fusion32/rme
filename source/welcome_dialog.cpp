@@ -19,6 +19,7 @@
 #include "welcome_dialog.h"
 #include "settings.h"
 #include "preferences.h"
+#include <wx/dirdlg.h>
 
 wxDEFINE_EVENT(WELCOME_DIALOG_ACTION, wxCommandEvent);
 
@@ -51,15 +52,12 @@ void WelcomeDialog::OnButtonClicked(const wxMouseEvent &event) {
         } else {
             wxCommandEvent action_event(WELCOME_DIALOG_ACTION);
             if(button->GetAction() == wxID_OPEN) {
-                wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ?
-                                    "(*.otbm;*.otgz)|*.otbm;*.otgz" :
-                                    "(*.otbm)|*.otbm|Compressed OpenTibia Binary Map (*.otgz)|*.otgz";
-                wxFileDialog file_dialog(this, "Open map file", "", "", wildcard, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-                if(file_dialog.ShowModal() == wxID_OK) {
-                    action_event.SetString(file_dialog.GetPath());
-                } else {
+                wxDirDialog openDialog(this, "Open project", wxEmptyString, wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+                if(openDialog.ShowModal() == wxID_CANCEL) {
                     return;
                 }
+
+                action_event.SetString(openDialog.GetPath());
             }
             action_event.SetId(button->GetAction());
             ProcessWindowEvent(action_event);
@@ -71,13 +69,11 @@ void WelcomeDialog::OnCheckboxClicked(const wxCommandEvent &event) {
     g_settings.setInteger(Config::WELCOME_DIALOG, event.GetInt());
 }
 
-void WelcomeDialog::OnRecentItemClicked(const wxMouseEvent &event) {
-    auto *recent_item = dynamic_cast<RecentItem *>(event.GetEventObject());
-    wxSize button_size = recent_item->GetSize();
-    wxPoint click_point = event.GetPosition();
-    if(click_point.x > 0 && click_point.x < button_size.x && click_point.y > 0 && click_point.y < button_size.x) {
+void WelcomeDialog::OnRecentProjectClicked(const wxMouseEvent &event) {
+    RecentProject *obj = dynamic_cast<RecentProject*>(event.GetEventObject());
+    if(obj && obj->GetClientRect().Contains(event.GetPosition())){
         wxCommandEvent action_event(WELCOME_DIALOG_ACTION);
-        action_event.SetString(recent_item->GetText());
+        action_event.SetString(obj->GetText());
         action_event.SetId(wxID_OPEN);
         ProcessWindowEvent(action_event);
     }
@@ -97,35 +93,32 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog *dialog,
           m_text_colour(base_colour.ChangeLightness(40)),
           m_background_colour(base_colour) {
 
-    auto *recent_maps_panel = newd RecentMapsPanel(this,
+    auto *recent_projects_panel = newd RecentProjectsPanel(this,
                                                    dialog,
                                                    base_colour,
                                                    recent_files);
-    recent_maps_panel->SetMaxSize(wxSize(size.x / 2, size.y));
-    recent_maps_panel->SetBackgroundColour(base_colour.ChangeLightness(98));
+    recent_projects_panel->SetMaxSize(wxSize(size.x / 2, size.y));
+    recent_projects_panel->SetBackgroundColour(base_colour.ChangeLightness(98));
 
     wxSize button_size = FROM_DIP(this, wxSize(150, 35));
     wxColour button_base_colour = base_colour.ChangeLightness(90);
 
-    int button_pos_center_x = size.x / 4 - button_size.x / 2;
-    int button_pos_center_y = size.y / 2;
-
-    wxPoint newMapButtonPoint(button_pos_center_x, button_pos_center_y);
-    auto *new_map_button = newd WelcomeDialogButton(this,
+    auto *new_project_button = newd WelcomeDialogButton(this,
                                                     wxDefaultPosition,
                                                     button_size,
                                                     button_base_colour,
                                                     "New");
-    new_map_button->SetAction(wxID_NEW);
-    new_map_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
+    new_project_button->SetAction(wxID_NEW);
+    new_project_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
 
-    auto *open_map_button = newd WelcomeDialogButton(this,
+    auto *open_project_button = newd WelcomeDialogButton(this,
                                                      wxDefaultPosition,
                                                      button_size,
                                                      button_base_colour,
                                                      "Open");
-    open_map_button->SetAction(wxID_OPEN);
-    open_map_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
+    open_project_button->SetAction(wxID_OPEN);
+    open_project_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
+
     auto *preferences_button = newd WelcomeDialogButton(this,
                                                         wxDefaultPosition,
                                                         button_size,
@@ -139,8 +132,8 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog *dialog,
     wxSizer *rootSizer = newd wxBoxSizer(wxHORIZONTAL);
     wxSizer *buttons_sizer = newd wxBoxSizer(wxVERTICAL);
     buttons_sizer->AddSpacer(size.y / 2);
-    buttons_sizer->Add(new_map_button, 0, wxALIGN_CENTER | wxTOP, FROM_DIP(this, 10));
-    buttons_sizer->Add(open_map_button, 0, wxALIGN_CENTER | wxTOP, FROM_DIP(this, 10));
+    buttons_sizer->Add(new_project_button, 0, wxALIGN_CENTER | wxTOP, FROM_DIP(this, 10));
+    buttons_sizer->Add(open_project_button, 0, wxALIGN_CENTER | wxTOP, FROM_DIP(this, 10));
     buttons_sizer->Add(preferences_button, 0, wxALIGN_CENTER | wxTOP, FROM_DIP(this, 10));
 
     wxSizer *vertical_sizer = newd wxBoxSizer(wxVERTICAL);
@@ -155,7 +148,7 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog *dialog,
     vertical_sizer->Add(horizontal_sizer, 1, wxEXPAND);
 
     rootSizer->Add(vertical_sizer, 1, wxEXPAND);
-    rootSizer->Add(recent_maps_panel, 1, wxEXPAND);
+    rootSizer->Add(recent_projects_panel, 1, wxEXPAND);
     SetSizer(rootSizer);
 }
 
@@ -227,21 +220,21 @@ void WelcomeDialogButton::OnMouseLeave(const wxMouseEvent &event) {
     Refresh();
 }
 
-RecentMapsPanel::RecentMapsPanel(wxWindow *parent,
+RecentProjectsPanel::RecentProjectsPanel(wxWindow *parent,
                                  WelcomeDialog *dialog,
                                  const wxColour &base_colour,
                                  const std::vector<wxString> &recent_files)
         : wxPanel(parent, wxID_ANY) {
     wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
-    for(const wxString &file : recent_files) {
-        auto *recent_item = newd RecentItem(this, base_colour, file);
+    for(const wxString &dir: recent_files) {
+        auto *recent_item = newd RecentProject(this, base_colour, dir);
         sizer->Add(recent_item, 0, wxEXPAND);
-        recent_item->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnRecentItemClicked, dialog);
+        recent_item->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnRecentProjectClicked, dialog);
     }
     SetSizerAndFit(sizer);
 }
 
-RecentItem::RecentItem(wxWindow *parent,
+RecentProject::RecentProject(wxWindow *parent,
                        const wxColour &base_colour,
                        const wxString &item_name)
         : wxPanel(parent, wxID_ANY),
@@ -262,20 +255,20 @@ RecentItem::RecentItem(wxWindow *parent,
     sizer->Add(m_title);
     sizer->Add(m_file_path, 1, wxTOP, FROM_DIP(this, 2));
     mainSizer->Add(sizer, 0, wxEXPAND | wxALL, FROM_DIP(this, 8));
-    Bind(wxEVT_ENTER_WINDOW, &RecentItem::OnMouseEnter, this);
-    Bind(wxEVT_LEAVE_WINDOW, &RecentItem::OnMouseLeave, this);
-    m_title->Bind(wxEVT_LEFT_UP, &RecentItem::PropagateItemClicked, this);
-    m_file_path->Bind(wxEVT_LEFT_UP, &RecentItem::PropagateItemClicked, this);
+    Bind(wxEVT_ENTER_WINDOW, &RecentProject::OnMouseEnter, this);
+    Bind(wxEVT_LEAVE_WINDOW, &RecentProject::OnMouseLeave, this);
+    m_title->Bind(wxEVT_LEFT_UP, &RecentProject::PropagateItemClicked, this);
+    m_file_path->Bind(wxEVT_LEFT_UP, &RecentProject::PropagateItemClicked, this);
     SetSizerAndFit(mainSizer);
 }
 
-void RecentItem::PropagateItemClicked(wxMouseEvent& event) {
+void RecentProject::PropagateItemClicked(wxMouseEvent& event) {
     event.ResumePropagation(1);
     event.SetEventObject(this);
     event.Skip();
 }
 
-void RecentItem::OnMouseEnter(const wxMouseEvent &event) {
+void RecentProject::OnMouseEnter(const wxMouseEvent &event) {
     if(GetScreenRect().Contains(ClientToScreen(event.GetPosition()))
         && m_title->GetForegroundColour() != m_text_colour_hover) {
         m_title->SetForegroundColour(m_text_colour_hover);
@@ -285,7 +278,7 @@ void RecentItem::OnMouseEnter(const wxMouseEvent &event) {
     }
 }
 
-void RecentItem::OnMouseLeave(const wxMouseEvent &event) {
+void RecentProject::OnMouseLeave(const wxMouseEvent &event) {
     if(!GetScreenRect().Contains(ClientToScreen(event.GetPosition()))
         && m_title->GetForegroundColour() != m_text_colour) {
         m_title->SetForegroundColour(m_text_colour);

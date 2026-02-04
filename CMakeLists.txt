@@ -7,15 +7,6 @@ find_package(ZLIB REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(wxWidgets COMPONENTS html aui gl adv core net base REQUIRED)
 
-# LibArchive disabled in compilation level by default, see "#define OTGZ_SUPPORT" in the "definitions.h" file
-# If you need use, enable this:
-#find_package(LibArchive REQUIRED)
-#${LibArchive_INCLUDE_DIRS} ${LibArchive_LIBRARIES}
-
-#if(APPLE)
-#    set(CMAKE_PREFIX_PATH /usr/local/opt/libarchive)
-#endif()
-
 if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
 	add_compile_options(-Wno-deprecated-enum-enum-conversion)
 endif ()

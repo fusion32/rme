@@ -81,7 +81,7 @@ void MinimapWindow::OnPaint(wxPaintEvent& event)
 	pdc.SetBackground(*wxBLACK_BRUSH);
 	pdc.Clear();
 
-	if(!g_gui.IsEditorOpen()) return;
+	if(!g_gui.IsProjectOpen()) return;
 	Editor& editor = *g_gui.GetCurrentEditor();
 	const Map& map = editor.getMap();
 
@@ -183,7 +183,7 @@ void MinimapWindow::OnPaint(wxPaintEvent& event)
 
 void MinimapWindow::OnMouseClick(wxMouseEvent& event)
 {
-	if(!g_gui.IsEditorOpen()) return;
+	if(!g_gui.IsProjectOpen()) return;
 	int new_map_x = last_start_x + event.GetX();
 	int new_map_y = last_start_y + event.GetY();
 	g_gui.SetScreenCenterPosition(Position(new_map_x, new_map_y, g_gui.GetCurrentFloor()));

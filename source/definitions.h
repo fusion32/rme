@@ -48,7 +48,6 @@
 #endif
 // OS
 
-#define OTGZ_SUPPORT 0
 #define ASSETS_NAME "Tibia"
 
 #ifdef __VISUALC__
@@ -102,12 +101,6 @@
 #       define _USE_PROCESS_COM
 #   endif
 #endif
-
-#define MAP_LOAD_FILE_WILDCARD_OTGZ "OpenTibia Binary Map (*.otbm;*.otgz)|*.otbm;*.otgz"
-#define MAP_SAVE_FILE_WILDCARD_OTGZ "OpenTibia Binary Map (*.otbm)|*.otbm|Compressed OpenTibia Binary Map (*.otgz)|*.otgz"
-
-#define MAP_LOAD_FILE_WILDCARD "OpenTibia Binary Map (*.otbm)|*.otbm"
-#define MAP_SAVE_FILE_WILDCARD "OpenTibia Binary Map (*.otbm)|*.otbm"
 
 // wxString conversions
 #define nstr(str) std::string((const char*)(str.mb_str(wxConvUTF8)))

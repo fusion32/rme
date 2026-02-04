@@ -32,7 +32,7 @@ class MapDrawer;
 class MapCanvas : public wxGLCanvas
 {
 public:
-	MapCanvas(MapWindow* parent, Editor& editor, int* attriblist);
+	MapCanvas(MapWindow* parent, Editor& editor);
 	virtual ~MapCanvas();
 	void Reset();
 
