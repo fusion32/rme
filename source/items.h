@@ -296,7 +296,7 @@ int GetMinItemTypeId(void);
 int GetMaxItemTypeId(void);
 const ItemType &GetItemType(uint16_t typeId);
 ItemType *GetMutableItemType(uint16_t typeId);
-bool LoadItemTypes(const char *filename, wxString &outError, wxArrayString &outWarnings);
+bool LoadItemTypes(const wxString &filename, wxString &outError, wxArrayString &outWarnings);
 void ClearItemTypes(void);
 
 #endif

@@ -49,28 +49,42 @@ void Materials::clear()
 	tilesets.clear();
 }
 
-bool Materials::loadMaterials(const FileName& identifier, wxString& error, wxArrayString& warnings)
+bool Materials::loadMaterials(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings)
+{
+	FileName filename(projectDir, "materials.xml");
+	if(!filename.Exists()){
+		filename.AppendDir("editor");
+		if(!filename.Exists()){
+			outError << "Unable to locate " << filename.GetFullName();
+			return false;
+		}
+	}
+
+	return loadMaterials(filename, outError, outWarnings);
+}
+
+bool Materials::loadMaterials(const FileName &filename, wxString &outError, wxArrayString &outWarnings)
 {
 	pugi::xml_document doc;
-	pugi::xml_parse_result result = doc.load_file(identifier.GetFullPath().mb_str());
+	pugi::xml_parse_result result = doc.load_file(filename.GetFullPath().mb_str());
 	if(!result) {
-		warnings.push_back("Could not open " + identifier.GetFullName() + " (file not found or syntax error)");
+		outWarnings.push_back(wxString("Could not open ")
+				<< filename.GetFullName() << ": " << result.description());
 		return false;
 	}
 
 	pugi::xml_node node = doc.child("materials");
 	if(!node) {
-		warnings.push_back(identifier.GetFullName() + ": Invalid rootheader.");
+		outWarnings.push_back(filename.GetFullName() << ": Invalid rootheader.");
 		return false;
 	}
 
-	unserializeMaterials(identifier, node, error, warnings);
+	unserializeMaterials(filename, node, outError, outWarnings);
 	return true;
 }
 
-bool Materials::unserializeMaterials(const FileName& filename, pugi::xml_node node, wxString& error, wxArrayString& warnings)
+bool Materials::unserializeMaterials(const FileName &filename, pugi::xml_node node, wxString &outError, wxArrayString &outWarnings)
 {
-	wxString warning;
 	pugi::xml_attribute attribute;
 	for(pugi::xml_node childNode = node.first_child(); childNode; childNode = childNode.next_sibling()) {
 		const std::string& childName = as_lower_str(childNode.name());
@@ -79,28 +93,21 @@ bool Materials::unserializeMaterials(const FileName& filename, pugi::xml_node no
 				continue;
 			}
 
-			FileName includeName;
-			includeName.SetPath(filename.GetPath());
+			wxString innerError;
+			FileName includeName = filename;
 			includeName.SetFullName(wxString(attribute.as_string(), wxConvUTF8));
-
-			wxString subError;
-			if(!loadMaterials(includeName, subError, warnings)) {
-				warnings.push_back("Error while loading file \"" + includeName.GetFullName() + "\": " + subError);
+			if(!loadMaterials(includeName, innerError, outWarnings)) {
+				outWarnings.push_back(wxString("Error while loading file \"")
+						<< includeName.GetFullName() << "\": " + innerError);
 			}
 		} else if(childName == "metaitem") {
 			//g_items.loadMetaItem(childNode);
 		} else if(childName == "border") {
-			g_brushes.unserializeBorder(childNode, warnings);
-			if(warning.size()) {
-				warnings.push_back("materials.xml: " + warning);
-			}
+			g_brushes.unserializeBorder(childNode, outWarnings);
 		} else if(childName == "brush") {
-			g_brushes.unserializeBrush(childNode, warnings);
-			if(warning.size()) {
-				warnings.push_back("materials.xml: " + warning);
-			}
+			g_brushes.unserializeBrush(childNode, outWarnings);
 		} else if(childName == "tileset") {
-			unserializeTileset(childNode, warnings);
+			unserializeTileset(childNode, outWarnings);
 		}
 	}
 	return true;

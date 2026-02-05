@@ -259,18 +259,27 @@ bool CreatureDatabase::hasMissing() const
 	return false;
 }
 
-bool CreatureDatabase::loadFromXML(const FileName& filename, bool standard, wxString& error, wxArrayString& warnings)
+bool CreatureDatabase::loadFromXML(const wxString &projectDir, bool standard, wxString &outError, wxArrayString &outWarnings)
 {
+	FileName filename(projectDir, "creatures.xml");
+	if(!filename.Exists()){
+		filename.AppendDir("editor");
+		if(!filename.Exists()){
+			outError << "Unable to locate " << filename.GetFullName();
+			return false;
+		}
+	}
+
 	pugi::xml_document doc;
 	pugi::xml_parse_result result = doc.load_file(filename.GetFullPath().mb_str());
 	if(!result) {
-		error = "Couldn't open file \"" + filename.GetFullName() + "\", invalid format?";
+		outError << "Couldn't open file \"" << filename.GetFullName() << "\":" << result.description();
 		return false;
 	}
 
 	pugi::xml_node node = doc.child("creatures");
 	if(!node) {
-		error = "Invalid file signature, this file is not a valid creatures file.";
+		outError << "Creatures file is missing \"creatures\" top-level node.";
 		return false;
 	}
 
@@ -279,11 +288,11 @@ bool CreatureDatabase::loadFromXML(const FileName& filename, bool standard, wxSt
 			continue;
 		}
 
-		CreatureType* creatureType = CreatureType::loadFromXML(creatureNode, warnings);
+		CreatureType* creatureType = CreatureType::loadFromXML(creatureNode, outWarnings);
 		if(creatureType) {
 			creatureType->standard = standard;
 			if((*this)[creatureType->name]) {
-				warnings.push_back("Duplicate creature type name \"" + wxstr(creatureType->name) + "\"! Discarding...");
+				outWarnings.push_back("Duplicate creature type name \"" + wxstr(creatureType->name) + "\"! Discarding...");
 				delete creatureType;
 			} else {
 				creature_map[as_lower_str(creatureType->name)] = creatureType;
@@ -293,12 +302,12 @@ bool CreatureDatabase::loadFromXML(const FileName& filename, bool standard, wxSt
 	return true;
 }
 
-bool CreatureDatabase::importXMLFromOT(const FileName& filename, wxString& error, wxArrayString& warnings)
+bool CreatureDatabase::importXMLFromOT(const wxString &filename, wxString &outError, wxArrayString &outWarnings)
 {
 	pugi::xml_document doc;
-	pugi::xml_parse_result result = doc.load_file(filename.GetFullPath().mb_str());
+	pugi::xml_parse_result result = doc.load_file(filename.mb_str());
 	if(!result) {
-		error = "Couldn't open file \"" + filename.GetFullName() + "\", invalid format?";
+		outError << "Couldn't open file \"" << filename << "\": " << result.description();
 		return false;
 	}
 
@@ -323,7 +332,7 @@ bool CreatureDatabase::importXMLFromOT(const FileName& filename, wxString& error
 				continue;
 			}
 
-			CreatureType* creatureType = CreatureType::loadFromOTXML(monsterFile, monsterDoc, warnings);
+			CreatureType* creatureType = CreatureType::loadFromOTXML(monsterFile, monsterDoc, outWarnings);
 			if(creatureType) {
 				CreatureType* current = (*this)[creatureType->name];
 				if(current) {
@@ -349,7 +358,7 @@ bool CreatureDatabase::importXMLFromOT(const FileName& filename, wxString& error
 			}
 		}
 	} else if((node = doc.child("monster")) || (node = doc.child("npc"))) {
-		CreatureType* creatureType = CreatureType::loadFromOTXML(filename, doc, warnings);
+		CreatureType* creatureType = CreatureType::loadFromOTXML(filename, doc, outWarnings);
 		if(creatureType) {
 			CreatureType* current = (*this)[creatureType->name];
 
@@ -375,7 +384,7 @@ bool CreatureDatabase::importXMLFromOT(const FileName& filename, wxString& error
 			}
 		}
 	} else {
-		error = "This is not valid OT npc/monster data file.";
+		outError << "This is not valid OT npc/monster data file.";
 		return false;
 	}
 	return true;

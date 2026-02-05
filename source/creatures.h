@@ -50,8 +50,8 @@ public:
 	iterator begin() noexcept { return creature_map.begin(); }
 	iterator end() noexcept { return creature_map.end(); }
 
-	bool loadFromXML(const FileName& filename, bool standard, wxString& error, wxArrayString& warnings);
-	bool importXMLFromOT(const FileName& filename, wxString& error, wxArrayString& warnings);
+	bool loadFromXML(const wxString &projectDir, bool standard, wxString &outError, wxArrayString &outWarnings);
+	bool importXMLFromOT(const wxString &filename, wxString &outError, wxArrayString &outWarnings);
 
 	bool saveToXML(const FileName& filename);
 };

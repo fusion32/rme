@@ -489,11 +489,6 @@ void ActionQueue::addBatch(BatchAction* batch, int stacking_delay)
 	// Commit any uncommited actions...
 	batch->commit();
 
-	// Update title
-	if(batch->isNoSelection() && g_editor.map.doChange()) {
-		g_editor.UpdateTitle();
-	}
-
 	if(batch->getType() == ACTION_REMOTE) {
 		delete batch;
 		return;
@@ -577,11 +572,6 @@ bool ActionQueue::undo()
 		if(batch) {
 			batch->undo();
 		}
-
-		// Update title
-		if(batch->isNoSelection() && g_editor.map.doChange()) {
-			g_editor.UpdateTitle();
-		}
 		return true;
 	}
 	return false;
@@ -595,11 +585,6 @@ bool ActionQueue::redo()
 			batch->redo();
 		}
 		current++;
-
-		// Update title
-		if(batch->isNoSelection() && g_editor.map.doChange()) {
-			g_editor.UpdateTitle();
-		}
 		return true;
 	}
 	return false;

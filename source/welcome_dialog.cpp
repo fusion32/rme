@@ -52,7 +52,7 @@ void WelcomeDialog::OnButtonClicked(const wxMouseEvent &event) {
         } else {
             wxCommandEvent action_event(WELCOME_DIALOG_ACTION);
             if(button->GetAction() == wxID_OPEN) {
-                wxDirDialog openDialog(this, "Open project", wxEmptyString, wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+                wxDirDialog openDialog(this, "Select project directory...", wxEmptyString, wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
                 if(openDialog.ShowModal() == wxID_CANCEL) {
                     return;
                 }

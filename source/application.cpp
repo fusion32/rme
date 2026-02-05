@@ -218,7 +218,7 @@ void Application::OnEventLoopEnter(wxEventLoopBase* loop) {
     m_startup = false;
 
     if(m_file_to_open != wxEmptyString) {
-        g_editor.OpenProject(FileName(m_file_to_open));
+        g_editor.OpenProject(m_file_to_open);
     } else if(!g_editor.IsWelcomeDialogShown()) {
 		g_editor.NewProject();
     }
@@ -227,7 +227,7 @@ void Application::OnEventLoopEnter(wxEventLoopBase* loop) {
 void Application::MacOpenFiles(const wxArrayString& fileNames)
 {
 	if(!fileNames.IsEmpty()) {
-		g_editor.OpenProject(FileName(fileNames.Item(0)));
+		g_editor.OpenProject(fileNames.Item(0));
 	}
 }
 
@@ -348,7 +348,6 @@ void MainFrame::OnUpdateMenus(wxCommandEvent&)
 {
 	g_editor.UpdateMenubar();
 	g_editor.UpdateMinimap(true);
-	g_editor.UpdateTitle();
 }
 
 void MainFrame::OnUpdateActions(wxCommandEvent&)
@@ -416,7 +415,7 @@ bool MainFrame::DoQueryImportCreatures()
 					for(uint32_t i = 0; i < paths.GetCount(); ++i) {
 						wxString error;
 						wxArrayString warnings;
-						bool ok = g_creatures.importXMLFromOT(FileName(paths[i]), error, warnings);
+						bool ok = g_creatures.importXMLFromOT(paths[i], error, warnings);
 						if(ok)
 							g_editor.ListDialog("Monster loader errors", warnings);
 						else
@@ -444,14 +443,10 @@ void MainFrame::UpdateIndicatorsMenu()
 
 void MainFrame::OnExit(wxCloseEvent& event)
 {
-	while(g_editor.IsProjectOpen()) {
-		if(!DoQuerySave()) {
-			if(event.CanVeto()) {
-				event.Veto();
-				return;
-			} else {
-				break;
-			}
+	if(g_editor.IsProjectOpen()) {
+		if(!DoQuerySave() && event.CanVeto()) {
+			event.Veto();
+			return;
 		}
 	}
 	g_editor.aui_manager->UnInit();

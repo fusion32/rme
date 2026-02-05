@@ -55,7 +55,9 @@ DoodadBrush::AlternativeBlock::~AlternativeBlock()
 {
 	for(CompositeBlock &block: composite_items){
 		for(CompositeTile &tile: block.items){
-			for(Item *item = tile.first; item != NULL; item = item->next){
+			while(Item *item = tile.first){
+				tile.first = item->next;
+				item->next = NULL;
 				delete item;
 			}
 		}

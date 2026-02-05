@@ -397,12 +397,12 @@ int GetLiquidColor(int liquidType){
 
 bool ItemTypeExists(uint16_t typeId){
 	return typeId >= GetMinItemTypeId()
-		&& typeId >= GetMaxItemTypeId()
+		&& typeId <= GetMaxItemTypeId()
 		&& g_itemTypes[typeId].typeId == typeId;
 }
 
 int GetMinItemTypeId(void){
-	return 100;
+	return 0;
 }
 
 int GetMaxItemTypeId(void){
@@ -443,19 +443,28 @@ static ItemType *GetOrCreateItemType(uint16_t typeId){
 			g_itemTypes.reserve(capacity);
 		}
 		g_itemTypes.resize(requiredSize);
-		g_itemTypes[typeId].typeId = typeId;
 	}
+	g_itemTypes[typeId].typeId = typeId;
 	return &g_itemTypes[typeId];
 }
 
-bool LoadItemTypes(const char *filename, wxString &outError, wxArrayString &outWarnings){
-	// Then load dat+spr ? Actually dat+spr is only for drawing, unless we want
-	// to do a consistency check too, which could probably just be thrown into
-	// the dat loader.
+bool LoadItemTypes(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings){
+	FileName filename(projectDir, "objects.srv");
+	if(!filename.Exists()){
+		filename.AppendDir("editor");
+		if(!filename.Exists()){
+			filename.RemoveLastDir();
+			filename.AppendDir("dat");
+			if(!filename.Exists()){
+				outError << "Unable to locate " << filename.GetFullName();
+				return false;
+			}
+		}
+	}
 
 	int typeId = -1;
 	std::string ident;
-	Script script(filename);
+	Script script(filename.GetFullPath());
 	while(true){
 		script.nextToken();
 		if(script.eof()){
@@ -510,7 +519,7 @@ bool LoadItemTypes(const char *filename, wxString &outError, wxArrayString &outW
 					if(script.token.kind == TOKEN_SPECIAL){
 						char special = script.getSpecial();
 						if(special == ',') continue;
-						if(special == ';') break;
+						if(special == '}') break;
 					}
 
 					int typeAttr = GetTypeAttributeByName(script.getIdentifier());
@@ -531,7 +540,7 @@ bool LoadItemTypes(const char *filename, wxString &outError, wxArrayString &outW
 	}
 
 	if(const char *error = script.getError()){
-		outError = error;
+		outError << error;
 		return false;
 	}
 

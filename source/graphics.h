@@ -287,9 +287,10 @@ public:
 
 	long getElapsedTime() const { return (animation_timer->TimeInMicro() / 1000).ToLong(); }
 
-	uint16_t getItemSpriteMinID() const noexcept { return 100; }
-	uint16_t getItemSpriteMaxID() const noexcept { return item_count; }
-	uint16_t getCreatureSpriteMaxID() const noexcept { return creature_count; }
+	int getItemSpriteMinID() const noexcept { return itemBaseId; }
+	int getItemSpriteMaxID() const noexcept { return itemBaseId + itemCount - 1; }
+	int getCreatureSpriteMinID() const noexcept { return creatureBaseId; }
+	int getCreatureSpriteMaxID() const noexcept { return creatureBaseId + creatureCount - 1; }
 
 	// Get an unused texture id (this is acquired by simply increasing a value starting from 0x10000000)
 	GLuint getFreeTextureID();
@@ -299,18 +300,15 @@ public:
 	// Metadata should be loaded first
 	// This fills the item / creature adress space
 	bool loadOTFI(const FileName& filename, wxString& error, wxArrayString& warnings);
-	bool loadSpriteMetadata(const FileName& datafile, wxString& error, wxArrayString& warnings);
+	bool loadSpriteMetadata(const wxString &projectDir, wxString& error, wxArrayString& warnings);
 	bool loadSpriteMetadataFlags(FileReadHandle& file, GameSprite* sType, wxString& error, wxArrayString& warnings);
-	bool loadSpriteData(const FileName& datafile, wxString& error, wxArrayString& warnings);
+	bool loadSpriteData(const wxString &projectDir, wxString& error, wxArrayString& warnings);
 
 	// Cleans old & unused textures according to config settings
 	void garbageCollection();
 	void addSpriteToCleanup(GameSprite* spr);
 
-	wxFileName getMetadataFileName() const { return metadata_file; }
-	wxFileName getSpritesFileName() const { return sprites_file; }
-
-	bool hasTransparency() const;
+	bool hasTransparency() const { return false; }
 	bool isUnloaded() const;
 
 private:
@@ -325,15 +323,10 @@ private:
 	ImageMap image_space;
 	std::deque<GameSprite*> cleanup_list;
 
-	uint16_t item_count;
-	uint16_t creature_count;
-	bool otfi_found;
-	bool is_extended;
-	bool has_transparency;
-	bool has_frame_durations;
-	bool has_frame_groups;
-	wxFileName metadata_file;
-	wxFileName sprites_file;
+	int itemBaseId;
+	int itemCount;
+	int creatureBaseId;
+	int creatureCount;
 
 	int loaded_textures;
 	int lastclean;

@@ -97,11 +97,10 @@ static uint32_t TemplateOutfitLookupTable[] = {
 
 GraphicManager::GraphicManager() :
 	unloaded(true),
-	otfi_found(false),
-	is_extended(false),
-	has_transparency(false),
-	has_frame_durations(false),
-	has_frame_groups(false),
+	itemBaseId(0),
+	itemCount(0),
+	creatureBaseId(0),
+	creatureCount(0),
 	loaded_textures(0),
 	lastclean(0)
 {
@@ -123,11 +122,6 @@ GraphicManager::~GraphicManager()
 	image_space.clear();
 
 	delete animation_timer;
-}
-
-bool GraphicManager::hasTransparency() const
-{
-	return has_transparency;
 }
 
 bool GraphicManager::isUnloaded() const
@@ -160,8 +154,10 @@ void GraphicManager::clear()
 	image_space.clear();
 	cleanup_list.clear();
 
-	item_count = 0;
-	creature_count = 0;
+	itemBaseId = 0;
+	itemCount = 0;
+	creatureBaseId = 0;
+	creatureCount = 0;
 	loaded_textures = 0;
 	lastclean = time(nullptr);
 	spritefile = "";
@@ -193,7 +189,7 @@ GameSprite* GraphicManager::getCreatureSprite(int id)
 		return nullptr;
 	}
 
-	SpriteMap::iterator it = sprite_space.find(id+item_count);
+	SpriteMap::iterator it = sprite_space.find(creatureBaseId + id);
 	if(it != sprite_space.end()) {
 		return static_cast<GameSprite*>(it->second);
 	}
@@ -383,52 +379,23 @@ bool GraphicManager::loadEditorSprites()
 	return true;
 }
 
-bool GraphicManager::loadOTFI(const FileName& filename, wxString& error, wxArrayString& warnings)
+bool GraphicManager::loadSpriteMetadata(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings)
 {
-	wxDir dir(filename.GetFullPath());
-	wxString otfi_file;
-
-	otfi_found = false;
-
-	if(dir.GetFirst(&otfi_file, "*.otfi", wxDIR_FILES)) {
-		wxFileName otfi(filename.GetFullPath(), otfi_file);
-		OTMLDocumentPtr doc = OTMLDocument::parse(otfi.GetFullPath().ToStdString());
-		if(doc->size() == 0 || !doc->hasChildAt("DatSpr")) {
-			error += "'DatSpr' tag not found";
+	FileName filename(projectDir, "Tibia.dat");
+	if(!filename.Exists()){
+		filename.AppendDir("editor");
+		if(!filename.Exists()){
+			outError << "Unable to locate " << filename.GetFullName();
 			return false;
 		}
-
-		OTMLNodePtr node = doc->get("DatSpr");
-		is_extended = node->valueAt<bool>("extended");
-		has_transparency = node->valueAt<bool>("transparency");
-		has_frame_durations = node->valueAt<bool>("frame-durations");
-		has_frame_groups = node->valueAt<bool>("frame-groups");
-		std::string metadata = node->valueAt<std::string>("metadata-file", std::string(ASSETS_NAME) + ".dat");
-		std::string sprites = node->valueAt<std::string>("sprites-file", std::string(ASSETS_NAME) + ".spr");
-		metadata_file = wxFileName(filename.GetFullPath(), wxString(metadata));
-		sprites_file = wxFileName(filename.GetFullPath(), wxString(sprites));
-		otfi_found = true;
 	}
 
-	if(!otfi_found) {
-		is_extended = false;
-		has_transparency = false;
-		has_frame_durations = false;
-		has_frame_groups = false;
-		metadata_file = wxFileName(filename.GetFullPath(), wxString(ASSETS_NAME) + ".dat");
-		sprites_file = wxFileName(filename.GetFullPath(), wxString(ASSETS_NAME) + ".spr");
-	}
-
-	return true;
-}
-
-bool GraphicManager::loadSpriteMetadata(const FileName& datafile, wxString& error, wxArrayString& warnings)
-{
 	// items.otb has most of the info we need. This only loads the GameSprite metadata
-	FileReadHandle file(nstr(datafile.GetFullPath()));
+	FileReadHandle file(nstr(filename.GetFullPath()));
 
 	if(!file.isOk()) {
-		error += "Failed to open " + datafile.GetFullPath() + " for reading\nThe error reported was:" + wxstr(file.getErrorMessage());
+		outError << "Failed to open " << filename.GetFullPath()
+				<< " for reading: " << file.getErrorMessage();
 		return false;
 	}
 
@@ -443,20 +410,23 @@ bool GraphicManager::loadSpriteMetadata(const FileName& datafile, wxString& erro
 
 	// NOTE(fusion): We're basically processing object types as a big single list,
 	// with items starting at 100, followed by creatures, effects, and animations.
-	int itemCount     = (maxItemId - 100 + 1);
-	int creatureCount = (maxCreatureId - 0 + 1);
-	int minTypeId     = 100;
-	int maxTypeId     = minTypeId + itemCount + creatureCount;
+	itemBaseId     = 100;
+	itemCount      = (maxItemId - 100 + 1);
+	creatureBaseId = itemBaseId + itemCount;
+	creatureCount  = (maxCreatureId - 0 + 1);
+
+	int minTypeId  = itemBaseId;
+	int maxTypeId  = minTypeId + itemCount + creatureCount - 1;
 	for(int typeId = minTypeId; typeId <= maxTypeId; typeId += 1){
 		GameSprite* sType = newd GameSprite();
 		sprite_space[typeId] = sType;
 		sType->id = typeId;
 
 		// Load the sprite flags
-		if(!loadSpriteMetadataFlags(file, sType, error, warnings)) {
+		if(!loadSpriteMetadataFlags(file, sType, outError, outWarnings)) {
 			wxString msg;
 			msg << "Failed to load flags for sprite " << sType->id;
-			warnings.push_back(msg);
+			outWarnings.push_back(msg);
 		}
 
 		// Size and GameSprite data
@@ -534,13 +504,16 @@ bool GraphicManager::loadSpriteMetadataFlags(FileReadHandle& file, GameSprite* s
 			case DatFlagHookEast:
 			case DatFlagRotate:
 			case DatFlagDontHide:
-			//case DatFlagFullBank: // TODO?
+			case DatFlagTeleportRelative:
+			case DatFlagLyingObject:
+			case DatFlagAnimateAlways:
+			case DatFlagFullBank:
 				break;
 
 			case DatFlagBank:
 			case DatFlagWrite:
 			case DatFlagWriteOnce:
-			//case DatFlagLensHelp: // TODO?
+			case DatFlagLensHelp:
 				file.skip(2);
 				break;
 
@@ -591,71 +564,71 @@ bool GraphicManager::loadSpriteMetadataFlags(FileReadHandle& file, GameSprite* s
 	return true;
 }
 
-bool GraphicManager::loadSpriteData(const FileName& datafile, wxString& error, wxArrayString& warnings)
+bool GraphicManager::loadSpriteData(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings)
 {
-	FileReadHandle fh(nstr(datafile.GetFullPath()));
+	FileName filename(projectDir, "Tibia.spr");
+	if(!filename.Exists()){
+		filename.AppendDir("editor");
+		if(!filename.Exists()){
+			outError << "Unable to locate " << filename.GetFullName();
+			return false;
+		}
+	}
+
+	FileReadHandle fh(nstr(filename.GetFullPath()));
 
 	if(!fh.isOk()) {
-		error = "Failed to open file for reading";
+		outError << "Failed to open " << filename.GetFullPath()
+				<< " for reading: " << fh.getErrorMessage();
 		return false;
 	}
 
-#define safe_get(func, ...) do {\
-		if(!fh.get##func(__VA_ARGS__)) {\
-			error = wxstr(fh.getErrorMessage()); \
-			return false; \
-		} \
+#define safe_get(func, ...) do {						\
+		if(!fh.get##func(__VA_ARGS__)) {				\
+			outError = wxstr(fh.getErrorMessage());		\
+			return false;								\
+		}												\
 	} while(false)
 
 
 	uint32_t sprSignature;
+	uint16_t numSprites;
 	safe_get(U32, sprSignature);
-
-	uint32_t total_pics = 0;
-	if(is_extended) {
-		safe_get(U32, total_pics);
-	} else {
-		uint16_t u16 = 0;
-		safe_get(U16, u16);
-		total_pics = u16;
-	}
-
+	safe_get(U16, numSprites);
 	if(!g_settings.getInteger(Config::USE_MEMCACHED_SPRITES)) {
-		spritefile = nstr(datafile.GetFullPath());
+		spritefile = nstr(filename.GetFullPath());
 		unloaded = false;
 		return true;
 	}
 
-	std::vector<uint32_t> sprite_indexes;
-	for(uint32_t i = 0; i < total_pics; ++i) {
-		uint32_t index;
-		safe_get(U32, index);
-		sprite_indexes.push_back(index);
+	std::vector<uint32_t> spriteOffsets;
+	spriteOffsets.resize(numSprites);
+	for(uint16_t i = 0; i < numSprites; i += 1) {
+		safe_get(U32, spriteOffsets[i]);
 	}
 
-	// Now read individual sprites
-	int id = 1;
-	for(std::vector<uint32_t>::iterator sprite_iter = sprite_indexes.begin(); sprite_iter != sprite_indexes.end(); ++sprite_iter, ++id) {
-		uint32_t index = *sprite_iter + 3;
-		fh.seek(index);
+	// TODO(fusion): Keeping the sprite in the "compressed" form can save some
+	// memory but is it really that much? Decompressing it is trivial also so
+	// it may not make that big of a difference in the end, idk.
+	int spriteId = 1;
+	for(uint32_t offset: spriteOffsets){
 		uint16_t size;
+		fh.seek(offset);
+		fh.skip(3); // color key ?
 		safe_get(U16, size);
-
-		ImageMap::iterator it = image_space.find(id);
+		auto it = image_space.find(spriteId);
 		if(it != image_space.end()) {
 			GameSprite::NormalImage* spr = dynamic_cast<GameSprite::NormalImage*>(it->second);
 			if(spr && size > 0) {
 				if(spr->size > 0) {
-					wxString ss;
-					ss << "items.spr: Duplicate GameSprite id " << id;
-					warnings.push_back(ss);
+					outWarnings.push_back(wxString("Duplicate GameSprite id ") << spriteId);
 					fh.skip(size);
 				} else {
-					spr->id = id;
+					spr->id = spriteId;
 					spr->size = size;
 					spr->dump = newd uint8_t[size];
 					if(!fh.getRAW(spr->dump, size)) {
-						error = wxstr(fh.getErrorMessage()); \
+						outError = wxstr(fh.getErrorMessage());
 						return false;
 					}
 				}
@@ -663,6 +636,7 @@ bool GraphicManager::loadSpriteData(const FileName& datafile, wxString& error, w
 		} else {
 			fh.skip(size);
 		}
+		spriteId += 1;
 	}
 #undef safe_get
 	unloaded = false;
@@ -686,7 +660,7 @@ bool GraphicManager::loadSpriteDump(uint8_t*& target, uint16_t& size, int sprite
 		return false;
 	unloaded = false;
 
-	if(!fh.seek((is_extended ? 4 : 2) + sprite_id * sizeof(uint32_t)))
+	if(!fh.seek(2 + sprite_id * sizeof(uint32_t)))
 		return false;
 
 	uint32_t to_seek = 0;

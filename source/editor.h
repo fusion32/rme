@@ -158,7 +158,6 @@ protected:
 
 public:
 	void SetTitle(wxString newtitle);
-	void UpdateTitle();
 	void UpdateMenus();
 	void UpdateActions();
 	void RefreshActions();
@@ -271,17 +270,18 @@ public:
 	// have support for copy and paste across editor instances. I still want to
 	// keep tabs tho, as they could be used to edit other aspects of a project but
 	// that's for a later stage.
-	void NewProject(void);
-	void OpenProject(void);
-	void OpenProject(FileName filename);
-	void CloseProject(void);
+	bool NewProject(void);
+	bool OpenProject(void);
+	bool OpenProject(const wxString &dir);
+	bool CloseProject(void);
 	void SaveProject(void);
 	void SaveProjectAs(void);
 	bool IsProjectOpen(void) const;
 	bool IsProjectDirty(void) const;
 
 protected:
-	bool LoadDataFiles(wxString& error, wxArrayString& warnings);
+	bool LoadProject(const wxString &dir, wxString &outError, wxArrayString &outWarnings);
+	void UnloadProject(void);
 
 public:
 	//=========================================================================
@@ -394,8 +394,8 @@ public:
 	//=========================================================================
 	// Public members
 	//=========================================================================
-	wxFileHistory recentFiles = {};
 	wxString projectDir = {};
+	wxFileHistory recentFiles = {};
 
 	//==
 	// TODO(fusion): Probably just turn these into their own globals?
@@ -483,21 +483,9 @@ extern Editor g_editor;
 
 class RenderingLock
 {
-	bool acquired;
 public:
-	RenderingLock() : acquired(true)
-	{
-		g_editor.DisableRendering();
-	}
-	~RenderingLock()
-	{
-		release();
-	}
-	void release()
-	{
-		g_editor.EnableRendering();
-		acquired = false;
-	}
+	RenderingLock(void)  { g_editor.DisableRendering(); }
+	~RenderingLock(void) { g_editor.EnableRendering(); }
 };
 
 class ScopedLoadingBar

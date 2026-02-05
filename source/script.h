@@ -67,6 +67,8 @@ struct Script {
 	}
 
 	int readNumber(void) {
+		nextToken();
+
 		bool negative = false;
 		if(token.kind == TOKEN_SPECIAL && token.special == '-'){
 			negative = true;

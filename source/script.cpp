@@ -4,11 +4,16 @@
 //==============================================================================
 
 void Script::error(const char *text){
+	// NOTE(fusion): Keep only the first error set.
+	if(token.kind == TOKEN_ERROR){
+		return;
+	}
+
 	ScriptSource *source = &stack.back();
 	token = {};
 	token.kind = TOKEN_ERROR;
 	snprintf(token.string, sizeof(token.string),
-			"error in script \"%s\", line %d: %s",
+			"Error in script \"%s\", line %d: %s",
 			source->name.c_str(), source->line, text);
 }
 
@@ -121,7 +126,7 @@ bool Script::parseIdentifier(char *dest, int destCapacity){
 	int len = 0;
 	while(true){
 		int ch = source->file.peek();
-		if(!isalnum(ch) || ch != '_'){
+		if(!isalnum(ch) && ch != '_'){
 			break;
 		}
 
@@ -212,12 +217,14 @@ void Script::nextToken(void){
 				return;
 			}
 		}else if(isalpha(ch)){
+			source->file.unget();
 			if(parseIdentifier(token.string, 30)){ // MAX_NAME = 30
 				token.kind = TOKEN_IDENTIFIER;
 			}
 			return;
 		}else if(isdigit(ch)){
 			int number;
+			source->file.unget();
 			if(parseNumber(&number, false)){
 				int count = 1;
 				token.bytes[0] = (uint8_t)number;
@@ -269,6 +276,7 @@ void Script::nextToken(void){
 			}
 
 			case '"':{ // STRING
+				source->file.unget();
 				if(parseString(token.string, (int)sizeof(token.string))){
 					token.kind = TOKEN_STRING;
 				}
@@ -347,7 +355,7 @@ const char *Script::getError(void){
 
 int Script::getNumber(void){
 	int number = 0;
-	if(token.kind == TOKEN_IDENTIFIER){
+	if(token.kind == TOKEN_NUMBER){
 		number = token.number;
 	}else{
 		error("expected number");
@@ -408,7 +416,7 @@ int Script::getSpecial(void){
 	if(token.kind == TOKEN_SPECIAL){
 		special = token.special;
 	}else{
-		error("expected coordinate");
+		error("expected special-char");
 	}
 	return special;
 }

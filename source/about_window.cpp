@@ -762,7 +762,7 @@ void SnakePanel::NewGame()
 	}
 	map[SNAKE_MAPWIDTH / 2][SNAKE_MAPHEIGHT / 2] = length;
 	NewApple();
-	UpdateTitle(); // Update title
+	UpdateTitle();
 }
 
 void SnakePanel::UpdateTitle()

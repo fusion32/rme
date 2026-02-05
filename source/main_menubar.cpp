@@ -660,7 +660,6 @@ void MainMenuBar::OnGenerateMap(wxCommandEvent& WXUNUSED(event))
 
 	g_editor.SetStatusText("Generated newd map");
 
-	g_editor.UpdateTitle();
 	g_editor.RefreshPalettes();
 	g_editor.UpdateMinimap();
 	g_editor.FitViewToMap();
@@ -728,7 +727,7 @@ void MainMenuBar::OnImportMonsterData(wxCommandEvent& WXUNUSED(event))
 		for(uint32_t i = 0; i < paths.GetCount(); ++i) {
 			wxString error;
 			wxArrayString warnings;
-			bool ok = g_creatures.importXMLFromOT(FileName(paths[i]), error, warnings);
+			bool ok = g_creatures.importXMLFromOT(paths[i], error, warnings);
 			if(ok)
 				g_editor.ListDialog("Monster loader errors", warnings);
 			else

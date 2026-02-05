@@ -97,49 +97,66 @@ std::vector<wxString> Editor::GetRecentFiles()
     return files;
 }
 
-void Editor::NewProject(void)
+bool Editor::NewProject(void)
 {
 	// TODO(fusion): Create new project? Which doesn't make a lot of sense if
 	// a project also includes objects, materials, etc... so we might want to
 	// have some kind of project template?
-	OpenProject();
+	return OpenProject();
 }
 
-void Editor::OpenProject(void)
+bool Editor::OpenProject(void)
 {
+	bool result = false;
 	wxDirDialog openDialog(root, "Select project directory...", wxEmptyString, wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
 	if(openDialog.ShowModal() == wxID_OK){
-		OpenProject(openDialog.GetPath());
+		result = OpenProject(openDialog.GetPath());
 	}
+	return result;
 }
 
-void Editor::OpenProject(FileName filename)
+bool Editor::OpenProject(const wxString &dir)
 {
-	if(IsProjectOpen()){
-		// Prompt for a save, then close?
-	}
-
 	FinishWelcomeDialog();
 
-	//Load everything here!
-	//CreateLoadBar();
-	//LoadItemTypes();
-	//LoadSprites();
-	//LoadMap();
-	//...
+	if(!wxFileName::DirExists(dir)){
+		PopupDialog("Error", "Project directory \"" + dir + "\" does not exist.", wxOK);
+		return false;
+	}
 
+	if(IsProjectOpen() && !CloseProject()){
+		return false;
+	}
+
+	wxString error;
+	wxArrayString warnings;
+	if(!LoadProject(dir, error, warnings)){
+		PopupDialog("Error", error, wxOK);
+		return false;
+	}
+
+	projectDir = dir;
 	SetStatusText("");
-	UpdateTitle();
+	SetTitle(projectDir);
 	RefreshPalettes();
 	UpdateMenubar();
 	root->Refresh();
+
+	ListDialog("Warnings", warnings);
+
+	return true;
 }
 
-void Editor::CloseProject(void)
+bool Editor::CloseProject(void)
 {
 	if(!IsProjectOpen()){
-		return;
+		return false;
 	}
+
+	// prompt for a save?
+
+	UnloadProject();
+	return true;
 }
 
 void Editor::SaveProject(void)
@@ -157,11 +174,92 @@ void Editor::SaveProjectAs(void)
 }
 
 bool Editor::IsProjectOpen(void) const {
-	return false;
+	return !projectDir.IsEmpty();
 }
 
 bool Editor::IsProjectDirty(void) const {
 	return false;
+}
+
+bool Editor::LoadProject(const wxString &dir, wxString &outError, wxArrayString &outWarnings)
+{
+	ASSERT(!IsProjectOpen());
+
+	ScopedLoadingBar loadingBar("Opening project...");
+
+	loadingBar.SetLoadDone(0, "Loading item types...");
+	if(!LoadItemTypes(dir, outError, outWarnings)){
+		outError = "Unable to load item types: " + outError;
+		UnloadProject();
+		return false;
+	}
+
+	loadingBar.SetLoadDone(10, "Loading DAT...");
+	if(!gfx.loadSpriteMetadata(dir, outError, outWarnings)){
+		outError = "Unable to load DAT: " + outError;
+		UnloadProject();
+		return false;
+	}
+
+	loadingBar.SetLoadDone(20, "Loading SPR...");
+	if(!gfx.loadSpriteData(dir, outError, outWarnings)){
+		outError = "Unable to load SPR: " + outError;
+		UnloadProject();
+		return false;
+	}
+
+	loadingBar.SetLoadDone(30, "Loading creatures.xml...");
+	if(!g_creatures.loadFromXML(dir, true, outError, outWarnings)){
+		outWarnings.push_back(wxString("Unable to load creatures.xml: ") << outError);
+		outError.Clear();
+	}
+
+	loadingBar.SetLoadDone(40, "Loading materials.xml...");
+	if(!g_materials.loadMaterials(dir, outError, outWarnings)){
+		outWarnings.push_back(wxString("Unable to load materials.xml: ") << outError);
+		outError.Clear();
+	}
+
+	g_brushes.init();
+	g_materials.createOtherTileset();
+
+	SetLoadDone(50, "Loading map...");
+	//if(!LoadMap(dir, error, warnings)){
+		//UnloadProject();
+		//return false;
+	//}
+
+	loadingBar.SetLoadDone(100);
+	return true;
+}
+
+void Editor::UnloadProject(void)
+{
+	current_brush = NULL;
+	previous_brush = NULL;
+	house_brush = NULL;
+	house_exit_brush = NULL;
+	waypoint_brush = NULL;
+	optional_brush = NULL;
+	eraser = NULL;
+	spawn_brush = NULL;
+	normal_door_brush = NULL;
+	locked_door_brush = NULL;
+	magic_door_brush = NULL;
+	quest_door_brush = NULL;
+	hatch_door_brush = NULL;
+	window_door_brush = NULL;
+	refresh_brush = NULL;
+	nolog_brush = NULL;
+	pz_brush = NULL;
+
+	//ClearMap();
+	g_brushes.clear();
+	g_materials.clear();
+	g_creatures.clear();
+	gfx.clear();
+	ClearItemTypes();
+	projectDir.Clear();
 }
 
 #if 0
@@ -261,36 +359,6 @@ bool Editor::LoadVersion(wxString& error, wxArrayString& warnings, bool force)
 		return ret;
 	}
 	return true;
-}
-
-void Editor::UnloadVersion()
-{
-	UnnamedRenderingLock();
-	gfx.clear();
-	current_brush = nullptr;
-	previous_brush = nullptr;
-
-	house_brush = nullptr;
-	house_exit_brush = nullptr;
-	waypoint_brush = nullptr;
-	optional_brush = nullptr;
-	eraser = nullptr;
-	normal_door_brush = nullptr;
-	locked_door_brush = nullptr;
-	magic_door_brush = nullptr;
-	quest_door_brush = nullptr;
-	hatch_door_brush = nullptr;
-	window_door_brush = nullptr;
-
-	if(loaded_version != CLIENT_VERSION_NONE) {
-		//UnloadVersion();
-		g_materials.clear();
-		g_brushes.clear();
-		ClearItemTypes();
-		gfx.clear();
-
-		loaded_version = CLIENT_VERSION_NONE;
-	}
 }
 
 void Editor::SaveCurrentMap(FileName filename, bool showdialog)
@@ -1023,7 +1091,7 @@ void Editor::RefreshView()
 	mapWindow->Refresh();
 }
 
-void Editor::CreateLoadBar(wxString message, bool canCancel /* = false */ )
+void Editor::CreateLoadBar(wxString message, bool canCancel /* = false */)
 {
 	progressText = message;
 
@@ -1106,6 +1174,7 @@ void Editor::FinishWelcomeDialog() {
 		root->Show();
         welcomeDialog->Destroy();
         welcomeDialog = nullptr;
+		UpdateMenubar();
     }
 }
 
@@ -1124,7 +1193,7 @@ void Editor::OnWelcomeDialogAction(wxCommandEvent &event)
     if(event.GetId() == wxID_NEW) {
         NewProject();
     } else if(event.GetId() == wxID_OPEN) {
-        OpenProject(FileName(event.GetString()));
+        OpenProject(event.GetString());
     }
 }
 
@@ -1244,11 +1313,6 @@ void Editor::SetTitle(wxString title)
 	} else {
 		root->SetTitle(wxString("Remere's Map Editor"));
 	}
-}
-
-void Editor::UpdateTitle()
-{
-	SetTitle(projectDir);
 }
 
 void Editor::UpdateMenus()
