@@ -18,7 +18,6 @@
 #include "main.h"
 
 #include "spawn_brush.h"
-#include "basemap.h"
 #include "spawn.h"
 
 //=============================================================================
@@ -45,7 +44,7 @@ std::string SpawnBrush::getName() const
 	return "Spawn Brush";
 }
 
-bool SpawnBrush::canDraw(BaseMap* map, const Position& position) const
+bool SpawnBrush::canDraw(Map *map, const Position& position) const
 {
 	Tile* tile = map->getTile(position);
 	if(tile) {
@@ -56,13 +55,13 @@ bool SpawnBrush::canDraw(BaseMap* map, const Position& position) const
 	return true;
 }
 
-void SpawnBrush::undraw(BaseMap* map, Tile* tile)
+void SpawnBrush::undraw(Map *map, Tile* tile)
 {
 	delete tile->spawn;
 	tile->spawn = nullptr;
 }
 
-void SpawnBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void SpawnBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	ASSERT(tile);
 	ASSERT(parameter); // Should contain an int which is the size of the newd spawn

@@ -27,7 +27,6 @@ class Spawn;
 struct Outfit;
 class House;
 class Creature;
-class BaseMap;
 class Waypoint;
 class Waypoints;
 class Tileset;

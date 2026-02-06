@@ -32,9 +32,9 @@ public:
 	bool isSpawn() const { return true; }
 	SpawnBrush* asSpawn() { return static_cast<SpawnBrush*>(this); }
 
-	virtual bool canDraw(BaseMap* map, const Position& position) const;
-	virtual void draw(BaseMap* map, Tile* tile, void* parameter); // parameter is brush size
-	virtual void undraw(BaseMap* map, Tile* tile);
+	virtual bool canDraw(Map *map, const Position& position) const;
+	virtual void draw(Map *map, Tile* tile, void* parameter); // parameter is brush size
+	virtual void undraw(Map *map, Tile* tile);
 
 	virtual int getLookID() const; // We don't have a look, sorry!
 	virtual std::string getName() const;

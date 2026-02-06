@@ -20,7 +20,6 @@
 #include "raw_brush.h"
 #include "settings.h"
 #include "items.h"
-#include "basemap.h"
 
 //=============================================================================
 // RAW brush
@@ -59,7 +58,7 @@ std::string RAWBrush::getName() const
 	return i2s(itemtype->typeId) + " - " + itemtype->name;
 }
 
-void RAWBrush::undraw(BaseMap* map, Tile* tile)
+void RAWBrush::undraw(Map *map, Tile* tile)
 {
 	ASSERT(itemtype); // ?
 	tile->removeItems(
@@ -68,7 +67,7 @@ void RAWBrush::undraw(BaseMap* map, Tile* tile)
 		});
 }
 
-void RAWBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void RAWBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	if(!itemtype) return;
 

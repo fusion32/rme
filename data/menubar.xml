@@ -43,7 +43,7 @@
         <separator/>
         <menu name="$Border Options">
             <item name="Border $Automagic" hotkey="A" action="AUTOMAGIC" help="Turns on all automatic border functions."/>
-			<separator/>
+            <separator/>
             <item name="$Borderize Selection" hotkey="Ctrl+B" action="BORDERIZE_SELECTION" help="Creates automatic borders in the entire selected area."/>
             <item name="Borderize $Map" action="BORDERIZE_MAP" help="Reborders the entire map."/>
             <item name="Ra$ndomize Selection" action="RANDOMIZE_SELECTION" help="Randomizes the ground tiles of the selected area."/>
@@ -73,7 +73,6 @@
         <item name="Edit $Monsters" action="EDIT_MONSTERS" help="Edit monsters."/>
         <separator/>
         <item name="$Cleanup..." action="MAP_CLEANUP" help="Removes all unknown items from the map."/>
-        <item name="$Properties..." hotkey="Ctrl+P" action="MAP_PROPERTIES" help="Show and change the map properties."/>
         <item name="$Statistics" hotkey="F8" action="MAP_STATISTICS" help="Show map statistics."/>
     </menu>
     <menu name="$Select">

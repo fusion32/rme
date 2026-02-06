@@ -21,22 +21,23 @@
 #include "editor.h"
 #include "creature.h"
 #include "settings.h"
+#include "map.h"
 
 CopyBuffer::CopyBuffer() :
-	tiles(newd BaseMap())
+	tiles(newd Map())
 {
 	// no-op
 }
 
-size_t CopyBuffer::GetTileCount()
+int CopyBuffer::GetTileCount()
 {
-	return tiles ? (size_t)tiles->size() : 0;
+	return tiles ? tiles->getTileCount() : 0;
 }
 
-BaseMap& CopyBuffer::getBufferMap()
+Map *CopyBuffer::getBufferMap()
 {
 	ASSERT(tiles);
-	return *tiles;
+	return tiles;
 }
 
 CopyBuffer::~CopyBuffer()
@@ -64,7 +65,7 @@ void CopyBuffer::copy(int floor)
 	}
 
 	clear();
-	tiles = newd BaseMap();
+	tiles = newd Map();
 
 	int tile_count = 0;
 	int item_count = 0;
@@ -120,7 +121,7 @@ void CopyBuffer::cut(int floor)
 	}
 
 	clear();
-	tiles = newd BaseMap();
+	tiles = newd Map();
 
 	Map &map = g_editor.map;
 	int tile_count = 0;
@@ -319,6 +320,6 @@ void CopyBuffer::paste(const Position& toPosition)
 
 bool CopyBuffer::canPaste() const
 {
-	return tiles && tiles->size() != 0;
+	return GetTileCount() > 0;
 }
 

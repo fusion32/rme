@@ -19,7 +19,8 @@ void Script::error(const char *text){
 
 ScriptSource *Script::push(const char *name){
 	if(stack.size() >= 3){
-		//warning "recursion depth is abnormaly high"
+		error("recursion depth is too high");
+		return NULL;
 	}
 
 	ScriptSource source = {};

@@ -109,7 +109,6 @@ MainMenuBar::MainMenuBar(MainFrame *frame) : frame(frame)
 	MAKE_ACTION(MAP_REMOVE_EMPTY_SPAWNS, wxITEM_NORMAL, OnMapRemoveEmptySpawns);
 	MAKE_ACTION(MAP_CLEANUP, wxITEM_NORMAL, OnMapCleanup);
 	MAKE_ACTION(MAP_CLEAN_HOUSE_ITEMS, wxITEM_NORMAL, OnMapCleanHouseItems);
-	MAKE_ACTION(MAP_PROPERTIES, wxITEM_NORMAL, OnMapProperties);
 	MAKE_ACTION(MAP_STATISTICS, wxITEM_NORMAL, OnMapStatistics);
 
 	MAKE_ACTION(VIEW_TOOLBARS_BRUSHES, wxITEM_CHECK, OnToolbars);
@@ -345,7 +344,6 @@ void MainMenuBar::Update()
 	EnableItem(EDIT_MONSTERS, false);
 
 	EnableItem(MAP_CLEANUP, loaded);
-	EnableItem(MAP_PROPERTIES, loaded);
 	EnableItem(MAP_STATISTICS, loaded);
 
 	EnableItem(NEW_VIEW, loaded);
@@ -1642,15 +1640,6 @@ void MainMenuBar::OnMapCleanup(wxCommandEvent& WXUNUSED(event))
 
 	if(ok == wxID_YES)
 		g_editor.map.cleanInvalidTiles(true);
-}
-
-void MainMenuBar::OnMapProperties(wxCommandEvent& WXUNUSED(event))
-{
-	wxDialog* properties = newd MapPropertiesWindow(frame);
-	if(properties->ShowModal() == 0) {
-		// FAIL! (?)
-	}
-	properties->Destroy();
 }
 
 void MainMenuBar::OnToolbars(wxCommandEvent& event)

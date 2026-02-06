@@ -20,7 +20,6 @@
 
 #include "position.h"
 #include "item.h"
-#include "map_region.h"
 #include "wall_brush.h"
 #include <unordered_set>
 
@@ -37,27 +36,31 @@ enum {
 class Tile
 {
 public:
-	TileLocation *location;
-	Item *items;
-	Creature *creature;
-	Spawn *spawn;
-	uint32_t house_id; // House id for this tile (pointer not safe)
-	uint8_t flags;
-	uint8_t minimapColor;
+	Item     *items       = NULL;
+	Creature *creature    = NULL;
+	Position pos          = {};
+	uint16_t houseId      = 0;
+	uint8_t  flags        = 0;
+	uint8_t  minimapColor = INVALID_MINIMAP_COLOR;
 
-	// ALWAYS use this constructor if the Tile is EVER going to be placed on a map
-	Tile(TileLocation& location);
-	// Use this when the tile is only used internally by the editor (like in certain brushes)
-	Tile(int x, int y, int z);
+	Tile(void) = default;
+	~Tile(void) { clear(); }
 
-	~Tile();
-
-	// non-copyable, non-comparable (?)
+	// non-copyable
 	Tile(const Tile &tile) = delete;
 	Tile &operator=(const Tile &other) = delete;
-	Tile &operator==(const Tile &other) = delete;
 
-	Tile* deepCopy(BaseMap& map) const;
+	// movable
+	Tile(Tile &&other) { swap(other); }
+	Tile &operator=(Tile &&other){
+		swap(other);
+		return *this;
+	}
+
+	void clear(void);
+	void swap(Tile &other);
+	void deepCopy(const Tile &other);
+	Tile *deepCopy(void) const;
 	uint32_t memsize(void) const;
 	int countItems(void) const;
 	int size(void) const;
@@ -80,10 +83,10 @@ public:
 	uint8_t getMiniMapColor(void) const;
 
 	GroundBrush* getGroundBrush() const;
-	void borderize(BaseMap* parent);
-	void wallize(BaseMap* parent);
-	void tableize(BaseMap* parent);
-	void carpetize(BaseMap* parent);
+	void borderize(Map *parent);
+	void wallize(Map *parent);
+	void tableize(Map *parent);
+	void carpetize(Map *parent);
 
 	template<typename Pred>
 	Item *getFirstItem(Pred &&predicate){
@@ -140,7 +143,8 @@ public:
 
 	// TODO(fusion): Not exactly sure when we want to NOT delete removed items here.
 	template<typename Pred>
-	void removeItems(Pred &&predicate, bool del = true){
+	int removeItems(Pred &&predicate, bool del = true){
+		int count = 0;
 		Item **it = &items;
 		while(*it != NULL){
 			if(predicate(*it)){
@@ -150,24 +154,28 @@ public:
 					delete *it;
 				}
 				*it = next;
+				count += 1;
 			}else{
 				it = &(*it)->next;
 			}
 		}
+		return count;
 	}
 
-	void removeBorders(void){
-		removeItems([](const Item *item) { return item->getFlag(CLIP); }, true);
+	int removeBorders(void){
+		return removeItems([](const Item *item) { return item->getFlag(CLIP); }, true);
 	}
 
-	void removeWalls(bool del = true){
-		removeItems([](const Item *item) { return item->isWall(); }, del);
+	int removeWalls(bool del = true){
+		return removeItems([](const Item *item) { return item->isWall(); }, del);
 	}
 
-	void removeWalls(WallBrush *brush){
+	int removeWalls(WallBrush *brush){
+		int count = 0;
 		if(brush){
-			removeItems([brush](const Item *item){ return item->isWall() && brush->hasWall(item); });
+			count = removeItems([brush](const Item *item){ return item->isWall() && brush->hasWall(item); });
 		}
+		return count;
 	}
 
 #if 0
@@ -183,31 +191,9 @@ public:
 	}
 #endif
 
-	// The location of the tile
-	// Stores state that remains between the tile being moved (like house exits)
-	void setLocation(TileLocation* where) { location = where; }
-	TileLocation* getLocation() { return location; }
-	const TileLocation* getLocation() const { return location; }
-
-	// Position of the tile
-	const Position& getPosition() const noexcept { return location->getPosition(); }
-	int getX() const noexcept { return location->getX(); }
-	int getY() const noexcept { return location->getY(); }
-	int getZ() const noexcept { return location->getZ(); }
-
 	bool getTileFlag(uint8_t flag) const { return (flags & flag) != 0; }
 	void setTileFlag(uint8_t flag) { flags |= flag; }
 	void clearTileFlag(uint8_t flag) { flags &= ~flag; }
-
-	bool isHouseTile() const noexcept { return house_id != 0; }
-	uint32_t getHouseID() const noexcept  { return house_id; }
-	HouseExitList* getHouseExits() { return location->getHouseExits(); }
-	const HouseExitList* getHouseExits() const { return location->getHouseExits(); }
-	void setHouse(House *house);
-	bool isHouseExit() const;
-	void addHouseExit(House* house);
-	void removeHouseExit(House* house);
-	bool hasHouseExit(uint32_t houseId) const;
 
 	// TODO(fusion): This could be a non-persistent tile flag but I'm not sure it
 	// is used for anything particularly useful.

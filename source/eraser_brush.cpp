@@ -19,7 +19,6 @@
 
 #include "brush.h"
 #include "sprites.h"
-#include "basemap.h"
 #include "settings.h"
 
 //=============================================================================
@@ -45,12 +44,12 @@ int EraserBrush::getLookID() const
 	return EDITOR_SPRITE_ERASER;
 }
 
-bool EraserBrush::canDraw(BaseMap* map, const Position& position) const
+bool EraserBrush::canDraw(Map *map, const Position& position) const
 {
 	return true;
 }
 
-void EraserBrush::undraw(BaseMap* map, Tile* tile)
+void EraserBrush::undraw(Map *map, Tile* tile)
 {
 	// TODO(fusion): Figure out which items we want to keep here and how to
 	// interact with Config::ERASER_LEAVE_UNIQUE.
@@ -60,7 +59,7 @@ void EraserBrush::undraw(BaseMap* map, Tile* tile)
 		});
 }
 
-void EraserBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void EraserBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	tile->removeItems(
 		[](const Item *item){

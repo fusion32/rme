@@ -18,196 +18,190 @@
 #ifndef RME_MAP_H_
 #define RME_MAP_H_
 
-#include "basemap.h"
 #include "tile.h"
 #include "town.h"
 #include "house.h"
 #include "spawn.h"
 #include "waypoints.h"
-#include "templates.h"
 
-class Map : public BaseMap
-{
-public:
-	Map();
-	virtual ~Map();
+#define MAP_SECTOR_SIZE 32
+#define MAP_SECTOR_MASK (MAP_SECTOR_SIZE - 1)
+STATIC_ASSERT(MAP_SECTOR_SIZE >= 16);
+STATIC_ASSERT(ISPOW2(MAP_SECTOR_SIZE));
 
-	// Operations on the entire map
-	void cleanInvalidTiles(bool showdialog = false);
-	// Save a bmp image of the minimap
-	bool exportMinimap(FileName filename, int floor = rme::MapGroundLayer, bool showdialog = false);
+inline uint32_t GetMapSectorId(int x, int y, int z){
+	ASSERT(x >= 0 && x <= UINT16_MAX
+		&& y >= 0 && y <= UINT16_MAX
+		&& z >= 0 && z <= UINT8_MAX);
 
-	// Query information about the map
+	// IMPORTANT(fusion): Each position has 40 bits of information so if we trim
+	// 4 bits from both the x and y coordinates, we can obtain an unique identifier
+	// for each sector.
+	return ((uint32_t)z << 24)
+		| (((uint32_t)y & ~MAP_SECTOR_MASK) << 8)
+		| (((uint32_t)x & ~MAP_SECTOR_MASK) >> 4);
+}
 
-	// Returns true if any change has been done since last save
-	bool hasChanged() const noexcept { return has_changed; }
-	// Makes a change, doesn't matter what. Just so that it asks when saving (Also adds a * to the window title)
-	bool doChange();
-	// Clears any changes
-	bool clearChanges();
+struct MapSector{
+	void setTilePositions(int baseX, int baseY, int baseZ){
+		for(int offsetY = 0; offsetY < MAP_SECTOR_SIZE; offsetY += 1)
+		for(int offsetX = 0; offsetX < MAP_SECTOR_SIZE; offsetX += 1){
+			Position tilePos = {
+				baseX + offsetX,
+				baseY + offsetY,
+				baseZ,
+			};
 
-	// Errors/warnings
-	bool hasWarnings() const { return !warnings.empty(); }
-	const wxArrayString& getWarnings() const noexcept { return warnings; }
-	bool hasError() const { return !error.empty(); }
-	const wxString& getError() const noexcept { return error; }
+			tiles[offsetY * MAP_SECTOR_SIZE + offsetX].pos = tilePos;
+		}
+	}
 
-	// Mess with spawns
-	bool addSpawn(Tile* spawn);
-	void removeSpawn(Tile* tile);
-	void removeSpawn(const Position& position) { removeSpawn(getTile(position)); }
-
-	// Returns all possible spawns on the target tile
-	SpawnList getSpawnList(const Tile* tile) const;
-	SpawnList getSpawnList(const Position& position) const;
-	SpawnList getSpawnList(int x, int y, int z) const;
-
-	// Returns true if the map has been saved
-	// ie. it knows which file it should be saved to
-	bool hasFile() const noexcept { return !filename.empty(); }
-	const std::string& getFilename() const noexcept { return filename; }
-	const std::string& getName() const noexcept { return name; }
-	void setName(const std::string& _name) noexcept { name = _name; }
-
-	// Get map data
-	int getWidth() const noexcept { return width; }
-	int getHeight() const noexcept { return height; }
-	const std::string& getMapDescription() const noexcept { return description; }
-	const std::string& getHouseFilename() const noexcept { return housefile; }
-	const std::string& getSpawnFilename() const noexcept { return spawnfile; }
-
-	// Set some map data
-	void setWidth(int new_width);
-	void setHeight(int new_height);
-	void setMapDescription(const std::string& new_description);
-	void setHouseFilename(const std::string& new_housefile);
-	void setSpawnFilename(const std::string& new_spawnfile);
-
-	void flagAsNamed() noexcept { unnamed = false; }
-
-	bool hasUniqueId(uint16_t uid) const;
-
-protected:
-	// Loads a map
-	bool open(const std::string identifier);
-
-protected:
-	void removeSpawnInternal(Tile* tile);
-
-	wxArrayString warnings;
-	wxString error;
-
-	std::string name; // The map name, NOT the same as filename
-	std::string filename; // the maps filename
-	std::string description; // The description of the map
-
-	// Map Width and Height - for info purposes
-	uint16_t width, height;
-
-	std::string spawnfile; // The maps spawnfile
-	std::string housefile; // The housefile
-
-public:
-	Towns towns;
-	Houses houses;
-	Spawns spawns;
-	Waypoints waypoints;
-
-protected:
-	bool has_changed; // If the map has changed
-	bool unnamed; // If the map has yet to receive a name
-
-	friend class IOMap;
-	friend class Editor;
+	Tile tiles[MAP_SECTOR_SIZE * MAP_SECTOR_SIZE];
 };
 
-template <typename ForeachType>
-inline void foreach_ItemOnMap(Map& map, ForeachType& foreach, bool selectedTiles)
-{
-	MapIterator tileiter = map.begin();
-	MapIterator end = map.end();
-	long long done = 0;
+struct Map {
+	wxString mapDir = {};
+	wxString saveDir = {};
 
-	while(tileiter != end) {
-		++done;
-		Tile* tile = (*tileiter)->get();
-		if(selectedTiles && !tile->isSelected()) {
-			++tileiter;
-			continue;
+	int minSectorX = 0;
+	int minSectorY = 0;
+	int minSectorZ = 0;
+	int maxSectorX = 0;
+	int maxSectorY = 0;
+	int maxSectorZ = 0;
+
+	// IMPORTANT(fusion): `std::unordered_map` is node based so sector and tile
+	// pointers should remain stable and valid while their sectors are still in
+	// this map.
+	std::unordered_map<uint32_t, MapSector> sectors;
+	std::unordered_set<uint32_t> dirtySectors;
+
+	//std::vector<Town> towns;
+	//std::vector<House> houses;
+	//std::vector<Waypoint> waypoints;
+
+	bool load(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
+	bool save(void);
+	void clear(void);
+
+	Tile *getTile(int x, int y, int z);
+	Tile *getOrCreateTile(int x, int y, int z);
+	Tile *getTile(Position pos) { return getTile(pos.x, pos.y, pos.z); }
+	Tile *getOrCreateTile(Position pos) { return getOrCreateTile(pos.x, pos.y, pos.z); }
+	bool isEmpty(void) const { return sectors.empty(); }
+	bool isDirty(void) const { return !dirtySectors.empty(); }
+
+	int getTileCount(void) const {
+		return (int)sectors.size() * MAP_SECTOR_SIZE * MAP_SECTOR_SIZE;
+	}
+
+	int getWidth(void) const {
+		return (maxSectorX - minSectorX + 1) * MAP_SECTOR_SIZE;
+	}
+
+	int getHeight(void) const {
+		return (maxSectorY - minSectorY + 1) * MAP_SECTOR_SIZE;
+	}
+
+	Position getMinPosition(void) const {
+		return Position{
+			minSectorX * MAP_SECTOR_SIZE,
+			minSectorY * MAP_SECTOR_SIZE,
+			minSectorZ,
+		};
+	}
+
+	Position getMaxPosition(void) const {
+		return Position{
+			maxSectorX * MAP_SECTOR_SIZE + (MAP_SECTOR_SIZE - 1),
+			maxSectorY * MAP_SECTOR_SIZE + (MAP_SECTOR_SIZE - 1),
+			maxSectorZ,
+		};
+	}
+
+
+	void cleanInvalidTiles(bool showDialog = false);
+	bool exportMinimap(const FileName &filename,
+						int floor = rme::MapGroundLayer,
+						bool showDialog = false);
+
+	template<typename F>
+	void forEachTile(F &&f, bool selectedOnly = false){
+		int numProcessed = 0;
+		int numTiles = getTileCount();
+		for(auto &[sectorId, sector]: sectors){
+			for(Tile &tile: sector.tiles){
+				f(&tile, ((double)numProcessed / (double)numTiles));
+			}
 		}
+	}
 
+	template<typename F>
+	void forEachItem(F &&f, bool selectedOnly = false){
+		int numProcessed = 0;
+		int numTiles = getTileCount();
 		std::queue<Item*> containers;
-		for(Item *item = tile->items; item != NULL; item = item->next){
-			foreach(map, tile, item, done);
-			if(item->getFlag(CONTAINER) || item->getFlag(CHEST)) {
-				containers.push(item);
-				while(!containers.empty()){
-					Item *container = containers.front();
-					containers.pop();
-					for(Item *inner = container->content; inner != NULL; inner = inner->next){
-						foreach(map, tile, inner, done);
-						if(inner->getFlag(CONTAINER) || inner->getFlag(CHEST)){
-							containers.push(inner);
+		for(auto &[sectorId, sector]: sectors){
+			for(Tile &tile: sector.tiles){
+				for(Item *item = tile.items; item != NULL; item = item->next){
+					if(selectedOnly && !item->isSelected()){
+						continue;
+					}
+
+					f(&tile, item, ((double)numProcessed / (double)numTiles));
+					if(item->getFlag(CONTAINER) || item->getFlag(CHEST)) {
+						containers.push(item);
+						while(!containers.empty()){
+							Item *container = containers.front();
+							containers.pop();
+							for(Item *inner = container->content; inner != NULL; inner = inner->next){
+								f(&tile, inner, ((double)numProcessed / (double)numTiles));
+								if(inner->getFlag(CONTAINER) || inner->getFlag(CHEST)){
+									containers.push(inner);
+								}
+							}
 						}
 					}
 				}
+				numProcessed += 1;
 			}
 		}
-		++tileiter;
 	}
-}
 
-template <typename ForeachType>
-inline void foreach_TileOnMap(Map& map, ForeachType& foreach)
-{
-	MapIterator tileiter = map.begin();
-	MapIterator end = map.end();
-	long long done = 0;
-
-	while(tileiter != end)
-		foreach(map, (*tileiter++)->get(), ++done);
-}
-
-template <typename RemoveIfType>
-inline long long remove_if_TileOnMap(Map& map, RemoveIfType& remove_if)
-{
-	MapIterator tileiter = map.begin();
-	MapIterator end = map.end();
-	long long done = 0;
-	long long removed = 0;
-	long long total = map.getTileCount();
-
-	while(tileiter != end) {
-		Tile* tile = (*tileiter)->get();
-		if(remove_if(map, tile, removed, done, total)) {
-			map.setTile(tile->getPosition(), nullptr, true);
-			++removed;
+	template<typename Pred>
+	int clearTiles(Pred &&predicate){
+		int numCleared = 0;
+		int numProcessed = 0;
+		int numTiles = getTileCount();
+		for(auto &[sectorId, sector]: sectors){
+			for(Tile &tile: sector.tiles){
+				if(predicate(&tile, ((double)numProcessed / (double)numTiles))){
+					tile.clear();
+					numCleared += 1;
+				}
+				numProcessed += 1;
+			}
 		}
-		++tileiter;
-		++done;
+		return numCleared;
 	}
 
-	return removed;
-}
-
-template <typename RemoveIfType>
-inline int64_t RemoveItemOnMap(Map& map, RemoveIfType& condition, bool selectedOnly) {
-	int64_t done = 0;
-	int64_t removed = 0;
-	MapIterator it = map.begin();
-	MapIterator end = map.end();
-	while(it != end) {
-		++done;
-		Tile* tile = (*it)->get();
-		if(!selectedOnly || tile->isSelected()){
-			tile->removeItems(
-				[&condition, &map, removed, done](const Item *item){
-					return condition(map, item, removed, done);
-				});
+	template<typename Pred>
+	int removeItems(Pred &&predicate){
+		int numRemoved = 0;
+		int numProcessed = 0;
+		int numTiles = getTileCount();
+		for(auto &[sectorId, sector]: sectors){
+			for(Tile &tile: sector.tiles){
+				double progress = ((double)numProcessed / (double)numTiles);
+				numRemoved += tile.removeItems(
+					[&predicate, progress](const Item *item){
+						return predicate(item, progress);
+					});
+				numProcessed += 1;
+			}
 		}
-		++it;
+		return numRemoved;
 	}
-	return removed;
-}
+};
 
-#endif
+#endif //RME_MAP_H_

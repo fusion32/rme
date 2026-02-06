@@ -27,7 +27,6 @@
 // TODO move to a declarations file.
 class ItemType;
 class CreatureType;
-class BaseMap;
 class House;
 class Item;
 class Tile;
@@ -98,9 +97,9 @@ public:
 		return true;
 	}
 
-	virtual void draw(BaseMap* map, Tile* tile, void* parameter = nullptr) = 0;
-	virtual void undraw(BaseMap* map, Tile* tile) = 0;
-	virtual bool canDraw(BaseMap* map, const Position& position) const = 0;
+	virtual void draw(Map *map, Tile* tile, void* parameter = nullptr) = 0;
+	virtual void undraw(Map *map, Tile* tile) = 0;
+	virtual bool canDraw(Map *map, const Position& position) const = 0;
 
 	//
 	uint32_t getID() const noexcept { return id; }
@@ -178,7 +177,7 @@ public:
 	bool isTerrain() const { return true; }
 	TerrainBrush* asTerrain() { return static_cast<TerrainBrush*>(this); }
 
-	virtual bool canDraw(BaseMap* map, const Position& position) const { return true; }
+	virtual bool canDraw(Map *map, const Position& position) const { return true; }
 
 	virtual std::string getName() const { return name; }
 	virtual void setName(const std::string& newName) { name = newName; }
@@ -210,9 +209,9 @@ public:
 	bool isFlag() const { return true; }
 	FlagBrush* asFlag() { return static_cast<FlagBrush*>(this); }
 
-	virtual bool canDraw(BaseMap* map, const Position& position) const;
-	virtual void draw(BaseMap* map, Tile* tile, void* parameter);
-	virtual void undraw(BaseMap* map, Tile* tile);
+	virtual bool canDraw(Map *map, const Position& position) const;
+	virtual void draw(Map *map, Tile* tile, void* parameter);
+	virtual void undraw(Map *map, Tile* tile);
 
 	virtual bool canDrag() const { return true; }
 	virtual int getLookID() const;
@@ -236,9 +235,9 @@ public:
 
 	static void switchDoor(Item* door);
 
-	virtual bool canDraw(BaseMap* map, const Position& position) const;
-	virtual void draw(BaseMap* map, Tile* tile, void* parameter);
-	virtual void undraw(BaseMap* map, Tile* tile);
+	virtual bool canDraw(Map *map, const Position& position) const;
+	virtual void draw(Map *map, Tile* tile, void* parameter);
+	virtual void undraw(Map *map, Tile* tile);
 
 	virtual int getLookID() const;
 	virtual std::string getName() const;
@@ -260,9 +259,9 @@ public:
 	bool isOptionalBorder() const { return true; }
 	OptionalBorderBrush* asOptionalBorder() { return static_cast<OptionalBorderBrush*>(this); }
 
-	virtual bool canDraw(BaseMap* map, const Position& position) const;
-	virtual void draw(BaseMap* map, Tile* tile, void* parameter);
-	virtual void undraw(BaseMap* map, Tile* tile);
+	virtual bool canDraw(Map *map, const Position& position) const;
+	virtual void draw(Map *map, Tile* tile, void* parameter);
+	virtual void undraw(Map *map, Tile* tile);
 
 	virtual bool canDrag() const { return true; }
 	virtual int getLookID() const;
@@ -281,9 +280,9 @@ public:
 	bool isEraser() const { return true; }
 	EraserBrush* asEraser() { return static_cast<EraserBrush*>(this); }
 
-	virtual bool canDraw(BaseMap* map, const Position& position) const;
-	virtual void draw(BaseMap* map, Tile* tile, void* parameter);
-	virtual void undraw(BaseMap* map, Tile* tile);
+	virtual bool canDraw(Map *map, const Position& position) const;
+	virtual void draw(Map *map, Tile* tile, void* parameter);
+	virtual void undraw(Map *map, Tile* tile);
 
 	virtual bool needBorders() const { return true; }
 	virtual bool canDrag() const { return true; }

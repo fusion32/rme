@@ -17,363 +17,230 @@
 
 #include "main.h"
 
-#include "editor.h"
 #include "map.h"
+#include "editor.h"
 
-Map::Map() : BaseMap(),
-	width(512),
-	height(512),
-	houses(*this),
-	has_changed(false),
-	unnamed(false),
-	waypoints(*this)
-{
-	// no-op
-}
+#include <wx/dir.h>
 
-Map::~Map()
+bool Map::load(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings)
 {
-	// no-op
-}
+	wxString mapDirAttempt = projectDir + "origmap";
+	if(!wxDir::Exists(mapDirAttempt)){
+		outError << "Unable to locate map directory";
+		return false;
+	}
 
-bool Map::open(const std::string file)
-{
-	// TODO
-	// error = ...;
-	// warnings = ...;
-	error = "TODO";
+	wxString saveDirAttempt = projectDir + "save";
+	if(!wxDir::Exists(saveDirAttempt)){
+		outError << "Unable to locate save directory";
+		return false;
+	}
+
+	wxString filename;
+	wxDir dir(mapDirAttempt);
+	if(dir.GetFirst(&filename, "*.sec")){
+		do{
+			// TODO(fusion): Load sectors...
+			std::cout << filename << std::endl;
+		}while(dir.GetNext(&filename));
+	}
+
+	//mapDir = std::move(mapDir);
+	//saveDir = std::move(saveDirAttempt);
+
+	outError << "OK";
 	return false;
 }
 
-void Map::cleanInvalidTiles(bool showdialog)
+bool Map::save(void)
 {
-	if(showdialog)
-		g_editor.CreateLoadBar("Removing invalid tiles...");
-
-	uint64_t tiles_done = 0;
-
-	for(MapIterator miter = begin(); miter != end(); ++miter) {
-		Tile* tile = (*miter)->get();
-		ASSERT(tile);
-
-		tile->removeItems([](const Item *item){ return !ItemTypeExists(item->getID()); });
-
-		++tiles_done;
-		if(showdialog && tiles_done % 0x10000 == 0) {
-			g_editor.SetLoadDone(int(tiles_done / double(getTileCount()) * 100.0));
-		}
+	if(mapDir.IsEmpty() || saveDir.IsEmpty()){
+		return false;
 	}
 
-	if(showdialog)
+	// TODO
+	return false;
+}
+
+void Map::clear(void)
+{
+	mapDir.Clear();
+	saveDir.Clear();
+	minSectorX = 0;
+	minSectorY = 0;
+	minSectorZ = 0;
+	maxSectorX = 0;
+	maxSectorY = 0;
+	maxSectorZ = 0;
+	sectors.clear();
+	dirtySectors.clear();
+}
+
+Tile *Map::getTile(int x, int y, int z)
+{
+	uint32_t sectorId = GetMapSectorId(x, y, z);
+	auto it = sectors.find(sectorId);
+	if(it == sectors.end()){
+		return NULL;
+	}
+
+	int offsetX = x & MAP_SECTOR_MASK;
+	int offsetY = y & MAP_SECTOR_MASK;
+	return &it->second.tiles[offsetY * MAP_SECTOR_SIZE + offsetX];
+}
+
+Tile *Map::getOrCreateTile(int x, int y, int z)
+{
+	uint32_t sectorId = GetMapSectorId(x, y, z);
+	auto ret = sectors.try_emplace(sectorId);
+	if(ret.second){
+		int sectorX = x / MAP_SECTOR_SIZE;
+		int sectorY = y / MAP_SECTOR_SIZE;
+		int sectorZ = z;
+
+		if(sectorX < minSectorX){
+			minSectorX = sectorX;
+		}else if(sectorX > maxSectorX){
+			maxSectorX = sectorX;
+		}
+
+		if(sectorY < minSectorY){
+			minSectorY = sectorY;
+		}else if(sectorY > maxSectorY){
+			maxSectorY = sectorY;
+		}
+
+		if(sectorZ < minSectorZ){
+			minSectorZ = sectorZ;
+		}else if(sectorZ > maxSectorZ){
+			maxSectorZ = sectorZ;
+		}
+
+		ret.first->second.setTilePositions(
+				sectorX * MAP_SECTOR_SIZE,
+				sectorY * MAP_SECTOR_SIZE,
+				sectorZ);
+	}
+
+	int offsetX = x & MAP_SECTOR_MASK;
+	int offsetY = y & MAP_SECTOR_MASK;
+	return &ret.first->second.tiles[offsetY * MAP_SECTOR_SIZE + offsetX];
+}
+
+void Map::cleanInvalidTiles(bool showDialog /*= false*/)
+{
+	if(showDialog)
+		g_editor.CreateLoadBar("Removing invalid tiles...");
+
+	double nextUpdate = 0.0;
+	removeItems(
+		[&nextUpdate, showDialog](const Item *item, double progress){
+			if(showDialog && progress >= nextUpdate){
+				g_editor.SetLoadDone((int)(progress * 100.0));
+				nextUpdate = progress + 0.01;
+			}
+			return !ItemTypeExists(item->getID());
+		});
+
+	if(showDialog)
 		g_editor.DestroyLoadBar();
 }
 
-bool Map::doChange()
+bool Map::exportMinimap(const FileName &filename,
+						int floor /*= rme::MapGroundLayer*/,
+						bool showDialog /*= false*/)
 {
-	bool doupdate = !has_changed;
-	has_changed = true;
-	return doupdate;
-}
-
-bool Map::clearChanges()
-{
-	bool doupdate = has_changed;
-	has_changed = false;
-	return doupdate;
-}
-
-void Map::setWidth(int new_width)
-{
-	if(new_width > 65000)
-		width = 65000;
-	else if(new_width < 64)
-		width = 64;
-	else
-		width = new_width;
-}
-
-void Map::setHeight(int new_height)
-{
-	if(new_height > 65000)
-		height = 65000;
-	else if(new_height < 64)
-		height = 64;
-	else
-		height = new_height;
-}
-void Map::setMapDescription(const std::string& new_description)
-{
-	description = new_description;
-}
-
-void Map::setHouseFilename(const std::string&  new_housefile)
-{
-	housefile = new_housefile;
-	unnamed = false;
-}
-
-void Map::setSpawnFilename(const std::string&  new_spawnfile)
-{
-	spawnfile = new_spawnfile;
-	unnamed = false;
-}
-
-bool Map::addSpawn(Tile* tile)
-{
-	Spawn* spawn = tile->spawn;
-	if(spawn) {
-		int z = tile->getZ();
-		int start_x = tile->getX() - spawn->getSize();
-		int start_y = tile->getY() - spawn->getSize();
-		int end_x = tile->getX() + spawn->getSize();
-		int end_y = tile->getY() + spawn->getSize();
-
-		for(int y = start_y; y <= end_y; ++y) {
-			for(int x = start_x; x <= end_x; ++x) {
-				TileLocation* ctile_loc = createTileL(x, y, z);
-				ctile_loc->increaseSpawnCount();
-			}
-		}
-		spawns.addSpawn(tile);
+	if(isEmpty()){
 		return true;
 	}
-	return false;
-}
 
-void Map::removeSpawnInternal(Tile* tile)
-{
-	Spawn* spawn = tile->spawn;
-	ASSERT(spawn);
-
-	int z = tile->getZ();
-	int start_x = tile->getX() - spawn->getSize();
-	int start_y = tile->getY() - spawn->getSize();
-	int end_x = tile->getX() + spawn->getSize();
-	int end_y = tile->getY() + spawn->getSize();
-
-	for(int y = start_y; y <= end_y; ++y) {
-		for(int x = start_x; x <= end_x; ++x) {
-			TileLocation* ctile_loc = getTileL(x, y, z);
-			if(ctile_loc != nullptr && ctile_loc->getSpawnCount() > 0)
-				ctile_loc->decreaseSpawnCount();
-		}
-	}
-}
-
-void Map::removeSpawn(Tile* tile)
-{
-	if(tile->spawn) {
-		removeSpawnInternal(tile);
-		spawns.removeSpawn(tile);
-	}
-}
-
-SpawnList Map::getSpawnList(const Tile* tile) const
-{
-	SpawnList list;
-	if(!tile) return list;
-
-	const TileLocation* location = tile->getLocation();
-	if(!location || location->getSpawnCount() == 0)
-		return list;
-
-	uint32_t found = 0;
-	if(tile->spawn) {
-		++found;
-		list.push_back(tile->spawn);
+	FileWriteHandle fh(nstr(filename.GetFullPath()));
+	if(!fh.isOpen()) {
+		return false;
 	}
 
-	// Scans the border tiles in an expanding square around the original spawn
-	const Position& position = tile->getPosition();
-	int start_x = position.x - 1;
-	int end_x = position.x + 1;
-	int start_y = position.y - 1;
-	int end_y = position.y + 1;
-
-	while(found != location->getSpawnCount()) {
-		for(int x = start_x; x <= end_x; ++x) {
-			const Tile* start_tile = getTile(x, start_y, position.z);
-			if(start_tile && start_tile->spawn) {
-				list.push_back(start_tile->spawn);
-				++found;
-			}
-			const Tile* end_tile = getTile(x, end_y, position.z);
-			if(end_tile && end_tile->spawn) {
-				list.push_back(end_tile->spawn);
-				++found;
-			}
-		}
-
-		for(int y = start_y + 1; y < end_y; ++y) {
-			const Tile* start_tile = getTile(start_x, y, position.z);
-			if(start_tile && start_tile->spawn) {
-				list.push_back(start_tile->spawn);
-				++found;
-			}
-			const Tile* end_tile = getTile(end_x, y, position.z);
-			if(end_tile && end_tile->spawn) {
-				list.push_back(end_tile->spawn);
-				++found;
-			}
-		}
-		--start_x;
-		--start_y;
-		++end_x;
-		++end_y;
+	if(showDialog){
+		g_editor.CreateLoadBar("Exporting minimap...");
 	}
-	return list;
-}
 
-SpawnList Map::getSpawnList(const Position& position) const
-{
-	const Tile* tile = getTile(position);
-	return getSpawnList(tile);
-}
+	Position min = getMinPosition();
+	int width = getWidth();
+	int height = getHeight();
+	auto bitmap = std::make_unique<uint8_t[]>(width * height);
+	memset(bitmap.get(), 0, width * height);
 
-SpawnList Map::getSpawnList(int x, int y, int z) const
-{
-	const Tile* tile = getTile(x, y, z);
-	return getSpawnList(tile);
-}
-
-bool Map::exportMinimap(FileName filename, int floor /*= rme::MapGroundLayer*/, bool displaydialog)
-{
-	uint8_t* pic = nullptr;
-
-	try
 	{
-		int min_x = 0x10000, min_y = 0x10000;
-		int max_x = 0x00000, max_y = 0x00000;
+		double nextUpdate = 0.0;
+		forEachTile(
+			[&nextUpdate, floor, showDialog, min, width, height, &bitmap](const Tile *tile, double progress){
+				if(showDialog && progress >= nextUpdate){
+					g_editor.SetLoadDone((int)(progress * 90));
+					nextUpdate = progress + 0.01;
+				}
 
-		if(size() == 0)
-			return true;
+				if(tile->empty() || tile->pos.z != floor){
+					return;
+				}
 
-		uint32_t minimap_colors[256];
-		for(int i = 0; i < 256; ++i)
-			minimap_colors[i] = colorFromEightBit(i).GetRGB();
+				int relX = tile->pos.x - min.x;
+				int relY = tile->pos.y - min.y;
+				int index = (height - relY - 1) * width + relX;
+				bitmap[index] = tile->getMiniMapColor();
+			});
+	}
 
-		for(MapIterator mit = begin(); mit != end(); ++mit) {
-			if((*mit)->get() == nullptr || (*mit)->empty())
-				continue;
 
-			Position pos = (*mit)->getPosition();
+	int pitch = ((width + 3) / 4) * 4;
+	int padding = width - pitch;
+	int headerSize = (14 + 40 + 4 * 256);
+	int fileSize = headerSize + pitch * height;
 
-			if(pos.x < min_x)
-				min_x = pos.x;
+	// BMP header
+	fh.addRAW("BM");			// identifier
+	fh.addU32(fileSize);		// file size
+	fh.addU16(0);				// reserved
+	fh.addU16(0);				// reserved
+	fh.addU32(headerSize);		// bitmap data offset
 
-			if(pos.y < min_y)
-				min_y = pos.y;
+	// DIB header
+	fh.addU32(40);				// DIB header size
+	fh.addU32(width);			// width
+	fh.addU32(height);			// height
+	fh.addU16(1);				// color planes
+	fh.addU16(8);				// bits per pixel
+	fh.addU32(0);				// compression type
+	fh.addU32(0);				// size of the raw bitmap data, can be zero when not compressed
+	fh.addU32(4000);			// horizontal resolution in pixels per meter
+	fh.addU32(4000);			// vertical resolution in pixels per meter
+	fh.addU32(256);				// colors in the color palette
+	fh.addU32(0);				// important colors, generally ignored
 
-			if(pos.x > max_x)
-				max_x = pos.x;
+	// Palette
+	for(int i = 0; i < 256; i += 1)
+		fh.addU32(colorFromEightBit(i).GetRGB());
 
-			if(pos.y > max_y)
-				max_y = pos.y;
-
-		}
-
-		int minimap_width = max_x - min_x+1;
-		int minimap_height = max_y - min_y+1;
-
-		pic = newd uint8_t[minimap_width*minimap_height]; // 1 byte per pixel
-
-		memset(pic, 0, minimap_width*minimap_height);
-
-		int tiles_iterated = 0;
-		for(MapIterator mit = begin(); mit != end(); ++mit) {
-			Tile* tile = (*mit)->get();
-			++tiles_iterated;
-			if(tiles_iterated % 8192 == 0 && displaydialog)
-				g_editor.SetLoadDone(int(tiles_iterated / double(tilecount) * 90.0));
-
-			if(tile->empty() || tile->getZ() != floor)
-				continue;
-
-			//std::cout << "Pixel : " << (tile->getY() - min_y) * width + (tile->getX() - min_x) << std::endl;
-			uint32_t pixelpos = (tile->getY() - min_y) * minimap_width + (tile->getX() - min_x);
-			pic[pixelpos] = tile->getMiniMapColor();
-		}
-
-		// Create a file for writing
-		FileWriteHandle fh(nstr(filename.GetFullPath()));
-
-		if(!fh.isOpen()) {
-			delete[] pic;
-			return false;
-		}
-		// Store the magic number
-		fh.addRAW("BM");
-
-		// Store the file size
-		// We need to predict how large it will be
-		uint32_t file_size =
-					14 // header
-					+40 // image data header
-					+256*4 // color palette
-					+((minimap_width + 3) / 4 * 4) * height; // pixels
-		fh.addU32(file_size);
-
-		// Two values reserved, must always be 0.
-		fh.addU16(0);
-		fh.addU16(0);
-
-		// Bitmapdata offset
-		fh.addU32(14 + 40 + 256*4);
-
-		// Header size
-		fh.addU32(40);
-
-		// Header width/height
-		fh.addU32(minimap_width);
-		fh.addU32(minimap_height);
-
-		// Color planes
-		fh.addU16(1);
-
-		// bits per pixel, OT map format is 8
-		fh.addU16(8);
-
-		// compression type, 0 is no compression
-		fh.addU32(0);
-
-		// image size, 0 is valid if we use no compression
-		fh.addU32(0);
-
-		// horizontal/vertical resolution in pixels / meter
-		fh.addU32(4000);
-		fh.addU32(4000);
-
-		// Number of colors
-		fh.addU32(256);
-		// Important colors, 0 is all
-		fh.addU32(0);
-
-		// Write the color palette
-		for(int i = 0; i < 256; ++i)
-			fh.addU32(minimap_colors[i]);
-
-		// Bitmap width must be divisible by four, calculate how much padding we need
-		int padding = ((minimap_width & 3) != 0? 4-(minimap_width & 3) : 0);
-		// Bitmap rows are saved in reverse order
-		for(int y = minimap_height-1; y >= 0; --y) {
-			fh.addRAW(pic + y*minimap_width, minimap_width);
-			for(int i = 0; i < padding; ++i) {
+	// Bitmap
+	{
+		double nextUpdate = 0.0;
+		for(int y = 0; y < height; y += 1){
+			fh.addRAW(&bitmap[y*width], width);
+			for(int i = 0; i < padding; i += 1){
 				fh.addU8(0);
 			}
-			if(y % 100 == 0 && displaydialog) {
-				g_editor.SetLoadDone(90 + int((minimap_height-y) / double(minimap_height) * 10.0));
+
+			double progress = (double)y / (double)height;
+			if(showDialog && nextUpdate >= progress){
+				g_editor.SetLoadDone(90 + (int)(progress * 10.0));
+				nextUpdate = progress + 0.01;
 			}
 		}
-
-		delete[] pic;
-		//fclose(file);
-		fh.close();
-	}
-	catch(...)
-	{
-		delete[] pic;
 	}
 
+	if(showDialog){
+		g_editor.DestroyLoadBar();
+	}
+
+	fh.close();
 	return true;
 }
 

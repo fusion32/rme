@@ -36,15 +36,15 @@ public:
 
 	virtual bool load(pugi::xml_node node, wxArrayString& warnings);
 
-	virtual bool canDraw(BaseMap* map, const Position& position) const { return true; }
+	virtual bool canDraw(Map *map, const Position& position) const { return true; }
 
 	// Draw to the target tile
 	// Note that this actually only puts the first WALL_NORMAL item on the tile.
 	// It's up to the doWalls function to change it to the correct alignment
-	virtual void draw(BaseMap* map, Tile* tile, void* parameter);
-	virtual void undraw(BaseMap* map, Tile* tile);
+	virtual void draw(Map *map, Tile* tile, void* parameter);
+	virtual void undraw(Map *map, Tile* tile);
 	// Creates walls on the target tile (does not depend on brush in any way)
-	static void doWalls(BaseMap* map, Tile* tile);
+	static void doWalls(Map *map, Tile* tile);
 
 	// If the specified wall item is part of this wall
 	bool hasWall(const Item* item);
@@ -93,7 +93,7 @@ public:
 
 	// We use the exact same loading algorithm as normal walls
 
-	virtual void draw(BaseMap* map, Tile* tile, void* parameter);
+	virtual void draw(Map *map, Tile* tile, void* parameter);
 };
 
 #endif

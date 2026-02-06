@@ -449,22 +449,22 @@ static ItemType *GetOrCreateItemType(uint16_t typeId){
 }
 
 bool LoadItemTypes(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings){
-	FileName filename(projectDir, "objects.srv");
-	if(!filename.Exists()){
-		filename.AppendDir("editor");
-		if(!filename.Exists()){
-			filename.RemoveLastDir();
-			filename.AppendDir("dat");
-			if(!filename.Exists()){
-				outError << "Unable to locate " << filename.GetFullName();
-				return false;
-			}
+	wxString filename;
+	{
+		wxPathList paths;
+		paths.Add(projectDir);
+		paths.Add(projectDir + "editor");
+		paths.Add(projectDir + "dat");
+		filename = paths.FindValidPath("objects.srv");
+		if(filename.IsEmpty()){
+			outError << "Unable to locate objects.srv";
+			return false;
 		}
 	}
 
 	int typeId = -1;
 	std::string ident;
-	Script script(filename.GetFullPath());
+	Script script(filename.mb_str());
 	while(true){
 		script.nextToken();
 		if(script.eof()){

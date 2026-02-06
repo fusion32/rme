@@ -32,10 +32,10 @@ public:
 	bool isCreature() const { return true; }
 	CreatureBrush* asCreature() { return static_cast<CreatureBrush*>(this); }
 
-	virtual bool canDraw(BaseMap* map, const Position& position) const;
-	virtual void draw(BaseMap* map, Tile* tile, void* parameter);
-	void draw_creature(BaseMap* map, Tile* tile);
-	virtual void undraw(BaseMap* map, Tile* tile);
+	virtual bool canDraw(Map *map, const Position& position) const;
+	virtual void draw(Map *map, Tile* tile, void* parameter);
+	void draw_creature(Map *map, Tile* tile);
+	virtual void undraw(Map *map, Tile* tile);
 
 	CreatureType* getType() const { return creature_type; }
 

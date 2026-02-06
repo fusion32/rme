@@ -275,18 +275,18 @@ int FlagBrush::getLookID() const
 	return 0;
 }
 
-bool FlagBrush::canDraw(BaseMap* map, const Position& position) const
+bool FlagBrush::canDraw(Map *map, const Position& position) const
 {
 	Tile* tile = map->getTile(position);
 	return tile && tile->getFlag(BANK);
 }
 
-void FlagBrush::undraw(BaseMap* map, Tile* tile)
+void FlagBrush::undraw(Map *map, Tile* tile)
 {
 	tile->clearTileFlag(flag);
 }
 
-void FlagBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void FlagBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	if(tile->getFlag(BANK)) {
 		tile->setTileFlag(flag);
@@ -368,7 +368,7 @@ void DoorBrush::switchDoor(Item* item)
 	}
 }
 
-bool DoorBrush::canDraw(BaseMap* map, const Position& position) const
+bool DoorBrush::canDraw(Map *map, const Position& position) const
 {
 	Tile* tile = map->getTile(position);
 	if(!tile) {
@@ -426,7 +426,7 @@ bool DoorBrush::canDraw(BaseMap* map, const Position& position) const
 	return false;
 }
 
-void DoorBrush::undraw(BaseMap* map, Tile* tile)
+void DoorBrush::undraw(Map *map, Tile* tile)
 {
 	for(Item *item = tile->items; item != NULL; item = item->next){
 		if(item->isBrushDoor()) {
@@ -439,7 +439,7 @@ void DoorBrush::undraw(BaseMap* map, Tile* tile)
 	}
 }
 
-void DoorBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void DoorBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	// TODO(fusion): What the actual f*** is going on here?
 	WallBrush *wb = NULL;
@@ -549,7 +549,7 @@ int OptionalBorderBrush::getLookID() const
 	return EDITOR_SPRITE_OPTIONAL_BORDER_TOOL;
 }
 
-bool OptionalBorderBrush::canDraw(BaseMap* map, const Position& position) const
+bool OptionalBorderBrush::canDraw(Map *map, const Position& position) const
 {
 	Tile* tile = map->getTile(position);
 
@@ -586,12 +586,12 @@ bool OptionalBorderBrush::canDraw(BaseMap* map, const Position& position) const
 	return false;
 }
 
-void OptionalBorderBrush::undraw(BaseMap* map, Tile* tile)
+void OptionalBorderBrush::undraw(Map *map, Tile* tile)
 {
 	tile->setOptionalBorder(false); // The bordering algorithm will handle this automagicaly
 }
 
-void OptionalBorderBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void OptionalBorderBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	tile->setOptionalBorder(true); // The bordering algorithm will handle this automagicaly
 }

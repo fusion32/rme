@@ -42,10 +42,10 @@ public:
 	bool loadAlternative(pugi::xml_node node, wxArrayString& warnings, AlternativeBlock* which = nullptr);
 	virtual bool load(pugi::xml_node node, wxArrayString& warnings);
 
-	virtual bool canDraw(BaseMap* map, const Position& position) const { return true; }
-	virtual void draw(BaseMap* map, Tile* tile, void* parameter);
+	virtual bool canDraw(Map *map, const Position& position) const { return true; }
+	virtual void draw(Map *map, Tile* tile, void* parameter);
 	const std::vector<CompositeTile> &getComposite(int variation) const;
-	virtual void undraw(BaseMap* map, Tile* tile);
+	virtual void undraw(Map *map, Tile* tile);
 
 	bool isEmpty(int variation) const;
 

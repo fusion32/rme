@@ -340,6 +340,16 @@ wxString GetExecDirectory(void)
 	return dir.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
 }
 
+wxString NormalizeDir(const wxString &dir){
+	wxFileName fn = wxFileName::DirName(dir);
+	fn.Normalize(wxPATH_NORM_ENV_VARS
+				| wxPATH_NORM_DOTS
+				| wxPATH_NORM_TILDE
+				| wxPATH_NORM_ABSOLUTE
+				| wxPATH_NORM_LONG);
+	return fn.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
+}
+
 void SetWindowToolTip(wxWindow *a, const wxString &tooltip)
 {
 	a->SetToolTip(tooltip);

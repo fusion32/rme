@@ -32,9 +32,9 @@ public:
 	bool isRaw() const { return true; }
 	RAWBrush* asRaw() { return static_cast<RAWBrush*>(this); }
 
-	virtual bool canDraw(BaseMap* map, const Position& position) const { return true; }
-	virtual void draw(BaseMap* map, Tile* tile, void* parameter);
-	virtual void undraw(BaseMap* map, Tile* tile);
+	virtual bool canDraw(Map *map, const Position& position) const { return true; }
+	virtual void draw(Map *map, Tile* tile, void* parameter);
+	virtual void undraw(Map *map, Tile* tile);
 
 	virtual bool canDrag() const { return true; }
 	virtual int getLookID() const;

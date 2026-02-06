@@ -37,10 +37,10 @@ public:
 	// Not used
 	virtual bool load(pugi::xml_node node, wxArrayString& warnings) { return true; }
 
-	virtual bool canDraw(BaseMap* map, const Position& position) const;
+	virtual bool canDraw(Map *map, const Position& position) const;
 	// Will ASSERT
-	virtual void draw(BaseMap* map, Tile* tile, void* parameter);
-	virtual void undraw(BaseMap* map, Tile* tile);
+	virtual void draw(Map *map, Tile* tile, void* parameter);
+	virtual void undraw(Map *map, Tile* tile);
 
 	virtual bool canDrag() const { return false; }
 	virtual bool canSmear() const { return false; }

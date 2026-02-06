@@ -19,7 +19,6 @@
 
 #include "waypoint_brush.h"
 #include "waypoints.h"
-#include "basemap.h"
 
 //=============================================================================
 // Waypoint Brush
@@ -49,18 +48,18 @@ std::string WaypointBrush::getWaypoint() const
 	return waypoint_name;
 }
 
-bool WaypointBrush::canDraw(BaseMap* map, const Position& position) const
+bool WaypointBrush::canDraw(Map *map, const Position& position) const
 {
 	return map->getTile(position) != nullptr;
 }
 
-void WaypointBrush::undraw(BaseMap* map, Tile* tile)
+void WaypointBrush::undraw(Map *map, Tile* tile)
 {
 	// Never called
 	ASSERT(false);
 }
 
-void WaypointBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void WaypointBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	// Never called
 	ASSERT(false);

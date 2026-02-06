@@ -38,9 +38,9 @@ public:
 
 	virtual bool load(pugi::xml_node node, wxArrayString& warnings);
 
-	virtual void draw(BaseMap* map, Tile* tile, void* parameter);
-	virtual void undraw(BaseMap* map, Tile* tile);
-	static void doBorders(BaseMap* map, Tile* tile);
+	virtual void draw(Map *map, Tile* tile, void* parameter);
+	virtual void undraw(Map *map, Tile* tile);
+	static void doBorders(Map *map, Tile* tile);
 	static const BorderBlock* getBrushTo(GroundBrush* first, GroundBrush* second);
 
 	virtual int32_t getZ() const { return z_order; }

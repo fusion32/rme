@@ -22,7 +22,6 @@
 #include "settings.h"
 #include "tile.h"
 #include "creature.h"
-#include "basemap.h"
 #include "spawn.h"
 
 //=============================================================================
@@ -53,7 +52,7 @@ std::string CreatureBrush::getName() const
 	return "Creature Brush";
 }
 
-bool CreatureBrush::canDraw(BaseMap* map, const Position& position) const
+bool CreatureBrush::canDraw(Map *map, const Position& position) const
 {
 	Tile* tile = map->getTile(position);
 	if(creature_type && tile && !tile->getFlag(UNPASS) && !tile->getFlag(AVOID)) {
@@ -70,20 +69,20 @@ bool CreatureBrush::canDraw(BaseMap* map, const Position& position) const
 	return false;
 }
 
-void CreatureBrush::undraw(BaseMap* map, Tile* tile)
+void CreatureBrush::undraw(Map *map, Tile* tile)
 {
 	delete tile->creature;
 	tile->creature = nullptr;
 }
 
-void CreatureBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void CreatureBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	ASSERT(tile);
 	ASSERT(parameter);
 	draw_creature(map, tile);
 }
 
-void CreatureBrush::draw_creature(BaseMap* map, Tile* tile)
+void CreatureBrush::draw_creature(Map *map, Tile* tile)
 {
 	if(canDraw(map, tile->getPosition())) {
 		undraw(map, tile);

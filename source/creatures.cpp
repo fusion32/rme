@@ -261,19 +261,22 @@ bool CreatureDatabase::hasMissing() const
 
 bool CreatureDatabase::loadFromXML(const wxString &projectDir, bool standard, wxString &outError, wxArrayString &outWarnings)
 {
-	FileName filename(projectDir, "creatures.xml");
-	if(!filename.Exists()){
-		filename.AppendDir("editor");
-		if(!filename.Exists()){
-			outError << "Unable to locate " << filename.GetFullName();
+	wxString filename;
+	{
+		wxPathList paths;
+		paths.Add(projectDir);
+		paths.Add(projectDir + "editor");
+		filename = paths.FindValidPath("creatures.xml");
+		if(filename.IsEmpty()){
+			outError << "Unable to locate creatures.xml";
 			return false;
 		}
 	}
 
 	pugi::xml_document doc;
-	pugi::xml_parse_result result = doc.load_file(filename.GetFullPath().mb_str());
+	pugi::xml_parse_result result = doc.load_file(filename.mb_str());
 	if(!result) {
-		outError << "Couldn't open file \"" << filename.GetFullName() << "\":" << result.description();
+		outError << "Couldn't open file \"" << filename << "\":" << result.description();
 		return false;
 	}
 
@@ -283,16 +286,13 @@ bool CreatureDatabase::loadFromXML(const wxString &projectDir, bool standard, wx
 		return false;
 	}
 
-	for(pugi::xml_node creatureNode = node.first_child(); creatureNode; creatureNode = creatureNode.next_sibling()) {
-		if(as_lower_str(creatureNode.name()) != "creature") {
-			continue;
-		}
-
+	for(pugi::xml_node creatureNode: node.children("creature")){
 		CreatureType* creatureType = CreatureType::loadFromXML(creatureNode, outWarnings);
 		if(creatureType) {
 			creatureType->standard = standard;
 			if((*this)[creatureType->name]) {
-				outWarnings.push_back("Duplicate creature type name \"" + wxstr(creatureType->name) + "\"! Discarding...");
+				outWarnings.push_back(wxString("Duplicate creature type name \"")
+						<< creatureType->name << "\"! Discarding...");
 				delete creatureType;
 			} else {
 				creature_map[as_lower_str(creatureType->name)] = creatureType;

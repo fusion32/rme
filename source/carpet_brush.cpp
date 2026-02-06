@@ -18,8 +18,6 @@
 #include "main.h"
 
 #include "carpet_brush.h"
-
-#include "basemap.h"
 #include "items.h"
 
 //=============================================================================
@@ -141,18 +139,18 @@ bool CarpetBrush::load(pugi::xml_node node, wxArrayString& warnings)
 	return true;
 }
 
-bool CarpetBrush::canDraw(BaseMap* map, const Position& position) const
+bool CarpetBrush::canDraw(Map *map, const Position& position) const
 {
 	return true;
 }
 
-void CarpetBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void CarpetBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	undraw(map, tile); // Remove old
 	tile->addItem(Item::Create(getRandomCarpet(CARPET_CENTER)));
 }
 
-void CarpetBrush::undraw(BaseMap* map, Tile* tile)
+void CarpetBrush::undraw(Map *map, Tile* tile)
 {
 	tile->removeItems(
 		[](const Item *item){
@@ -160,7 +158,7 @@ void CarpetBrush::undraw(BaseMap* map, Tile* tile)
 		});
 }
 
-static bool hasMatchingCarpetBrushAtTile(BaseMap* map, CarpetBrush* carpetBrush, int x, int y, int z) {
+static bool hasMatchingCarpetBrushAtTile(Map *map, CarpetBrush* carpetBrush, int x, int y, int z) {
 	Tile* tile = map->getTile(x, y, z);
 	if(!tile) return false;
 	for(Item *item = tile->items; item != NULL; item = item->next){
@@ -171,7 +169,7 @@ static bool hasMatchingCarpetBrushAtTile(BaseMap* map, CarpetBrush* carpetBrush,
 	return false;
 };
 
-void CarpetBrush::doCarpets(BaseMap* map, Tile* tile)
+void CarpetBrush::doCarpets(Map *map, Tile* tile)
 {
 	ASSERT(tile);
 	const Position& position = tile->getPosition();

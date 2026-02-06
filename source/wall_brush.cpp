@@ -20,7 +20,6 @@
 
 #include "wall_brush.h"
 #include "items.h"
-#include "basemap.h"
 
 uint32_t WallBrush::full_border_types[16];
 uint32_t WallBrush::half_border_types[16];
@@ -244,12 +243,12 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 	return true;
 }
 
-void WallBrush::undraw(BaseMap* map, Tile* tile)
+void WallBrush::undraw(Map *map, Tile* tile)
 {
 	tile->removeWalls(this);
 }
 
-void WallBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void WallBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	ASSERT(tile);
 	bool b = (parameter && *reinterpret_cast<bool*>(parameter));
@@ -334,7 +333,7 @@ void WallBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 	}
 }
 
-bool hasMatchingWallBrushAtTile(BaseMap* map, WallBrush* wall_brush, int x, int y, int z)
+bool hasMatchingWallBrushAtTile(Map *map, WallBrush* wall_brush, int x, int y, int z)
 {
 	Tile* t = map->getTile(x, y, z);
 	if(!t) return false;
@@ -352,7 +351,7 @@ bool hasMatchingWallBrushAtTile(BaseMap* map, WallBrush* wall_brush, int x, int 
 	return false;
 }
 
-void WallBrush::doWalls(BaseMap* map, Tile* tile)
+void WallBrush::doWalls(Map *map, Tile* tile)
 {
 	ASSERT(tile);
 
@@ -499,7 +498,7 @@ WallDecorationBrush::~WallDecorationBrush()
 	////
 }
 
-void WallDecorationBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void WallDecorationBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	ASSERT(tile);
 	tile->removeWalls(this);

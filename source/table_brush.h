@@ -37,11 +37,11 @@ public:
 
 	virtual bool load(pugi::xml_node node, wxArrayString& warnings);
 
-	virtual bool canDraw(BaseMap* map, const Position& position) const;
-	virtual void draw(BaseMap* map, Tile* tile, void* parameter);
-	virtual void undraw(BaseMap* map, Tile* tile);
+	virtual bool canDraw(Map *map, const Position& position) const;
+	virtual void draw(Map *map, Tile* tile, void* parameter);
+	virtual void undraw(Map *map, Tile* tile);
 
-	static void doTables(BaseMap* map, Tile* tile);
+	static void doTables(Map *map, Tile* tile);
 
 	virtual int getLookID() const { return look_id; }
 

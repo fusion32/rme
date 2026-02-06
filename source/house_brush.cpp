@@ -49,7 +49,7 @@ uint32_t HouseBrush::getHouseID() const
 	return 0;
 }
 
-void HouseBrush::undraw(BaseMap* map, Tile* tile)
+void HouseBrush::undraw(Map *map, Tile* tile)
 {
 
 	// TODO(fusion): Same as HouseBrush::draw.
@@ -59,7 +59,7 @@ void HouseBrush::undraw(BaseMap* map, Tile* tile)
 	tile->setHouse(nullptr);
 }
 
-void HouseBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void HouseBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	// TODO(fusion): There are no door ids but rather certain doors that have
 	// the NAMEDOOR flag and which can have a TEXTSTRING attribute with the

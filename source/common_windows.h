@@ -48,29 +48,6 @@ public:
 };
 
 /**
- * The map properties window
- * Change map size, protocol etc.
- */
-class MapPropertiesWindow : public wxDialog
-{
-public:
-	MapPropertiesWindow(wxWindow* parent);
-	virtual ~MapPropertiesWindow();
-
-	void OnClickOK(wxCommandEvent&);
-	void OnClickCancel(wxCommandEvent&);
-
-protected:
-	wxSpinCtrl* height_spin;
-	wxSpinCtrl* width_spin;
-	wxTextCtrl* description_ctrl;
-	wxTextCtrl* house_filename_ctrl;
-	wxTextCtrl* spawn_filename_ctrl;
-
-	DECLARE_EVENT_TABLE();
-};
-
-/**
  * The import map dialog
  * Allows selection of file path, offset and some weird options.
  */

@@ -19,7 +19,6 @@
 
 #include "ground_brush.h"
 #include "items.h"
-#include "basemap.h"
 
 uint32_t GroundBrush::border_types[256];
 
@@ -524,13 +523,13 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 	return true;
 }
 
-void GroundBrush::undraw(BaseMap* map, Tile* tile)
+void GroundBrush::undraw(Map *map, Tile* tile)
 {
 	ASSERT(tile);
 	tile->removeItems([this](const Item *item){ return item->getGroundBrush() == this; });
 }
 
-void GroundBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void GroundBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	ASSERT(tile);
 	if(border_items.empty()) return;
@@ -629,7 +628,7 @@ const GroundBrush::BorderBlock* GroundBrush::getBrushTo(GroundBrush* first, Grou
 	return nullptr;
 }
 
-static GroundBrush *extractGroundBrushFromTile(BaseMap* map, uint32_t x, uint32_t y, uint32_t z){
+static GroundBrush *extractGroundBrushFromTile(Map *map, uint32_t x, uint32_t y, uint32_t z){
 	GroundBrush *brush = NULL;
 	if(Tile* tile = map->getTile(x, y, z)) {
 		brush = tile->getGroundBrush();
@@ -637,7 +636,7 @@ static GroundBrush *extractGroundBrushFromTile(BaseMap* map, uint32_t x, uint32_
 	return brush;
 };
 
-void GroundBrush::doBorders(BaseMap* map, Tile* tile)
+void GroundBrush::doBorders(Map *map, Tile* tile)
 {
 	ASSERT(tile);
 

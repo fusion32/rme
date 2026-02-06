@@ -19,7 +19,6 @@
 
 #include "house_exit_brush.h"
 #include "house.h"
-#include "basemap.h"
 
 //=============================================================================
 // House Exit Brush
@@ -47,7 +46,7 @@ uint32_t HouseExitBrush::getHouseID() const
 }
 
 
-bool HouseExitBrush::canDraw(BaseMap* map, const Position& position) const
+bool HouseExitBrush::canDraw(Map *map, const Position& position) const
 {
 	Tile* tile = map->getTile(position);
 	if(!tile || !tile->getFlag(BANK)) {
@@ -59,13 +58,13 @@ bool HouseExitBrush::canDraw(BaseMap* map, const Position& position) const
 	return true;
 }
 
-void HouseExitBrush::undraw(BaseMap* map, Tile* tile)
+void HouseExitBrush::undraw(Map *map, Tile* tile)
 {
 	// Never called
 	ASSERT(false);
 }
 
-void HouseExitBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void HouseExitBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	// Never called
 	ASSERT(false);

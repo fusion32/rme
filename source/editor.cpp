@@ -54,7 +54,7 @@ Editor g_editor;
 Editor::Editor()
 {
 	actionQueue = newd ActionQueue();
-	doodad_buffer_map = newd BaseMap();
+	doodad_buffer_map = newd Map();
 }
 
 Editor::~Editor()
@@ -181,9 +181,11 @@ bool Editor::IsProjectDirty(void) const {
 	return false;
 }
 
-bool Editor::LoadProject(const wxString &dir, wxString &outError, wxArrayString &outWarnings)
+bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWarnings)
 {
 	ASSERT(!IsProjectOpen());
+
+	dir = NormalizeDir(dir);
 
 	ScopedLoadingBar loadingBar("Opening project...");
 
@@ -224,10 +226,11 @@ bool Editor::LoadProject(const wxString &dir, wxString &outError, wxArrayString 
 	g_materials.createOtherTileset();
 
 	SetLoadDone(50, "Loading map...");
-	//if(!LoadMap(dir, error, warnings)){
-		//UnloadProject();
-		//return false;
-	//}
+	if(!map.load(dir, outError, outWarnings)){
+		outError = "Unable to load map: " + outError;
+		UnloadProject();
+		return false;
+	}
 
 	loadingBar.SetLoadDone(100);
 	return true;
@@ -253,7 +256,7 @@ void Editor::UnloadProject(void)
 	nolog_brush = NULL;
 	pz_brush = NULL;
 
-	//ClearMap();
+	map.clear();
 	g_brushes.clear();
 	g_materials.clear();
 	g_creatures.clear();
@@ -1246,7 +1249,7 @@ void Editor::PreparePaste()
 void Editor::StartPasting()
 {
 	pasting = true;
-	secondary_map = &copybuffer.getBufferMap();
+	secondary_map = copybuffer.getBufferMap();
 }
 
 void Editor::EndPasting()
@@ -1904,15 +1907,15 @@ bool Editor::canRedo() const
 	return actionQueue->canRedo();
 }
 
-void Editor::undo(int indexes)
+void Editor::undo(int numActions)
 {
-	if(indexes <= 0 || !actionQueue->canUndo())
+	if(numActions <= 0 || !actionQueue->canUndo())
 		return;
 
-	while(indexes > 0) {
+	while(numActions > 0) {
 		if(!actionQueue->undo())
 			break;
-		indexes--;
+		numActions--;
 	}
 	UpdateActions();
 	RefreshView();
@@ -2758,7 +2761,7 @@ void Editor::drawInternal(Position offset, bool alt, bool dodraw)
 	if(brush->isDoodad()) {
 		BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
 		Action* action = actionQueue->createAction(batch);
-		BaseMap* buffer_map = doodad_buffer_map;
+		Map *buffer_map = doodad_buffer_map;
 
 		Position delta_pos = offset - Position(0x8000, 0x8000, 0x8);
 		PositionList tilestoborder;
@@ -3107,7 +3110,7 @@ void Editor::drawInternal(const PositionVector& tilestodraw, PositionVector& til
 		if(alt && dodraw) {
 			// This is exempt from USE_AUTOMAGIC
 			doodad_buffer_map->clear();
-			BaseMap* draw_map = doodad_buffer_map;
+			Map *draw_map = doodad_buffer_map;
 
 			for(PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
 				TileLocation* location = map.createTileL(*it);

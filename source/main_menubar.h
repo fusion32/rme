@@ -82,7 +82,6 @@ namespace MenuBar
 		MAP_REMOVE_UNREACHABLE_TILES,
 		MAP_REMOVE_EMPTY_SPAWNS,
 		MAP_CLEAN_HOUSE_ITEMS,
-		MAP_PROPERTIES,
 		MAP_STATISTICS,
 		VIEW_TOOLBARS_BRUSHES,
 		VIEW_TOOLBARS_POSITION,
@@ -234,7 +233,6 @@ public:
 	void OnMapEditMonsters(wxCommandEvent& event);
 	void OnMapCleanHouseItems(wxCommandEvent& event);
 	void OnMapCleanup(wxCommandEvent& event);
-	void OnMapProperties(wxCommandEvent& event);
 	void OnMapStatistics(wxCommandEvent& event);
 
 	// View Menu

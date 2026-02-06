@@ -21,7 +21,6 @@
 #include <wx/dataobj.h>
 
 #include "position.h"
-#include "basemap.h"
 
 class Editor;
 
@@ -42,13 +41,12 @@ public:
 	// Clears the copybuffer (eg. resets it)
 	void clear();
 
-	size_t GetTileCount();
-
-	BaseMap& getBufferMap();
+	int GetTileCount();
+	Map *getBufferMap();
 
 private:
 	Position copyPos;
-	BaseMap* tiles;
+	Map *tiles;
 };
 
 #endif

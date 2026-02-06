@@ -37,11 +37,11 @@ class CarpetBrush : public Brush
 
 		virtual bool load(pugi::xml_node node, wxArrayString& warnings);
 
-		virtual bool canDraw(BaseMap* map, const Position& position) const;
-		virtual void draw(BaseMap* map, Tile* tile, void* parameter);
-		virtual void undraw(BaseMap* map, Tile* tile);
+		virtual bool canDraw(Map *map, const Position& position) const;
+		virtual void draw(Map *map, Tile* tile, void* parameter);
+		virtual void undraw(Map *map, Tile* tile);
 
-		static void doCarpets(BaseMap* map, Tile* tile);
+		static void doCarpets(Map *map, Tile* tile);
 
 		virtual bool canDrag() const { return true; }
 		virtual bool needBorders() const { return true; }

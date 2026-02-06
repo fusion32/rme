@@ -381,20 +381,22 @@ bool GraphicManager::loadEditorSprites()
 
 bool GraphicManager::loadSpriteMetadata(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings)
 {
-	FileName filename(projectDir, "Tibia.dat");
-	if(!filename.Exists()){
-		filename.AppendDir("editor");
-		if(!filename.Exists()){
-			outError << "Unable to locate " << filename.GetFullName();
+	wxString filename;
+	{
+		wxPathList paths;
+		paths.Add(projectDir);
+		paths.Add(projectDir + "editor");
+		filename = paths.FindValidPath("Tibia.dat");
+		if(filename.IsEmpty()){
+			outError << "Unable to locate Tibia.dat";
 			return false;
 		}
 	}
 
 	// items.otb has most of the info we need. This only loads the GameSprite metadata
-	FileReadHandle file(nstr(filename.GetFullPath()));
-
+	FileReadHandle file(filename.ToStdString());
 	if(!file.isOk()) {
-		outError << "Failed to open " << filename.GetFullPath()
+		outError << "Failed to open " << filename
 				<< " for reading: " << file.getErrorMessage();
 		return false;
 	}
@@ -566,19 +568,22 @@ bool GraphicManager::loadSpriteMetadataFlags(FileReadHandle& file, GameSprite* s
 
 bool GraphicManager::loadSpriteData(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings)
 {
-	FileName filename(projectDir, "Tibia.spr");
-	if(!filename.Exists()){
-		filename.AppendDir("editor");
-		if(!filename.Exists()){
-			outError << "Unable to locate " << filename.GetFullName();
+	wxString filename;
+	{
+		wxPathList paths;
+		paths.Add(projectDir);
+		paths.Add(projectDir + "editor");
+		filename = paths.FindValidPath("Tibia.spr");
+		if(filename.IsEmpty()){
+			outError << "Unable to locate Tibia.spr";
 			return false;
 		}
 	}
 
-	FileReadHandle fh(nstr(filename.GetFullPath()));
+	FileReadHandle fh(filename.ToStdString());
 
 	if(!fh.isOk()) {
-		outError << "Failed to open " << filename.GetFullPath()
+		outError << "Failed to open " << filename
 				<< " for reading: " << fh.getErrorMessage();
 		return false;
 	}
@@ -596,7 +601,7 @@ bool GraphicManager::loadSpriteData(const wxString &projectDir, wxString &outErr
 	safe_get(U32, sprSignature);
 	safe_get(U16, numSprites);
 	if(!g_settings.getInteger(Config::USE_MEMCACHED_SPRITES)) {
-		spritefile = nstr(filename.GetFullPath());
+		spritefile = filename.ToStdString();
 		unloaded = false;
 		return true;
 	}

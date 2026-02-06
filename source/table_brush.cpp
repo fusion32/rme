@@ -18,9 +18,7 @@
 #include "main.h"
 
 #include "table_brush.h"
-
 #include "items.h"
-#include "basemap.h"
 
 uint32_t TableBrush::table_types[256];
 
@@ -109,12 +107,12 @@ bool TableBrush::load(pugi::xml_node node, wxArrayString& warnings)
 	return true;
 }
 
-bool TableBrush::canDraw(BaseMap* map, const Position& position) const
+bool TableBrush::canDraw(Map *map, const Position& position) const
 {
 	return true;
 }
 
-void TableBrush::undraw(BaseMap* map, Tile* t)
+void TableBrush::undraw(Map *map, Tile* t)
 {
 	t->removeItems(
 		[this](const Item *item){
@@ -122,7 +120,7 @@ void TableBrush::undraw(BaseMap* map, Tile* t)
 		});
 }
 
-void TableBrush::draw(BaseMap* map, Tile* tile, void* parameter)
+void TableBrush::draw(Map *map, Tile* tile, void* parameter)
 {
 	undraw(map, tile); // Remove old
 
@@ -147,7 +145,7 @@ void TableBrush::draw(BaseMap* map, Tile* tile, void* parameter)
 }
 
 
-bool hasMatchingTableBrushAtTile(BaseMap* map, TableBrush* table_brush, int x, int y, int z)
+bool hasMatchingTableBrushAtTile(Map *map, TableBrush* table_brush, int x, int y, int z)
 {
 	Tile* t = map->getTile(x, y, z);
 	if(!t) return false;
@@ -161,7 +159,7 @@ bool hasMatchingTableBrushAtTile(BaseMap* map, TableBrush* table_brush, int x, i
 	return false;
 }
 
-void TableBrush::doTables(BaseMap* map, Tile* tile)
+void TableBrush::doTables(Map *map, Tile* tile)
 {
 	ASSERT(tile);
 	if(!tile->getTable()) {

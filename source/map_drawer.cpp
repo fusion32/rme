@@ -371,7 +371,7 @@ void MapDrawer::DrawSecondaryMap(int map_z)
 	if(options.ingame)
 		return;
 
-	BaseMap* secondary_map = g_editor.secondary_map;
+	Map *secondary_map = g_editor.secondary_map;
 	if(!secondary_map) return;
 
 	Position normal_pos;
@@ -419,8 +419,8 @@ void MapDrawer::DrawSecondaryMap(int map_z)
 					b /= 2;
 				}
 
-				if(options.show_houses && tile->isHouseTile()){
-					if(tile->getHouseID() == current_house_id){
+				if(options.show_houses && tile->houseId != 0){
+					if(tile->houseId == current_house_id){
 						r /= 2;
 					}else{
 						r /= 2;

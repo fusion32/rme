@@ -27,7 +27,9 @@
 
 #include "mt_rand.h"
 
+#define STATIC_ASSERT(expr) static_assert((expr), #expr);
 #define NARRAY(arr) (int)(sizeof(arr)/sizeof((arr)[0]))
+#define ISPOW2(x) ((x) != 0 && ((x) & ((x) - 1)) == 0)
 
 int32_t uniform_random(int32_t minNumber, int32_t maxNumber);
 int32_t uniform_random(int32_t maxNumber);
@@ -80,6 +82,7 @@ wxString b2yn(bool v);
 wxColor colorFromEightBit(int color);
 
 wxString GetExecDirectory(void);
+wxString NormalizeDir(const wxString &dir);
 void SetWindowToolTip(wxWindow *a, const wxString &tooltip);
 void SetWindowToolTip(wxWindow *a, wxWindow *b, const wxString &tooltip);
 

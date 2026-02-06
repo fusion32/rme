@@ -22,65 +22,58 @@
 #include "tile.h"
 #include "creature.h"
 #include "house.h"
-#include "basemap.h"
 #include "spawn.h"
 #include "ground_brush.h"
 #include "wall_brush.h"
 #include "carpet_brush.h"
 #include "table_brush.h"
 
-Tile::Tile(TileLocation& loc) :
-	location(&loc),
-	items(nullptr),
-	creature(nullptr),
-	spawn(nullptr),
-	house_id(0),
-	flags(0),
-	minimapColor(INVALID_MINIMAP_COLOR)
-{
-	////
-}
-
-Tile::Tile(int x, int y, int z) :
-	location(nullptr),
-	items(nullptr),
-	creature(nullptr),
-	spawn(nullptr),
-	house_id(0),
-	flags(0),
-	minimapColor(INVALID_MINIMAP_COLOR)
-{
-	////
-}
-
-Tile::~Tile()
+void Tile::clear(void)
 {
 	while(Item *it = items){
 		items = it->next;
 		it->next = NULL;
 		delete it;
 	}
+
 	delete creature;
-	delete spawn;
 }
 
-Tile* Tile::deepCopy(BaseMap& map) const
-{
-	Tile* copy = map.allocator.allocateTile(location);
-	copy->flags = flags;
-	copy->house_id = house_id;
-	if(spawn) copy->spawn = spawn->deepCopy();
-	if(creature) copy->creature = creature->deepCopy();
-	// Spawncount & exits are not transferred on copy!
+void Tile::swap(Tile &other){
+	std::swap(pos, other.pos);
+	std::swap(flags, other.flags);
+	std::swap(houseId, other.houseId);
+	std::swap(minimapColor, other.minimapColor);
+	std::swap(creature, other.creature);
+	std::swap(items, other.items);
+}
 
-	{
-		Item **tail = &copy->items;
-		for(Item *it = items; it != NULL; it = it->next){
+void Tile::deepCopy(const Tile &other)
+{
+	clear();
+
+	pos = other.pos;
+	flags = other.flags;
+	houseId = other.houseId;
+	minimapColor = other.minimapColor;
+
+	if(other.creature){
+		creature = other.creature->deepCopy();
+	}
+
+	if(other.items){
+		Item **tail = &items;
+		for(const Item *it = other.items; it != NULL; it = it->next){
 			*tail = it->deepCopy();
 			tail = &(*tail)->next;
 		}
 	}
+}
 
+Tile *Tile::deepCopy(void) const
+{
+	Tile *copy = newd Tile();
+	copy->deepCopy(*this);
 	return copy;
 }
 
@@ -101,29 +94,16 @@ uint32_t Tile::memsize() const
 
 int Tile::size() const
 {
-	int sz = countItems();
-	if(creature) ++sz;
-	if(spawn) ++sz;
-	if(location) {
-		if(location->getHouseExits()) ++sz;
-		if(location->getSpawnCount()) ++sz;
-		if(location->getWaypointCount()) ++ sz;
+	int result = countItems();
+	if(creature){
+		result += 1;
 	}
-	return sz;
+	return result;
 }
 
 bool Tile::empty() const
 {
-	int count = 0;
-	if(items) count += 1;
-	if(creature) count += 1;
-	if(spawn) count += 1;
-	if(location) {
-		if(location->getHouseExits()) count += 1;
-		if(location->getSpawnCount()) count += 1;
-		if(location->getWaypointCount()) count += 1;
-	}
-	return count > 0;
+	return items == NULL && creature == NULL;
 }
 
 void Tile::merge(Tile* other)
@@ -132,20 +112,14 @@ void Tile::merge(Tile* other)
 
 	flags |= other->flags;
 
-	if(other->house_id) {
-		house_id = other->house_id;
+	if(other->houseId) {
+		houseId = other->houseId;
 	}
 
 	if(other->creature) {
 		delete creature;
 		creature = other->creature;
 		other->creature = nullptr;
-	}
-
-	if(other->spawn) {
-		delete spawn;
-		spawn = other->spawn;
-		other->spawn = nullptr;
 	}
 
 	if(other->creature) {
@@ -163,8 +137,6 @@ void Tile::merge(Tile* other)
 
 void Tile::select()
 {
-	if(size() == 0) return;
-	if(spawn) spawn->select();
 	if(creature) creature->select();
 	for(Item *it = items; it != NULL; it = it->next){
 		it->select();
@@ -173,7 +145,6 @@ void Tile::select()
 
 void Tile::deselect()
 {
-	if(spawn) spawn->deselect();
 	if(creature) creature->deselect();
 	for(Item *it = items; it != NULL; it = it->next){
 		it->deselect();
@@ -346,63 +317,23 @@ GroundBrush* Tile::getGroundBrush() const
 	}
 }
 
-void Tile::borderize(BaseMap* parent)
+void Tile::borderize(Map *parent)
 {
 	GroundBrush::doBorders(parent, this);
 }
 
-void Tile::wallize(BaseMap* parent)
+void Tile::wallize(Map *parent)
 {
 	WallBrush::doWalls(parent, this);
 }
 
-void Tile::tableize(BaseMap* parent)
+void Tile::tableize(Map *parent)
 {
 	TableBrush::doTables(parent, this);
 }
 
-void Tile::carpetize(BaseMap* parent)
+void Tile::carpetize(Map *parent)
 {
 	CarpetBrush::doCarpets(parent, this);
-}
-
-void Tile::setHouse(House* house)
-{
-	house_id = (house ? house->id : 0);
-}
-
-bool Tile::isHouseExit() const {
-	const HouseExitList* exits = location->getHouseExits();
-	return exits && !exits->empty();
-}
-
-void Tile::addHouseExit(House* house)
-{
-	if(!house) return;
-
-	HouseExitList* exits = location->createHouseExits();
-	exits->push_back(house->id);
-}
-
-void Tile::removeHouseExit(House* house)
-{
-	if(!house) return;
-
-	HouseExitList* exits = location->getHouseExits();
-	if(!exits || exits->empty()) return;
-
-	auto it = std::find(exits->begin(), exits->end(), house->id);
-	if(it != exits->end())
-		exits->erase(it);
-}
-
-bool Tile::hasHouseExit(uint32_t houseId) const
-{
-	const HouseExitList* exits = getHouseExits();
-	if(!exits || exits->empty())
-		return false;
-
-	auto it = std::find(exits->begin(), exits->end(), houseId);
-	return it != exits->end();
 }
 

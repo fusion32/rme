@@ -4,7 +4,6 @@ ${CMAKE_CURRENT_LIST_DIR}/action.h
 ${CMAKE_CURRENT_LIST_DIR}/actions_history_window.h
 ${CMAKE_CURRENT_LIST_DIR}/application.h
 ${CMAKE_CURRENT_LIST_DIR}/artprovider.h
-${CMAKE_CURRENT_LIST_DIR}/basemap.h
 ${CMAKE_CURRENT_LIST_DIR}/browse_tile_window.h
 ${CMAKE_CURRENT_LIST_DIR}/brush.h
 ${CMAKE_CURRENT_LIST_DIR}/brush_enums.h
@@ -40,10 +39,8 @@ ${CMAKE_CURRENT_LIST_DIR}/main.h
 ${CMAKE_CURRENT_LIST_DIR}/main_menubar.h
 ${CMAKE_CURRENT_LIST_DIR}/main_toolbar.h
 ${CMAKE_CURRENT_LIST_DIR}/map.h
-${CMAKE_CURRENT_LIST_DIR}/map_allocator.h
 ${CMAKE_CURRENT_LIST_DIR}/map_display.h
 ${CMAKE_CURRENT_LIST_DIR}/map_drawer.h
-${CMAKE_CURRENT_LIST_DIR}/map_region.h
 ${CMAKE_CURRENT_LIST_DIR}/map_window.h
 ${CMAKE_CURRENT_LIST_DIR}/materials.h
 ${CMAKE_CURRENT_LIST_DIR}/minimap_window.h
@@ -75,7 +72,6 @@ ${CMAKE_CURRENT_LIST_DIR}/spawn.h
 ${CMAKE_CURRENT_LIST_DIR}/spawn_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/sprites.h
 ${CMAKE_CURRENT_LIST_DIR}/table_brush.h
-${CMAKE_CURRENT_LIST_DIR}/templates.h
 ${CMAKE_CURRENT_LIST_DIR}/threads.h
 ${CMAKE_CURRENT_LIST_DIR}/tile.h
 ${CMAKE_CURRENT_LIST_DIR}/tileset.h
@@ -93,7 +89,6 @@ ${CMAKE_CURRENT_LIST_DIR}/action.cpp
 ${CMAKE_CURRENT_LIST_DIR}/actions_history_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/application.cpp
 ${CMAKE_CURRENT_LIST_DIR}/artprovider.cpp
-${CMAKE_CURRENT_LIST_DIR}/basemap.cpp
 ${CMAKE_CURRENT_LIST_DIR}/brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/brush_tables.cpp
 ${CMAKE_CURRENT_LIST_DIR}/browse_tile_window.cpp
@@ -129,7 +124,6 @@ ${CMAKE_CURRENT_LIST_DIR}/main_toolbar.cpp
 ${CMAKE_CURRENT_LIST_DIR}/map.cpp
 ${CMAKE_CURRENT_LIST_DIR}/map_display.cpp
 ${CMAKE_CURRENT_LIST_DIR}/map_drawer.cpp
-${CMAKE_CURRENT_LIST_DIR}/map_region.cpp
 ${CMAKE_CURRENT_LIST_DIR}/map_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/materials.cpp
 ${CMAKE_CURRENT_LIST_DIR}/minimap_window.cpp
@@ -156,10 +150,6 @@ ${CMAKE_CURRENT_LIST_DIR}/settings.cpp
 ${CMAKE_CURRENT_LIST_DIR}/spawn_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/spawn.cpp
 ${CMAKE_CURRENT_LIST_DIR}/table_brush.cpp
-${CMAKE_CURRENT_LIST_DIR}/templatemap76-74.cpp
-${CMAKE_CURRENT_LIST_DIR}/templatemap81.cpp
-${CMAKE_CURRENT_LIST_DIR}/templatemap854.cpp
-${CMAKE_CURRENT_LIST_DIR}/templatemapclassic.cpp
 ${CMAKE_CURRENT_LIST_DIR}/tile.cpp
 ${CMAKE_CURRENT_LIST_DIR}/tileset.cpp
 ${CMAKE_CURRENT_LIST_DIR}/town.cpp

@@ -32,7 +32,6 @@
 #include "position.h"
 #include "selection.h"
 
-class BaseMap;
 class Map;
 
 class Editor;
@@ -280,7 +279,7 @@ public:
 	bool IsProjectDirty(void) const;
 
 protected:
-	bool LoadProject(const wxString &dir, wxString &outError, wxArrayString &outWarnings);
+	bool LoadProject(wxString dir, wxString &outError, wxArrayString &outWarnings);
 	void UnloadProject(void);
 
 public:
@@ -320,7 +319,6 @@ public:
 	bool hasChanges() const;
 	void clearChanges();
 
-	wxString getLoaderError() const { return map.getError(); }
 	bool importMap(FileName filename, int import_x_offset, int import_y_offset, int import_z_offset, ImportType house_import_type, ImportType spawn_import_type);
 	bool importMiniMap(FileName filename, int import, int import_x_offset, int import_y_offset, int import_z_offset);
 
@@ -331,8 +329,8 @@ public:
 	void addAction(Action* action, int stacking_delay = 0);
 	bool canUndo() const;
 	bool canRedo() const;
-	void undo(int indexes = 1);
-	void redo(int indexes = 1);
+	void undo(int numActions = 1);
+	void redo(int numActions = 1);
 	void updateActions();
 	void resetActionsTimer();
 	void clearActions();
@@ -418,8 +416,8 @@ public:
 	DuplicatedItemsWindow *duplicated_items_window = NULL;
 	ActionsHistoryWindow *actions_history_window = NULL;
 
-	BaseMap *secondary_map = NULL; // A buffer map
-	BaseMap *doodad_buffer_map = NULL; // The map in which doodads are temporarily stored
+	Map *secondary_map = NULL; // A buffer map
+	Map *doodad_buffer_map = NULL; // The map in which doodads are temporarily stored
 
 	//=========================================================================
 	// Brush references
