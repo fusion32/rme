@@ -218,13 +218,13 @@ void Selection::clear()
 	}
 }
 
-void Selection::start(SessionFlags flags, ActionIdentifier identifier)
+void Selection::start(SessionFlags flags, ActionType type)
 {
 	if(!(flags & INTERNAL)) {
 		if(!(flags & SUBTHREAD)) {
-			session = g_editor.createBatch(identifier);
+			session = g_editor.createBatch(type);
 		}
-		subsession = g_editor.createAction(identifier);
+		subsession = g_editor.createAction(type);
 	}
 	busy = true;
 }

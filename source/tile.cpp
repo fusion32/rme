@@ -77,6 +77,24 @@ Tile *Tile::deepCopy(void) const
 	return copy;
 }
 
+void Tile::mergeCopy(const Tile &other)
+{
+	flags |= other.flags;
+
+	if(other.houseId) {
+		houseId = other.houseId;
+	}
+
+	if(other.creature) {
+		delete creature;
+		creature = other.creature->deepCopy();
+	}
+
+	for(const Item *item = other.items; item != NULL; item = item->next){
+		addItem(item->deepCopy());
+	}
+}
+
 int Tile::countItems(void) const
 {
 	int count = 0;
@@ -104,35 +122,6 @@ int Tile::size() const
 bool Tile::empty() const
 {
 	return items == NULL && creature == NULL;
-}
-
-void Tile::merge(Tile* other)
-{
-	if(!other) return;
-
-	flags |= other->flags;
-
-	if(other->houseId) {
-		houseId = other->houseId;
-	}
-
-	if(other->creature) {
-		delete creature;
-		creature = other->creature;
-		other->creature = nullptr;
-	}
-
-	if(other->creature) {
-		delete creature;
-		creature = other->creature;
-		other->creature = nullptr;
-	}
-
-	while(Item *first = other->items){
-		other->items = first->next;
-		first->next = NULL;
-		addItem(first);
-	}
 }
 
 void Tile::select()

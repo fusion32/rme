@@ -19,6 +19,7 @@
 
 #include "carpet_brush.h"
 #include "items.h"
+#include "map.h"
 
 //=============================================================================
 // Carpet brush
@@ -172,10 +173,9 @@ static bool hasMatchingCarpetBrushAtTile(Map *map, CarpetBrush* carpetBrush, int
 void CarpetBrush::doCarpets(Map *map, Tile* tile)
 {
 	ASSERT(tile);
-	const Position& position = tile->getPosition();
-	uint32_t x = position.x;
-	uint32_t y = position.y;
-	uint32_t z = position.z;
+	uint32_t x = tile->pos.x;
+	uint32_t y = tile->pos.y;
+	uint32_t z = tile->pos.z;
 	for(Item *item = tile->items; item != NULL; item = item->next){
 		CarpetBrush* carpetBrush = item->getCarpetBrush();
 		if(!carpetBrush) {

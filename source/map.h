@@ -91,6 +91,12 @@ struct Map {
 	bool isEmpty(void) const { return sectors.empty(); }
 	bool isDirty(void) const { return !dirtySectors.empty(); }
 
+	Tile *swapTile(Tile &other) {
+		Tile *tile = getOrCreateTile(other.pos);
+		tile->swap(other);
+		return tile;
+	}
+
 	int getTileCount(void) const {
 		return (int)sectors.size() * MAP_SECTOR_SIZE * MAP_SECTOR_SIZE;
 	}

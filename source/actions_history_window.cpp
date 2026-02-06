@@ -52,11 +52,11 @@ void HistoryListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t index) cons
 		dc.SetTextForeground(*wxBLACK);
 	}
 
-	const BatchAction* action = g_editor.actionQueue->getAction(index - 1);
-	if(action) {
-		const wxBitmap& bitmap = getIconBitmap(action->getType());
+	const ActionGroup *group = g_editor.actionQueue->getGroup(index - 1);
+	if(group) {
+		const wxBitmap& bitmap = getIconBitmap(group->type);
 		dc.DrawBitmap(bitmap, rect.GetX() + 4, rect.GetY() + 4, true);
-		dc.DrawText(action->getLabel(), rect.GetX() + 28, rect.GetY() + 3);
+		dc.DrawText(group->getLabel(), rect.GetX() + 28, rect.GetY() + 3);
 	} else {
 		dc.DrawBitmap(open_bitmap, rect.GetX() + 4, rect.GetY() + 4, true);
 		dc.DrawText("Open Map", rect.GetX() + 28, rect.GetY() + 3);
@@ -68,14 +68,12 @@ wxCoord HistoryListBox::OnMeasureItem(size_t index) const
 	return 24;
 }
 
-const wxBitmap& HistoryListBox::getIconBitmap(ActionIdentifier identifier) const
+const wxBitmap& HistoryListBox::getIconBitmap(ActionType type) const
 {
-	switch (identifier)
+	switch (type)
 	{
 		case ACTION_MOVE:
 			return move_bitmap;
-		case ACTION_REMOTE:
-			return remote_bitmap;
 		case ACTION_SELECT:
 			return select_bitmap;
 		case ACTION_UNSELECT:
@@ -136,7 +134,7 @@ void ActionsHistoryWindow::RefreshActions()
 		return;
 
 	list->SetItemCount(1 + g_editor.actionQueue->size());
-	list->SetSelection(g_editor.actionQueue->getCurrentIndex());
+	list->SetSelection(g_editor.actionQueue->cursor);
 	list->Refresh();
 }
 
@@ -146,7 +144,7 @@ void ActionsHistoryWindow::OnListSelected(wxCommandEvent& event)
 	if(index == wxNOT_FOUND)
 		return;
 
-	int current = g_editor.actionQueue->getCurrentIndex();
+	int current = (int)g_editor.actionQueue->cursor;
 	if(index > current) {
 		g_editor.redo(index - current);
 	} else if (index < current) {

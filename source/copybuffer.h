@@ -21,32 +21,28 @@
 #include <wx/dataobj.h>
 
 #include "position.h"
+#include "map.h"
 
-class Editor;
-
+class Map;
 class CopyBuffer
 {
 public:
-	CopyBuffer();
-	virtual ~CopyBuffer();
+	CopyBuffer(void) = default;
+	~CopyBuffer(void);
 
-	// In-editor implantation
+	void clear(void);
+	int getTileCount(void) const;
 	void copy(int floor);
 	void cut(int floor);
 	void paste(const Position& toPosition);
-	bool canPaste() const;
-	// Returns the upper-left corner of the copybuffer
-	Position getPosition() const;
 
-	// Clears the copybuffer (eg. resets it)
-	void clear();
-
-	int GetTileCount();
-	Map *getBufferMap();
+	bool canPaste(void) const { return getTileCount() > 0; }
+	Position getPosition(void) const { return copyPos; }
+	Map *getBufferMap(void) { return buffer; }
 
 private:
-	Position copyPos;
-	Map *tiles;
+	Position copyPos = {};
+	Map      *buffer = NULL;
 };
 
 #endif

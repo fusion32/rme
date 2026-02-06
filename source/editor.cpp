@@ -1872,31 +1872,6 @@ void Editor::LoadHotkeys()
 	}
 }
 
-Action* Editor::createAction(ActionIdentifier type)
-{
-	return actionQueue->createAction(type);
-}
-
-Action* Editor::createAction(BatchAction* parent)
-{
-	return actionQueue->createAction(parent);
-}
-
-BatchAction* Editor::createBatch(ActionIdentifier type)
-{
-	return actionQueue->createBatch(type);
-}
-
-void Editor::addBatch(BatchAction* action, int stacking_delay)
-{
-	actionQueue->addBatch(action, stacking_delay);
-}
-
-void Editor::addAction(Action* action, int stacking_delay )
-{
-	actionQueue->addAction(action, stacking_delay);
-}
-
 bool Editor::canUndo() const
 {
 	return actionQueue->canUndo();
@@ -1907,7 +1882,7 @@ bool Editor::canRedo() const
 	return actionQueue->canRedo();
 }
 
-void Editor::undo(int numActions)
+void Editor::undo(int numActions /*= 1*/)
 {
 	if(numActions <= 0 || !actionQueue->canUndo())
 		return;
@@ -1915,29 +1890,30 @@ void Editor::undo(int numActions)
 	while(numActions > 0) {
 		if(!actionQueue->undo())
 			break;
-		numActions--;
+		numActions -= 1;
 	}
+
 	UpdateActions();
 	RefreshView();
 }
 
-void Editor::redo(int indexes)
+void Editor::redo(int numActions /*= 1*/)
 {
-	if(indexes <= 0 || !actionQueue->canRedo())
+	if(numActions <= 0 || !actionQueue->canRedo())
 		return;
 
-	while(indexes > 0) {
+	while(numActions > 0) {
 		if(!actionQueue->redo())
 			break;
-		indexes--;
+		numActions -= 1;
 	}
+
 	UpdateActions();
 	RefreshView();
 }
 
 void Editor::updateActions()
 {
-	actionQueue->generateLabels();
 	UpdateMenus();
 	UpdateActions();
 }
@@ -2994,8 +2970,8 @@ void Editor::drawInternal(const PositionVector& tilestodraw, PositionVector& til
 	}
 
 	if(brush->isGround() || brush->isEraser()) {
-		ActionIdentifier identifier = (dodraw && !brush->isEraser()) ? ACTION_DRAW : ACTION_ERASE;
-		BatchAction* batch = actionQueue->createBatch(identifier);
+		ActionType type = (dodraw && !brush->isEraser()) ? ACTION_DRAW : ACTION_ERASE;
+		BatchAction* batch = actionQueue->createBatch(type);
 		Action* action = actionQueue->createAction(batch);
 
 		for(PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {

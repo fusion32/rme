@@ -61,12 +61,12 @@ public:
 	void swap(Tile &other);
 	void deepCopy(const Tile &other);
 	Tile *deepCopy(void) const;
+	void mergeCopy(const Tile &other);
 	uint32_t memsize(void) const;
 	int countItems(void) const;
 	int size(void) const;
 	bool empty(void) const;
 
-	void merge(Tile* other);
 	void select();
 	void deselect();
 	void selectGround();

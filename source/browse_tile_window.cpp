@@ -128,7 +128,7 @@ wxDialog(parent, wxID_ANY, "Browse Field", position, wxSize(600, 400), wxCAPTION
 	sizer->Add(item_list, wxSizerFlags(1).Expand());
 
 	wxString pos;
-	pos << "x=" << tile->getX() << ",  y=" << tile->getY() << ",  z=" << tile->getZ();
+	pos << "x=" << tile->pos.x << ",  y=" << tile->pos.y << ",  z=" << tile->pos.z;
 
 	wxSizer* infoSizer = newd wxBoxSizer(wxVERTICAL);
     wxBoxSizer* buttons = newd wxBoxSizer(wxHORIZONTAL);
@@ -146,7 +146,7 @@ wxDialog(parent, wxID_ANY, "Browse Field", position, wxSize(600, 400), wxCAPTION
 	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "Refresh:  " + b2yn(tile->getTileFlag(TILE_FLAG_REFRESH))), wxSizerFlags(0).Left());
 	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "No logout:  " + b2yn(tile->getTileFlag(TILE_FLAG_NOLOGOUT))), wxSizerFlags(0).Left());
 	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "Protection zone:  " + b2yn(tile->getTileFlag(TILE_FLAG_PROTECTIONZONE))), wxSizerFlags(0).Left());
-	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "House:  " + b2yn(tile->isHouseTile())), wxSizerFlags(0).Left());
+	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "House:  " + b2yn(tile->houseId != 0)), wxSizerFlags(0).Left());
 
 	sizer->Add(infoSizer, wxSizerFlags(0).Left().DoubleBorder());
 

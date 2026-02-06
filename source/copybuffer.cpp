@@ -23,38 +23,20 @@
 #include "settings.h"
 #include "map.h"
 
-CopyBuffer::CopyBuffer() :
-	tiles(newd Map())
-{
-	// no-op
-}
-
-int CopyBuffer::GetTileCount()
-{
-	return tiles ? tiles->getTileCount() : 0;
-}
-
-Map *CopyBuffer::getBufferMap()
-{
-	ASSERT(tiles);
-	return tiles;
-}
-
-CopyBuffer::~CopyBuffer()
+CopyBuffer::~CopyBuffer(void)
 {
 	clear();
 }
 
-Position CopyBuffer::getPosition() const
+void CopyBuffer::clear(void)
 {
-	ASSERT(tiles);
-	return copyPos;
+	delete buffer;
+	buffer = nullptr;
 }
 
-void CopyBuffer::clear()
+int CopyBuffer::getTileCount(void) const
 {
-	delete tiles;
-	tiles = nullptr;
+	return buffer ? buffer->getTileCount() : 0;
 }
 
 void CopyBuffer::copy(int floor)
@@ -65,52 +47,44 @@ void CopyBuffer::copy(int floor)
 	}
 
 	clear();
-	tiles = newd Map();
+	buffer = newd Map();
 
-	int tile_count = 0;
-	int item_count = 0;
+	int numTiles = 0;
+	int numItems = 0;
 	copyPos = Position(0xFFFF, 0xFFFF, floor);
-
-	for(Tile* tile : g_editor.getSelection()) {
-		++tile_count;
-
-		TileLocation* newlocation = tiles->createTileL(tile->getPosition());
-		Tile* copied_tile = tiles->allocator(newlocation);
-
+	for(Tile *tile: g_editor.getSelection()) {
+		Tile *copy = buffer->getOrCreateTile(tile->pos);
 		for(Item *item = tile->items; item != NULL; item = item->next){
 			if(item->isSelected()){
 				continue;
 			}
 
 			if(item->getFlag(BANK)){
-				copied_tile->house_id = tile->house_id;
-				copied_tile->flags    = tile->flags;
+				copy->houseId = tile->houseId;
+				copy->flags   = tile->flags;
 			}
 
-			++item_count;
+			numItems += 1;
 			// Copy items to copybuffer
-			copied_tile->addItem(item->deepCopy());
+			copy->addItem(item->deepCopy());
 		}
 
 		if(tile->creature && tile->creature->isSelected()) {
-			copied_tile->creature = tile->creature->deepCopy();
-		}
-		if(tile->spawn && tile->spawn->isSelected()) {
-			copied_tile->spawn = tile->spawn->deepCopy();
+			copy->creature = tile->creature->deepCopy();
 		}
 
-		tiles->setTile(copied_tile);
+		if(copyPos.x > copy->pos.x)
+			copyPos.x = copy->pos.x;
 
-		if(copied_tile->getX() < copyPos.x)
-			copyPos.x = copied_tile->getX();
+		if(copyPos.y > copy->pos.y)
+			copyPos.y = copy->pos.y;
 
-		if(copied_tile->getY() < copyPos.y)
-			copyPos.y = copied_tile->getY();
+		numTiles += 1;
 	}
 
-	std::ostringstream ss;
-	ss << "Copied " << tile_count << " tile" << (tile_count > 1 ? "s" : "") <<  " (" << item_count << " item" << (item_count > 1? "s" : "") << ")";
-	g_editor.SetStatusText(wxstr(ss.str()));
+	g_editor.SetStatusText(wxString() << "Copied " << numTiles << " tile"
+			<< (numTiles == 1 ? "" : "s") <<  " (" << numItems << " item"
+			<< (numItems == 1 ? "" : "s") << ")");
 }
 
 void CopyBuffer::cut(int floor)
@@ -121,205 +95,179 @@ void CopyBuffer::cut(int floor)
 	}
 
 	clear();
-	tiles = newd Map();
+	buffer = newd Map();
 
-	Map &map = g_editor.map;
-	int tile_count = 0;
-	int item_count = 0;
+	int numTiles = 0;
+	int numItems = 0;
 	copyPos = Position(0xFFFF, 0xFFFF, floor);
 
-	BatchAction* batch = g_editor.createBatch(ACTION_CUT_TILES);
-	Action* action = g_editor.createAction(batch);
+	std::vector<Position> tilesToBorder;
+	ActionGroup *group = g_editor.actionQueue->createGroup(ACTION_CUT_TILES);
+	{
+		Action *action = group->createAction();
+		for(Tile *tile: g_editor.getSelection()) {
+			// NOTE(fusion): This can be confusing at first glance. We're copying the
+			// tile into `newTile`, then splitting it into the selected and non-selected
+			// parts. The selected part is put into the copy buffer while the other is
+			// put into an action to be commited along with the action group later on.
 
-	PositionList tilestoborder;
+			Tile newTile; newTile.deepCopy(*tile);
+			Tile *copy = buffer->getOrCreateTile(tile->pos);
 
-	for(Tile* tile : g_editor.getSelection()) {
-		tile_count++;
-
-		Tile* newtile = tile->deepCopy(map);
-		Tile* copied_tile = tiles->allocator(tile->getLocation());
-
-		if(Item *ground = tile->getFirstItem(BANK)){
-			if(ground->isSelected()){
-				copied_tile->house_id = newtile->house_id;
-				copied_tile->flags = newtile->flags;
-				newtile->flags = 0;
-				newtile->house_id = 0;
-			}
-		}
-
-		item_count += copied_tile->addItems(newtile->popSelectedItems());
-
-		if(newtile->creature && newtile->creature->isSelected()) {
-			copied_tile->creature = newtile->creature;
-			newtile->creature = nullptr;
-		}
-
-		if(newtile->spawn && newtile->spawn->isSelected()) {
-			copied_tile->spawn = newtile->spawn;
-			newtile->spawn = nullptr;
-		}
-
-		tiles->setTile(copied_tile->getPosition(), copied_tile);
-
-		if(copied_tile->getX() < copyPos.x) {
-			copyPos.x = copied_tile->getX();
-		}
-
-		if(copied_tile->getY() < copyPos.y) {
-			copyPos.y = copied_tile->getY();
-		}
-
-		if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-			for(int y = -1; y <= 1; y++)
-				for(int x = -1; x <= 1; x++)
-					tilestoborder.push_back(Position(tile->getX() + x, tile->getY() + y, tile->getZ()));
-		}
-		action->addChange(newd Change(newtile));
-	}
-
-	batch->addAndCommitAction(action);
-
-	// Remove duplicates
-	tilestoborder.sort();
-	tilestoborder.unique();
-
-	if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-		action = g_editor.createAction(batch);
-		for(PositionList::iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
-			TileLocation* location = map.createTileL(*it);
-			if(location->get()) {
-				Tile* new_tile = location->get()->deepCopy(map);
-				new_tile->borderize(&map);
-				new_tile->wallize(&map);
-				action->addChange(newd Change(new_tile));
-			} else {
-				Tile* new_tile = map.allocator(location);
-				new_tile->borderize(&map);
-				if(new_tile->size()) {
-					action->addChange(newd Change(new_tile));
-				} else {
-					delete new_tile;
+			if(Item *ground = newTile.getFirstItem(BANK)){
+				if(ground->isSelected()){
+					copy->houseId   = newTile.houseId;
+					copy->flags     = newTile.flags;
+					newTile.houseId = 0;
+					newTile.flags   = 0;
 				}
 			}
-		}
 
-		batch->addAndCommitAction(action);
+			numItems += copy->addItems(newTile.popSelectedItems());
+			if(newTile.creature && newTile.creature->isSelected()){
+				copy->creature   = newTile.creature;
+				newTile.creature = NULL;
+			}
+
+			if(copyPos.x > newTile.pos.x)
+				copyPos.x = newTile.pos.x;
+
+			if(copyPos.y > newTile.pos.y)
+				copyPos.y = newTile.pos.y;
+
+			action->changeTile(std::move(newTile));
+
+			if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
+				for(int y = -1; y <= 1; y++)
+				for(int x = -1; x <= 1; x++){
+					tilesToBorder.push_back(Position(tile->pos.x + x, tile->pos.y + y, tile->pos.z));
+				}
+			}
+
+			numTiles += 1;
+		}
+		action->commit();
 	}
 
-	g_editor.addBatch(batch);
-	g_editor.updateActions();
+	{ // Remove duplicates
+		std::sort(tilesToBorder.begin(), tilesToBorder.end());
+		auto end = std::unique(tilesToBorder.begin(), tilesToBorder.end());
+		tilesToBorder.erase(end, tilesToBorder.end());
+	}
 
-	std::stringstream ss;
-	ss << "Cut out " << tile_count << " tile" << (tile_count > 1 ? "s" : "") <<  " (" << item_count << " item" << (item_count > 1? "s" : "") << ")";
-	g_editor.SetStatusText(wxstr(ss.str()));
+	if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
+		Action *action = group->createAction();
+		for(Position pos: tilesToBorder){
+			Tile newTile;
+			if(Tile *tile = g_editor.map.getTile(pos)){
+				newTile.deepCopy(*tile);
+			}
+			newTile.borderize(&g_editor.map);
+			newTile.wallize(&g_editor.map);
+			action->changeTile(std::move(newTile));
+		}
+		action->commit();
+	}
+
+	g_editor.updateActions();
+	g_editor.SetStatusText(wxString() << "Cut out " << numTiles << " tile"
+			<< (numTiles == 1 ? "" : "s") <<  " (" << numItems << " item"
+			<< (numItems == 1 ? "" : "s") << ")");
 }
 
 void CopyBuffer::paste(const Position& toPosition)
 {
-	if(!tiles) {
+	if(!buffer) {
 		return;
 	}
 
-	Map &map = g_editor.map;
-
-	BatchAction* batchAction = g_editor.createBatch(ACTION_PASTE_TILES);
-	Action* action = g_editor.createAction(batchAction);
-	for(MapIterator it = tiles->begin(); it != tiles->end(); ++it) {
-		Tile* buffer_tile = (*it)->get();
-		Position pos = buffer_tile->getPosition() - copyPos + toPosition;
-
-		if(!pos.isValid())
-			continue;
-
-		TileLocation* location = map.createTileL(pos);
-		Tile* copy_tile = buffer_tile->deepCopy(map);
-		Tile* old_dest_tile = location->get();
-		Tile* new_dest_tile = nullptr;
-		copy_tile->setLocation(location);
-
-		if(g_settings.getInteger(Config::MERGE_PASTE) || !copy_tile->getFlag(BANK)) {
-			if(old_dest_tile)
-				new_dest_tile = old_dest_tile->deepCopy(map);
-			else
-				new_dest_tile = map.allocator(location);
-			new_dest_tile->merge(copy_tile);
-			delete copy_tile;
-		} else {
-			// If the copied tile has ground, replace target tile
-			new_dest_tile = copy_tile;
-		}
-
-		// Add all surrounding tiles to the map, so they get borders
-		map.createTile(pos.x-1, pos.y-1, pos.z);
-		map.createTile(pos.x  , pos.y-1, pos.z);
-		map.createTile(pos.x+1, pos.y-1, pos.z);
-		map.createTile(pos.x-1, pos.y  , pos.z);
-		map.createTile(pos.x+1, pos.y  , pos.z);
-		map.createTile(pos.x-1, pos.y+1, pos.z);
-		map.createTile(pos.x  , pos.y+1, pos.z);
-		map.createTile(pos.x+1, pos.y+1, pos.z);
-
-		action->addChange(newd Change(new_dest_tile));
-	}
-	batchAction->addAndCommitAction(action);
-
-	if(g_settings.getInteger(Config::USE_AUTOMAGIC) && g_settings.getInteger(Config::BORDERIZE_PASTE)) {
-		action = g_editor.createAction(batchAction);
-		std::vector<Tile*> borderize_tiles;
-
-		// Go through all modified (selected) tiles (might be slow)
-		for(MapIterator it = tiles->begin(); it != tiles->end(); ++it) {
-			bool add_me = false; // If this tile is touched
-			Position pos = (*it)->getPosition() - copyPos + toPosition;
-			if(pos.z < rme::MapMinLayer || pos.z > rme::MapMaxLayer) {
-				continue;
-			}
-			// Go through all neighbours
-			Tile* t;
-			t = map.getTile(pos.x-1, pos.y-1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x  , pos.y-1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x+1, pos.y-1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x-1, pos.y  , pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x+1, pos.y  , pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x-1, pos.y+1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x  , pos.y+1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x+1, pos.y+1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			if(add_me) borderize_tiles.push_back(map.getTile(pos));
-		}
-
-		{ // Remove duplicates
-			std::sort(borderize_tiles.begin(), borderize_tiles.end());
-			auto end = std::unique(borderize_tiles.begin(), borderize_tiles.end());
-			borderize_tiles.erase(end, borderize_tiles.end());
-		}
-
-		for(Tile* tile : borderize_tiles) {
-			if(tile) {
-				Tile* newTile = tile->deepCopy(map);
-				newTile->borderize(&map);
-
-				if(Item *ground = tile->getFirstItem(BANK)){
-					if(ground->isSelected()){
-						newTile->selectGround();
-					}
+	ActionGroup *group = g_editor.actionQueue->createGroup(ACTION_PASTE_TILES);
+	{
+		Action *action = group->createAction();
+		buffer->forEachTile(
+			[this, toPosition, action](const Tile *copy, double progress){
+				Position pos = toPosition + (copy->pos - copyPos);
+				if(!pos.isValid()){
+					return;
 				}
 
-				newTile->wallize(&map);
-				action->addChange(newd Change(newTile));
-			}
-		}
+				Tile newTile;
+				if(g_settings.getBoolean(Config::MERGE_PASTE) || !copy->getFlag(BANK)){
+					if(Tile *tile = g_editor.map.getTile(pos)){
+						newTile.deepCopy(*tile);
+					}
+					newTile.mergeCopy(*copy);
+				}else{
+					newTile.deepCopy(*copy);
+				}
 
-		// Commit changes to map
-		batchAction->addAndCommitAction(action);
+				// TODO(fusion): This might be unnecessary?
+				// Add all surrounding tiles to the map, so they get borders.
+				for(int offsetY = -1; offsetY <= 1; offsetY += 1)
+				for(int offsetX = -1; offsetX <= 1; offsetX += 1){
+					if(offsetX == 0 && offsetY == 0){
+						continue;
+					}
+					g_editor.map.getOrCreateTile(pos.x + offsetX, pos.y + offsetY, pos.z);
+				}
+
+				action->changeTile(std::move(newTile));
+			});
+		action->commit();
 	}
 
-	g_editor.addBatch(batchAction);
-	g_editor.updateActions();
-}
+	if(g_settings.getInteger(Config::USE_AUTOMAGIC) && g_settings.getInteger(Config::BORDERIZE_PASTE)) {
+		std::vector<Tile*> tilesToBorder;
+		buffer->forEachTile(
+			[this, toPosition, &tilesToBorder](const Tile *copy, double progress){
+				Position pos = toPosition + (copy->pos - copyPos);
+				if(!pos.isValid()){
+					return;
+				}
 
-bool CopyBuffer::canPaste() const
-{
-	return GetTileCount() > 0;
+				bool addMe = false;
+				for(int offsetY = -1; offsetY <= 1; offsetY += 1)
+				for(int offsetX = -1; offsetX <= 1; offsetX += 1){
+					if(offsetX == 0 && offsetY == 0){
+						continue;
+					}
+					if(Tile *tile = g_editor.map.getTile(pos.x + offsetX, pos.y + offsetY, pos.z)){
+						if(!tile->isSelected()){
+							tilesToBorder.push_back(tile);
+							addMe = true;
+						}
+					}
+					g_editor.map.getOrCreateTile(pos.x + offsetX, pos.y + offsetY, pos.z);
+				}
+
+				if(addMe){
+					if(Tile *tile = g_editor.map.getTile(pos)){
+						tilesToBorder.push_back(tile);
+					}
+				}
+			});
+
+		{ // Remove duplicates
+			std::sort(tilesToBorder.begin(), tilesToBorder.end());
+			auto end = std::unique(tilesToBorder.begin(), tilesToBorder.end());
+			tilesToBorder.erase(end, tilesToBorder.end());
+		}
+
+		Action *action = group->createAction();
+		for(Tile *tile: tilesToBorder) {
+			Tile newTile; newTile.deepCopy(*tile);
+			newTile.borderize(&g_editor.map);
+			newTile.wallize(&g_editor.map);
+			if(Item *ground = tile->getFirstItem(BANK)){
+				if(ground->isSelected()){
+					newTile.selectGround();
+				}
+			}
+			action->changeTile(std::move(newTile));
+		}
+		action->commit();
+	}
+
+	g_editor.updateActions();
 }
 

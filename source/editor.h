@@ -32,9 +32,6 @@
 #include "position.h"
 #include "selection.h"
 
-class Map;
-
-class Editor;
 class Brush;
 class HouseBrush;
 class HouseExitBrush;
@@ -322,11 +319,6 @@ public:
 	bool importMap(FileName filename, int import_x_offset, int import_y_offset, int import_z_offset, ImportType house_import_type, ImportType spawn_import_type);
 	bool importMiniMap(FileName filename, int import, int import_x_offset, int import_y_offset, int import_z_offset);
 
-	Action* createAction(ActionIdentifier type);
-	Action* createAction(BatchAction* parent);
-	BatchAction* createBatch(ActionIdentifier type);
-	void addBatch(BatchAction* action, int stacking_delay = 0);
-	void addAction(Action* action, int stacking_delay = 0);
 	bool canUndo() const;
 	bool canRedo() const;
 	void undo(int numActions = 1);

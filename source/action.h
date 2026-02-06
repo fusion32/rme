@@ -19,21 +19,21 @@
 #define RME_ACTION_H_
 
 #include "position.h"
+#include "tile.h"
 
+#include <variant>
 #include <deque>
-#include <set>
 
 class Tile;
 class House;
 class Waypoint;
-class Change;
 class Action;
 class BatchAction;
 class ActionQueue;
 
-enum ActionIdentifier {
+enum ActionType {
+	ACTION_NONE,
 	ACTION_MOVE,
-	ACTION_REMOTE,
 	ACTION_SELECT,
 	ACTION_UNSELECT,
 	ACTION_DELETE_TILES,
@@ -49,191 +49,79 @@ enum ActionIdentifier {
 	ACTION_CHANGE_PROPERTIES,
 };
 
-enum ChangeType {
-	CHANGE_NONE,
-	CHANGE_TILE,
-	CHANGE_MOVE_HOUSE_EXIT,
-	CHANGE_MOVE_WAYPOINT,
+struct ChangeTile {
+	Tile tile;
 };
 
-struct HouseData {
-	uint32_t id;
-	Position position;
+struct ChangeHouseExit {
+	uint16_t houseId;
+	Position pos;
 };
 
-struct WaypointData {
-	std::string id;
-	Position position;
+struct ChangeWaypoint {
+	std::string name;
+	Position pos;
 };
 
-class Change
-{
-	Change();
+using Change = std::variant<
+		ChangeTile,
+		ChangeHouseExit,
+		ChangeWaypoint>;
 
-public:
-	Change(Tile* tile);
-	~Change();
+struct Action {
+	ActionType          type = ACTION_NONE;
+	bool                commited = false;
+	std::vector<Change> changes = {};
 
-	static Change* Create(House* house, const Position& position);
-	static Change* Create(Waypoint* waypoint, const Position& position);
+	size_t memsize(void) const;
+	size_t size(void) const { return changes.size(); }
+	bool empty(void) const { return changes.empty(); }
 
-	void clear();
-
-	ChangeType getType() const noexcept { return type; }
-	void* getData() const noexcept { return data; }
-
-	uint32_t memsize() const;
-
-private:
-	ChangeType type;
-	void* data;
-
-	friend class Action;
+	void changeTile(Tile tile);
+	void changeHouseExit(uint16_t houseId, Position pos);
+	void changeWaypoint(std::string name, Position pos);
+	void commit(void);
+	void undo(void);
 };
 
-typedef std::vector<Change*> ChangeList;
+struct ActionGroup {
+	ActionType          type = ACTION_NONE;
+	time_t              lastUsed = 0;
+	std::vector<Action> actions;
 
-// A dirty list represents a list of all tiles that was changed in an action
-class DirtyList
-{
-public:
-	struct ValueType {
-		uint32_t pos;
-		uint32_t floors;
-	};
+	const char *getLabel(void) const;
+	size_t size(void) const { return actions.size(); }
+	bool empty(void) const { return actions.empty(); }
 
-	uint32_t owner = 0;
+	// IMPORTANT(fusion): One action at a time...
+	Action *createAction(void);
 
-protected:
-	struct Comparator {
-		bool operator()(const ValueType& a, const ValueType& b) const {
-			return a.pos < b.pos;
-		}
-	};
-
-public:
-
-	typedef std::set<ValueType, Comparator> SetType;
-
-	void AddPosition(int x, int y, int z);
-	void AddChange(Change* c);
-	bool Empty() const { return iset.empty() && ichanges.empty(); }
-	SetType& GetPosList();
-	ChangeList& GetChanges();
-
-protected:
-	SetType iset;
-	ChangeList ichanges;
+	void commit(void);
+	void undo(void);
 };
 
-class Action
-{
-public:
-	virtual ~Action();
+struct ActionQueue {
+	size_t                  cursor = 0;
+	std::deque<ActionGroup> groups;
 
-	void addChange(Change* t) {
-		changes.push_back(t);
+	size_t size(void) const { return groups.size(); }
+	bool empty(void) const { return groups.empty(); }
+	bool canUndo(void) const { return cursor > 0; }
+	bool canRedo(void) const { return cursor < groups.size(); }
+	bool hasChanges(void) const;
+	void resetTimer(void);
+
+	const ActionGroup *getGroup(size_t index) const {
+		return (index < groups.size() ? &groups[index] : NULL);
 	}
 
-	// Get memory footprint
-	size_t approx_memsize() const;
-	size_t memsize() const;
-	size_t size() const noexcept { return changes.size(); }
-	bool empty() const noexcept { return changes.empty(); }
-	ActionIdentifier getType() const noexcept { return type; }
+	// IMPORTANT(fusion): One group or action at a time...
+	ActionGroup *createGroup(ActionType type, int groupWindow = 0);
+	Action *createAction(ActionType type, int groupWindow = 0);
 
-	void commit(DirtyList* dirty_list);
-	bool isCommited() const noexcept { return commited; }
-	void undo(DirtyList* dirty_list);
-	void redo(DirtyList* dirty_list) { commit(dirty_list); }
-
-protected:
-	Action(ActionIdentifier ident);
-
-	bool commited;
-	ChangeList changes;
-	ActionIdentifier type;
-
-	friend class ActionQueue;
-};
-
-typedef std::vector<Action*> ActionVector;
-
-class BatchAction
-{
-public:
-	virtual ~BatchAction();
-
-	void resetTimer() noexcept { timestamp = 0; }
-
-	// Get memory footprint
-	size_t memsize(bool resize = false) const;
-	size_t size() const noexcept { return batch.size(); }
-	bool empty() const noexcept { return batch.empty(); }
-	ActionIdentifier getType() const noexcept { return type; }
-	const wxString& getLabel() const noexcept { return label; }
-	bool isNoSelection() const noexcept;
-
-	virtual void addAction(Action* action);
-	virtual void addAndCommitAction(Action* action);
-
-protected:
-	BatchAction(ActionIdentifier ident);
-
-	virtual void commit();
-	virtual void undo();
-	virtual void redo();
-
-	void merge(BatchAction* other);
-
-	int timestamp;
-	uint32_t memory_size;
-	ActionIdentifier type;
-	ActionVector batch;
-	wxString label;
-
-	friend class ActionQueue;
-};
-
-class ActionQueue
-{
-public:
-	ActionQueue();
-	virtual ~ActionQueue();
-
-	typedef std::deque<BatchAction*> ActionList;
-
-	void resetTimer();
-
-	virtual Action* createAction(ActionIdentifier identifier) const;
-	virtual Action* createAction(BatchAction* parent) const;
-	virtual BatchAction* createBatch(ActionIdentifier identifier) const;
-
-	void addBatch(BatchAction* action, int stacking_delay = 0);
-	void addAction(Action* action, int stacking_delay = 0);
-
-	bool undo();
-	bool redo();
-	void clear();
-
-	const ActionList& getActions() const noexcept { return actions; }
-	const BatchAction* getAction(size_t index) const;
-	int getCurrentIndex() const noexcept { return current; }
-	bool canUndo() const noexcept { return current > 0; }
-	bool canRedo() const noexcept { return current < actions.size(); }
-	size_t size() const noexcept { return actions.size(); }
-	bool empty() const noexcept { return actions.empty(); }
-
-	bool hasChanges() const;
-
-	void generateLabels();
-
-protected:
-	static wxString createLabel(ActionIdentifier type);
-
-	size_t current;
-	size_t memory_size;
-	ActionList actions;
+	bool undo(void);
+	bool redo(void);
+	void clear(void);
 };
 
 #endif

@@ -191,8 +191,7 @@ ExportMiniMapWindow::ExportMiniMapWindow(wxWindow* parent) :
 	sizer->Add(tmpsizer, 0, wxALL | wxEXPAND, 5);
 
 	// File name
-	wxString mapName(g_editor.map.getName().c_str(), wxConvUTF8);
-	file_name_text_field = newd wxTextCtrl(this, wxID_ANY, mapName.BeforeLast('.'), wxDefaultPosition, wxDefaultSize);
+	file_name_text_field = newd wxTextCtrl(this, wxID_ANY, "", wxDefaultPosition, wxDefaultSize);
 	file_name_text_field->Bind(wxEVT_KEY_UP, &ExportMiniMapWindow::OnFileNameChanged, this);
 	tmpsizer = newd wxStaticBoxSizer(wxHORIZONTAL, this, "File Name");
 	tmpsizer->Add(file_name_text_field, 1, wxALL, 5);
@@ -837,6 +836,7 @@ EditTownsDialog::EditTownsDialog(wxWindow* parent) :
 	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
 	wxSizer* tmpsizer;
 
+#if TODO
 	for(TownMap::const_iterator town_iter = map.towns.begin(); town_iter != map.towns.end(); ++town_iter) {
 		Town* town = town_iter->second;
 		town_list.push_back(newd Town(*town));
@@ -844,6 +844,7 @@ EditTownsDialog::EditTownsDialog(wxWindow* parent) :
 			max_town_id = town->getID();
 		}
 	}
+#endif
 
 	// Town list
 	town_listbox = newd wxListBox(this, EDIT_TOWNS_LISTBOX, wxDefaultPosition, wxSize(240, 100));
@@ -1042,6 +1043,7 @@ void EditTownsDialog::OnClickRemove(wxCommandEvent& WXUNUSED(event))
 		}
 		if(!town) return;
 
+#if TODO
 		const Map &map = g_editor.map;
 		for(const auto& pair : map.houses) {
 			if(pair.second->townid == town->getID()) {
@@ -1049,6 +1051,7 @@ void EditTownsDialog::OnClickRemove(wxCommandEvent& WXUNUSED(event))
 				return;
 			}
 		}
+#endif
 
 		delete town;
 		town_list.erase(town_iter);
@@ -1093,8 +1096,6 @@ void EditTownsDialog::OnClickOK(wxCommandEvent& WXUNUSED(event))
 			}
 		}
 
-		Towns &towns = g_editor.map.towns;
-
 		// Verify the newd information
 		for(std::vector<Town*>::iterator town_iter = town_list.begin(); town_iter != town_list.end(); ++town_iter) {
 			Town* town = *town_iter;
@@ -1112,15 +1113,20 @@ void EditTownsDialog::OnClickOK(wxCommandEvent& WXUNUSED(event))
 			}
 		}
 
+#if TODO
 		// Clear old towns
+		Towns &towns = g_editor.map.towns;
+
 		towns.clear();
 
 		// Build the newd town map
 		for(std::vector<Town*>::iterator town_iter = town_list.begin(); town_iter != town_list.end(); ++town_iter) {
 			towns.addTown(*town_iter);
 		}
-		town_list.clear();
 		g_editor.map.doChange();
+#endif
+
+		town_list.clear();
 
 		EndModal(1);
 		g_editor.RefreshPalettes();

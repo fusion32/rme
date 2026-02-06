@@ -30,7 +30,7 @@ public:
 	wxCoord OnMeasureItem(size_t index) const override;
 
 private:
-	const wxBitmap& getIconBitmap(ActionIdentifier identifier) const;
+	const wxBitmap& getIconBitmap(ActionType type) const;
 
 	wxBitmap open_bitmap;
 	wxBitmap move_bitmap;

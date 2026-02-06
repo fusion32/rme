@@ -69,7 +69,7 @@ public:
 		SUBTHREAD = 2,
 	};
 
-	void start(SessionFlags flags = NONE, ActionIdentifier identifier = ACTION_SELECT);
+	void start(SessionFlags flags = NONE, ActionType type = ACTION_SELECT);
 	void commit();
 	void finish(SessionFlags flags = NONE);
 
