@@ -18,7 +18,7 @@
 #include "main.h"
 
 #include "ground_brush.h"
-#include "items.h"
+#include "map.h"
 
 uint32_t GroundBrush::border_types[256];
 
@@ -640,11 +640,9 @@ void GroundBrush::doBorders(Map *map, Tile* tile)
 {
 	ASSERT(tile);
 
-	const Position& position = tile->getPosition();
-
-	uint32_t x = position.x;
-	uint32_t y = position.y;
-	uint32_t z = position.z;
+	uint32_t x = tile->pos.x;
+	uint32_t y = tile->pos.y;
+	uint32_t z = tile->pos.z;
 
 	// Pair of visited / what border type
 	std::pair<bool, GroundBrush*> neighbours[8];

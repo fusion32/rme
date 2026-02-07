@@ -19,6 +19,7 @@
 
 #include "doodad_brush.h"
 #include "settings.h"
+#include "tile.h"
 
 //=============================================================================
 // Doodad brush
@@ -281,7 +282,7 @@ bool DoodadBrush::ownsItem(const Item* item) const
 	return false;
 }
 
-void DoodadBrush::undraw(Map *map, Tile* tile)
+void DoodadBrush::undraw(Map *map, Tile *tile)
 {
 	// Remove all doodad-related
 	bool doodadBrushEraseLike = g_settings.getInteger(Config::DOODAD_BRUSH_ERASE_LIKE);

@@ -237,23 +237,17 @@ public:
 		wxPoint position = wxDefaultPosition);
 	ObjectPropertiesWindowBase(
 		wxWindow* parent, wxString title,
-		const Map* map, const Tile* tile, Spawn* spawn,
-		wxPoint position = wxDefaultPosition);
-	ObjectPropertiesWindowBase(
-		wxWindow* parent, wxString title,
 		const Map* map, const Tile* tile, Creature* creature,
 		wxPoint position = wxDefaultPosition);
 
 	Item* getItemBeingEdited();
 	Creature* getCreatureBeingEdited();
-	Spawn* getSpawnBeingEdited();
 
 protected:
 	const Map* edit_map;
 	const Tile* edit_tile;
 	Item* edit_item;
 	Creature* edit_creature;
-	Spawn* edit_spawn;
 };
 
 /**

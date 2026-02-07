@@ -19,6 +19,7 @@
 #define _RME_POSITION_CTRL_H_
 
 #include "numbertextctrl.h"
+#include "position.h"
 
 class PositionCtrl : public wxStaticBoxSizer
 {

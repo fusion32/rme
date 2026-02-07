@@ -46,16 +46,14 @@ void Action::commit(void)
 	}
 
 	Map &map = g_editor.map;
-	Selection &selection = g_editor.selection;
-	selection.start(Selection::INTERNAL);
 	for(Change &change: changes){
 		if(ChangeTile *v = std::get_if<ChangeTile>(&change)){
 			Tile *tile = map.swapTile(v->tile);
 			if(tile->isSelected() != v->tile.isSelected()){
 				if(tile->isSelected()){
-					selection.addInternal(tile);
+					g_editor.selection.addInternal(tile);
 				}else{
-					selection.removeInternal(tile);
+					g_editor.selection.removeInternal(tile);
 				}
 			}
 		}else if(ChangeHouseExit *v = std::get_if<ChangeHouseExit>(&change)){
@@ -64,7 +62,6 @@ void Action::commit(void)
 			// TODO(fusion): See how things move.
 		}
 	}
-	selection.finish(Selection::INTERNAL);
 	commited = true;
 }
 
@@ -75,16 +72,14 @@ void Action::undo(void)
 	}
 
 	Map &map = g_editor.map;
-	Selection &selection = g_editor.selection;
-	selection.start(Selection::INTERNAL);
 	for(Change &change: changes){
 		if(ChangeTile *v = std::get_if<ChangeTile>(&change)){
 			Tile *tile = map.swapTile(v->tile);
 			if(tile->isSelected() != v->tile.isSelected()){
 				if(tile->isSelected()){
-					selection.addInternal(tile);
+					g_editor.selection.addInternal(tile);
 				}else{
-					selection.removeInternal(tile);
+					g_editor.selection.removeInternal(tile);
 				}
 			}
 		}else if(ChangeHouseExit *v = std::get_if<ChangeHouseExit>(&change)){
@@ -93,7 +88,6 @@ void Action::undo(void)
 			// TODO(fusion): See how things move.
 		}
 	}
-	selection.finish(Selection::INTERNAL);
 	commited = false;
 }
 

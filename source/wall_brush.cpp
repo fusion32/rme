@@ -19,7 +19,7 @@
 #include "main.h"
 
 #include "wall_brush.h"
-#include "items.h"
+#include "map.h"
 
 uint32_t WallBrush::full_border_types[16];
 uint32_t WallBrush::half_border_types[16];
@@ -356,9 +356,9 @@ void WallBrush::doWalls(Map *map, Tile* tile)
 	ASSERT(tile);
 
 	// For quicker reference
-	int x = tile->getPosition().x;
-	int y = tile->getPosition().y;
-	int z = tile->getPosition().z;
+	int x = tile->pos.x;
+	int y = tile->pos.y;
+	int z = tile->pos.z;
 
 	// TODO(fusion): On a reasonable setting there should be a single wall on a
 	// tile, but it remains to be confirmed whether that is the case. What I know

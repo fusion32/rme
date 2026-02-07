@@ -15,13 +15,13 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
-#ifndef __POSITION_HPP__
-#define __POSITION_HPP__
+#ifndef RME_POSITION_H_
+#define RME_POSITION_H_
 
+#include <stdint.h>
 #include <iostream>
-#include <cstdint>
-#include <vector>
-#include <list>
+
+#include "const.h"
 
 class Position
 {
@@ -140,7 +140,4 @@ inline Position UnpackRelativeCoordinate(int packed){
 	return pos;
 }
 
-typedef std::vector<Position> PositionVector;
-typedef std::list<Position> PositionList;
-
-#endif
+#endif //RME_POSITION_H_

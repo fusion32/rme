@@ -13,9 +13,8 @@ ${CMAKE_CURRENT_LIST_DIR}/common_windows.h
 ${CMAKE_CURRENT_LIST_DIR}/const.h
 ${CMAKE_CURRENT_LIST_DIR}/container_properties_window.h
 ${CMAKE_CURRENT_LIST_DIR}/copybuffer.h
-${CMAKE_CURRENT_LIST_DIR}/creature.h
 ${CMAKE_CURRENT_LIST_DIR}/creature_brush.h
-${CMAKE_CURRENT_LIST_DIR}/creatures.h
+${CMAKE_CURRENT_LIST_DIR}/creature.h
 ${CMAKE_CURRENT_LIST_DIR}/dat_debug_view.h
 ${CMAKE_CURRENT_LIST_DIR}/dcbutton.h
 ${CMAKE_CURRENT_LIST_DIR}/definitions.h
@@ -24,6 +23,7 @@ ${CMAKE_CURRENT_LIST_DIR}/duplicated_items_window.h
 ${CMAKE_CURRENT_LIST_DIR}/editor.h
 ${CMAKE_CURRENT_LIST_DIR}/find_item_window.h
 ${CMAKE_CURRENT_LIST_DIR}/filehandle.h
+${CMAKE_CURRENT_LIST_DIR}/forward.h
 ${CMAKE_CURRENT_LIST_DIR}/graphics.h
 ${CMAKE_CURRENT_LIST_DIR}/ground_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/gui_ids.h
@@ -48,7 +48,6 @@ ${CMAKE_CURRENT_LIST_DIR}/mt_rand.h
 ${CMAKE_CURRENT_LIST_DIR}/numbertextctrl.h
 ${CMAKE_CURRENT_LIST_DIR}/old_properties_window.h
 ${CMAKE_CURRENT_LIST_DIR}/otml.h
-${CMAKE_CURRENT_LIST_DIR}/outfit.h
 ${CMAKE_CURRENT_LIST_DIR}/palette_brushlist.h
 ${CMAKE_CURRENT_LIST_DIR}/palette_common.h
 ${CMAKE_CURRENT_LIST_DIR}/palette_creature.h
@@ -64,12 +63,9 @@ ${CMAKE_CURRENT_LIST_DIR}/properties_window.h
 ${CMAKE_CURRENT_LIST_DIR}/raw_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/replace_items_window.h
 ${CMAKE_CURRENT_LIST_DIR}/result_window.h
-${CMAKE_CURRENT_LIST_DIR}/rme_forward_declarations.h
 ${CMAKE_CURRENT_LIST_DIR}/script.h
 ${CMAKE_CURRENT_LIST_DIR}/selection.h
 ${CMAKE_CURRENT_LIST_DIR}/settings.h
-${CMAKE_CURRENT_LIST_DIR}/spawn.h
-${CMAKE_CURRENT_LIST_DIR}/spawn_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/sprites.h
 ${CMAKE_CURRENT_LIST_DIR}/table_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/threads.h
@@ -100,7 +96,6 @@ ${CMAKE_CURRENT_LIST_DIR}/container_properties_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/copybuffer.cpp
 ${CMAKE_CURRENT_LIST_DIR}/creature_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/creature.cpp
-${CMAKE_CURRENT_LIST_DIR}/creatures.cpp
 ${CMAKE_CURRENT_LIST_DIR}/dat_debug_view.cpp
 ${CMAKE_CURRENT_LIST_DIR}/dcbutton.cpp
 ${CMAKE_CURRENT_LIST_DIR}/doodad_brush.cpp
@@ -147,8 +142,6 @@ ${CMAKE_CURRENT_LIST_DIR}/result_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/script.cpp
 ${CMAKE_CURRENT_LIST_DIR}/selection.cpp
 ${CMAKE_CURRENT_LIST_DIR}/settings.cpp
-${CMAKE_CURRENT_LIST_DIR}/spawn_brush.cpp
-${CMAKE_CURRENT_LIST_DIR}/spawn.cpp
 ${CMAKE_CURRENT_LIST_DIR}/table_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/tile.cpp
 ${CMAKE_CURRENT_LIST_DIR}/tileset.cpp

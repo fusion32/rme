@@ -15,6 +15,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
+#include "common.h"
 #include "main.h"
 
 #include "copybuffer.h"
@@ -101,7 +102,7 @@ void CopyBuffer::cut(int floor)
 	int numItems = 0;
 	copyPos = Position(0xFFFF, 0xFFFF, floor);
 
-	std::vector<Position> tilesToBorder;
+	std::vector<Position> tilesToBorderize;
 	ActionGroup *group = g_editor.actionQueue->createGroup(ACTION_CUT_TILES);
 	{
 		Action *action = group->createAction();
@@ -140,7 +141,7 @@ void CopyBuffer::cut(int floor)
 			if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
 				for(int y = -1; y <= 1; y++)
 				for(int x = -1; x <= 1; x++){
-					tilesToBorder.push_back(Position(tile->pos.x + x, tile->pos.y + y, tile->pos.z));
+					tilesToBorderize.push_back(Position(tile->pos.x + x, tile->pos.y + y, tile->pos.z));
 				}
 			}
 
@@ -149,22 +150,24 @@ void CopyBuffer::cut(int floor)
 		action->commit();
 	}
 
-	{ // Remove duplicates
-		std::sort(tilesToBorder.begin(), tilesToBorder.end());
-		auto end = std::unique(tilesToBorder.begin(), tilesToBorder.end());
-		tilesToBorder.erase(end, tilesToBorder.end());
-	}
+	VectorSortUnique(tilesToBorderize);
 
 	if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
 		Action *action = group->createAction();
-		for(Position pos: tilesToBorder){
+		for(Position pos: tilesToBorderize){
 			Tile newTile;
 			if(Tile *tile = g_editor.map.getTile(pos)){
 				newTile.deepCopy(*tile);
+				newTile.borderize(&g_editor.map);
+				newTile.wallize(&g_editor.map);
+				action->changeTile(std::move(newTile));
+			}else{
+				newTile.pos = pos;
+				newTile.borderize(&g_editor.map);
+				if(!newTile.empty()){
+					action->changeTile(std::move(newTile));
+				}
 			}
-			newTile.borderize(&g_editor.map);
-			newTile.wallize(&g_editor.map);
-			action->changeTile(std::move(newTile));
 		}
 		action->commit();
 	}
@@ -191,7 +194,7 @@ void CopyBuffer::paste(const Position& toPosition)
 					return;
 				}
 
-				Tile newTile;
+				Tile newTile; newTile.pos = pos;
 				if(g_settings.getBoolean(Config::MERGE_PASTE) || !copy->getFlag(BANK)){
 					if(Tile *tile = g_editor.map.getTile(pos)){
 						newTile.deepCopy(*tile);
@@ -217,9 +220,9 @@ void CopyBuffer::paste(const Position& toPosition)
 	}
 
 	if(g_settings.getInteger(Config::USE_AUTOMAGIC) && g_settings.getInteger(Config::BORDERIZE_PASTE)) {
-		std::vector<Tile*> tilesToBorder;
+		std::vector<Tile*> tilesToBorderize;
 		buffer->forEachTile(
-			[this, toPosition, &tilesToBorder](const Tile *copy, double progress){
+			[this, toPosition, &tilesToBorderize](const Tile *copy, double progress){
 				Position pos = toPosition + (copy->pos - copyPos);
 				if(!pos.isValid()){
 					return;
@@ -231,9 +234,9 @@ void CopyBuffer::paste(const Position& toPosition)
 					if(offsetX == 0 && offsetY == 0){
 						continue;
 					}
-					if(Tile *tile = g_editor.map.getTile(pos.x + offsetX, pos.y + offsetY, pos.z)){
-						if(!tile->isSelected()){
-							tilesToBorder.push_back(tile);
+					if(Tile *neighbor = g_editor.map.getTile(pos.x + offsetX, pos.y + offsetY, pos.z)){
+						if(!neighbor->isSelected()){
+							tilesToBorderize.push_back(neighbor);
 							addMe = true;
 						}
 					}
@@ -242,19 +245,15 @@ void CopyBuffer::paste(const Position& toPosition)
 
 				if(addMe){
 					if(Tile *tile = g_editor.map.getTile(pos)){
-						tilesToBorder.push_back(tile);
+						tilesToBorderize.push_back(tile);
 					}
 				}
 			});
 
-		{ // Remove duplicates
-			std::sort(tilesToBorder.begin(), tilesToBorder.end());
-			auto end = std::unique(tilesToBorder.begin(), tilesToBorder.end());
-			tilesToBorder.erase(end, tilesToBorder.end());
-		}
+		VectorSortUnique(tilesToBorderize);
 
 		Action *action = group->createAction();
-		for(Tile *tile: tilesToBorder) {
+		for(Tile *tile: tilesToBorderize) {
 			Tile newTile; newTile.deepCopy(*tile);
 			newTile.borderize(&g_editor.map);
 			newTile.wallize(&g_editor.map);

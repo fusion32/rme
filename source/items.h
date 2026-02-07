@@ -31,13 +31,10 @@ class HouseBrush;
 class HouseExitBrush;
 class OptionalBorderBrush;
 class EraserBrush;
-class SpawnBrush;
 class DoorBrush;
 class FlagBrush;
 class RAWBrush;
-
 class GameSprite;
-class ItemDatabase;
 
 // NOTE(fusion): We could add prefixes to these enums but it would make it a lot
 // more verbose and I don't think there is any risk of name collisions. We can
@@ -240,11 +237,7 @@ enum LiquidType {
 	LIQUID_LAST			= LIQUID_LEMONADE,
 };
 
-class ItemType {
-public:
-	ItemType(void);
-
-public:
+struct ItemType {
 	// editor related
 	GameSprite	*sprite = nullptr;
 	Brush		*brush = nullptr;
@@ -269,7 +262,6 @@ public:
 	bool		isCarpet = false;
 	BorderType	border_alignment = BORDER_NONE;
 
-public:
 	uint16_t	typeId = 0;
 	BitSet<NUM_FLAGS> flags = {};
 	int			attributes[NUM_TYPE_ATTRIBUTES] = {};
@@ -277,6 +269,7 @@ public:
 	std::string	name = {};
 	std::string	description = {};
 
+	ItemType(void);
 	bool getFlag(ObjectFlag flag) const;
 	int getAttribute(ObjectTypeAttribute attr) const;
 	int getAttributeOffset(ObjectInstanceAttribute attr) const;

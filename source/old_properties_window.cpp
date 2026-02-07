@@ -44,7 +44,6 @@ END_EVENT_TABLE()
 OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, const Tile* tile_parent, Item* item, wxPoint pos) :
 	ObjectPropertiesWindowBase(win_parent, "Item Properties", map, tile_parent, item, pos),
 	count_field(nullptr),
-	direction_field(nullptr),
 	splash_type_field(nullptr),
 	text_field(nullptr),
 	description_field(nullptr),
@@ -237,7 +236,6 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, const Tile* tile_parent, Creature* creature, wxPoint pos) :
 	ObjectPropertiesWindowBase(win_parent, "Creature Properties", map, tile_parent, creature, pos),
 	count_field(nullptr),
-	direction_field(nullptr),
 	splash_type_field(nullptr),
 	text_field(nullptr),
 	description_field(nullptr),
@@ -255,58 +253,14 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 	subsizer->Add(newd wxStaticText(this, wxID_ANY, "\"" + wxstr(edit_creature->getName()) + "\""), wxSizerFlags(1).Expand());
 
 	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Spawn interval"));
-	count_field = newd wxSpinCtrl(this, wxID_ANY, i2ws(edit_creature->getSpawnTime()), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 10, 3600, edit_creature->getSpawnTime());
+	count_field = newd wxSpinCtrl(this, wxID_ANY, i2ws(edit_creature->spawnInterval), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 10, 3600, edit_creature->spawnInterval);
 	// count_field->SetSelection(-1, -1);
 	subsizer->Add(count_field, wxSizerFlags(1).Expand());
-
-	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Direction"));
-	direction_field = newd wxChoice(this, wxID_ANY);
-
-	for(Direction dir = DIRECTION_FIRST; dir <= DIRECTION_LAST; ++dir) {
-		direction_field->Append(wxstr(Creature::DirID2Name(dir)), newd int32_t(dir));
-	}
-	direction_field->SetSelection(edit_creature->getDirection());
-	subsizer->Add(direction_field, wxSizerFlags(1).Expand());
 
 	boxsizer->Add(subsizer, wxSizerFlags(1).Expand());
 
 	topsizer->Add(boxsizer, wxSizerFlags(3).Expand().Border(wxALL, 20));
 	//SetSize(220, 0);
-
-	wxSizer* std_sizer = newd wxBoxSizer(wxHORIZONTAL);
-	std_sizer->Add(newd wxButton(this, wxID_OK, "OK"), wxSizerFlags(1).Center());
-	std_sizer->Add(newd wxButton(this, wxID_CANCEL, "Cancel"), wxSizerFlags(1).Center());
-	topsizer->Add(std_sizer, wxSizerFlags(0).Center().Border(wxLEFT | wxRIGHT | wxBOTTOM, 20));
-
-	SetSizerAndFit(topsizer);
-	Centre(wxBOTH);
-}
-
-OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, const Tile* tile_parent, Spawn* spawn, wxPoint pos) :
-	ObjectPropertiesWindowBase(win_parent, "Spawn Properties", map, tile_parent, spawn, pos),
-	count_field(nullptr),
-	direction_field(nullptr),
-	splash_type_field(nullptr),
-	text_field(nullptr),
-	description_field(nullptr),
-	destination_field(nullptr)
-{
-	ASSERT(edit_spawn);
-
-	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
-	wxSizer* boxsizer = newd wxStaticBoxSizer(wxVERTICAL, this, "Spawn Properties");
-
-	wxFlexGridSizer* subsizer = newd wxFlexGridSizer(2, 10, 10);
-	subsizer->AddGrowableCol(1);
-
-	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Spawn size"));
-	count_field = newd wxSpinCtrl(this, wxID_ANY, i2ws(edit_spawn->getSize()), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, g_settings.getInteger(Config::MAX_SPAWN_RADIUS), edit_spawn->getSize());
-	// count_field->SetSelection(-1, -1);
-	subsizer->Add(count_field, wxSizerFlags(1).Expand());
-
-	boxsizer->Add(subsizer, wxSizerFlags(1).Expand());
-
-	topsizer->Add(boxsizer, wxSizerFlags(3).Expand().Border(wxALL, 20));
 
 	wxSizer* std_sizer = newd wxBoxSizer(wxHORIZONTAL);
 	std_sizer->Add(newd wxButton(this, wxID_OK, "OK"), wxSizerFlags(1).Center());
@@ -323,11 +277,6 @@ OldPropertiesWindow::~OldPropertiesWindow()
 	if(splash_type_field) {
 		for(uint32_t i = 0; i < splash_type_field->GetCount(); ++i) {
 			delete reinterpret_cast<int*>(splash_type_field->GetClientData(i));
-		}
-	}
-	if(direction_field) {
-		for(uint32_t i = 0; i < direction_field->GetCount(); ++i) {
-			delete reinterpret_cast<int*>(direction_field->GetClientData(i));
 		}
 	}
 }
@@ -395,18 +344,7 @@ void OldPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 			}
 		}
 	} else if(edit_creature) {
-		int new_spawntime = count_field->GetValue();
-		edit_creature->setSpawnTime(new_spawntime);
-
-		int* new_dir = reinterpret_cast<int*>(direction_field->GetClientData(
-			direction_field->GetSelection()));
-
-		if(new_dir) {
-			edit_creature->setDirection((Direction)*new_dir);
-		}
-	} else if(edit_spawn) {
-		int new_spawnsize = count_field->GetValue();
-		edit_spawn->setSize(new_spawnsize);
+		edit_creature->spawnInterval = count_field->GetValue();
 	}
 	EndModal(1);
 }

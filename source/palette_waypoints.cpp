@@ -85,12 +85,14 @@ void WaypointPalettePanel::SelectFirstBrush()
 
 Brush* WaypointPalettePanel::GetSelectedBrush() const
 {
+#if TODO
     long item = waypoint_list->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	g_editor.waypoint_brush->setWaypoint(
 		item == -1?
 			nullptr :
 			map->waypoints.getWaypoint(nstr(waypoint_list->GetItemText(item)))
 	);
+#endif
 	return g_editor.waypoint_brush;
 }
 
@@ -117,6 +119,7 @@ wxString WaypointPalettePanel::GetName() const
 
 void WaypointPalettePanel::OnUpdate()
 {
+#if TODO
 	if(wxTextCtrl* tc = waypoint_list->GetEditControl()) {
 		Waypoint* wp = map->waypoints.getWaypoint(nstr(tc->GetValue()));
 		if(wp && !wp->pos.isValid()) {
@@ -142,10 +145,12 @@ void WaypointPalettePanel::OnUpdate()
 			waypoint_list->InsertItem(0, wxstr(iter->second->name));
 		}
 	}
+#endif
 }
 
 void WaypointPalettePanel::OnClickWaypoint(wxListEvent& event)
 {
+#if TODO
 	if(!map)
 		return;
 
@@ -155,6 +160,7 @@ void WaypointPalettePanel::OnClickWaypoint(wxListEvent& event)
 		g_editor.SetScreenCenterPosition(wp->pos);
 		g_editor.waypoint_brush->setWaypoint(wp);
 	}
+#endif
 }
 
 void WaypointPalettePanel::OnBeginEditWaypointLabel(wxListEvent& event)
@@ -165,6 +171,7 @@ void WaypointPalettePanel::OnBeginEditWaypointLabel(wxListEvent& event)
 
 void WaypointPalettePanel::OnEditWaypointLabel(wxListEvent& event)
 {
+#if TODO
 	std::string wpname = nstr(event.GetLabel());
 	std::string oldwpname = nstr(waypoint_list->GetItemText(event.GetIndex()));
 	Waypoint* wp = map->waypoints.getWaypoint(oldwpname);
@@ -209,10 +216,12 @@ void WaypointPalettePanel::OnEditWaypointLabel(wxListEvent& event)
 
 	if(event.IsAllowed())
 		g_editor.EnableHotkeys();
+#endif
 }
 
 void WaypointPalettePanel::OnClickAddWaypoint(wxCommandEvent& event)
 {
+#if TODO
 	if(map) {
 		map->waypoints.addWaypoint(newd Waypoint());
 		long i = waypoint_list->InsertItem(0, "");
@@ -220,10 +229,12 @@ void WaypointPalettePanel::OnClickAddWaypoint(wxCommandEvent& event)
 
 		//g_editor.RefreshPalettes();
 	}
+#endif
 }
 
 void WaypointPalettePanel::OnClickRemoveWaypoint(wxCommandEvent& event)
 {
+#if TODO
 	if(!map)
 		return;
 
@@ -238,4 +249,5 @@ void WaypointPalettePanel::OnClickRemoveWaypoint(wxCommandEvent& event)
 		waypoint_list->DeleteItem(item);
 		refresh_timer.Start(300, true);
 	}
+#endif
 }

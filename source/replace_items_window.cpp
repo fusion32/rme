@@ -323,37 +323,36 @@ void ReplaceItemsDialog::OnExecuteButtonClicked(wxCommandEvent& WXUNUSED(event))
 	progress->SetValue(0);
 
 	int done = 0;
-	for(const ReplacingItem& info : items) {
-		ItemFinder finder(info.replaceId, (uint32_t)g_settings.getInteger(Config::REPLACE_SIZE));
+	for(const ReplacingItem &info: items) {
+		ItemFinder finder;
+		finder.itemId = info.replaceId;
+		finder.maxCount = g_settings.getInteger(Config::REPLACE_SIZE);
 
-		// search on map
-		foreach_ItemOnMap(g_editor.map, finder, selectionOnly);
+		g_editor.map.forEachItem(finder, selectionOnly);
 
-		uint32_t total = 0;
-		const auto& result = finder.result;
+		if(!finder.results.empty()){
+			Action *action = g_editor.actionQueue->createAction(ACTION_REPLACE_ITEMS);
+			for(const auto &[tile, item]: finder.results) {
+				// NOTE(fusion): Could happen if the item is inside some container?
+				int index = tile->getIndexOf(item);
+				if(index == wxNOT_FOUND){
+					continue;
+				}
 
-		if(!result.empty()) {
-			BatchAction* batch = g_editor.createBatch(ACTION_REPLACE_ITEMS);
-			Action* action = g_editor.createAction(batch);
-			for(const auto& pair : result) {
-				Tile* new_tile = pair.first->deepCopy(g_editor.map);
-				int index = pair.first->getIndexOf(pair.second);
-				ASSERT(index != wxNOT_FOUND);
-				Item* item = new_tile->getItemAt(index);
-				ASSERT(item && item->getID() == pair.second->getID());
-				item->transform(info.withId);
-				action->addChange(new Change(new_tile));
-				total++;
+				Tile newTile; newTile.deepCopy(*tile);
+				Item *newItem = newTile.getItemAt(index);
+				ASSERT(newItem && newItem->getID() == item->getID());
+				newItem->transform(info.withId);
+				action->changeTile(std::move(newTile));
 			}
-			batch->addAndCommitAction(action);
-			g_editor.addBatch(batch);
+			action->commit();
 			g_editor.updateActions();
 		}
 
-		done++;
+		done += 1;
 		const int value = static_cast<int>((done / items.size()) * 100);
 		progress->SetValue(std::clamp<int>(value, 0, 100));
-		list->MarkAsComplete(info, total);
+		list->MarkAsComplete(info, finder.results.size());
 	}
 
 	g_editor.mapWindow->Refresh();

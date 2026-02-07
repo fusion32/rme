@@ -15,24 +15,52 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
-#ifndef RME_OUTFIT_H_
-#define RME_OUTFIT_H_
+#ifndef RME_FORWARD_H_
+#define RME_FORWARD_H_
 
-struct Outfit {
-	Outfit() : lookType(0), lookItem(0), lookMount(0), lookAddon(0), lookHead(0), lookBody(0), lookLegs(0), lookFeet(0) {}
-	~Outfit() {}
-	int lookType;
-	int lookItem;
-	int lookMount;
-	int lookAddon;
-	int lookHead;
-	int lookBody;
-	int lookLegs;
-	int lookFeet;
+struct Action;
+struct ActionGroup;
+struct ActionQueue;
+struct Creature;
+struct CreatureType;
+struct Item;
+struct ItemType;
+struct Map;
+struct Outfit;
+struct Tile;
 
-	uint32_t getColorHash() const {
-		return lookHead << 24 | lookBody << 16 | lookLegs << 8 | lookFeet;
-	}
-};
+class CopyBuffer;
+class House;
+class Selection;
+class Tileset;
+class Town;
+class Waypoint;
+class Waypoints;
 
-#endif
+class AutoBorder;
+class Brush;
+class RAWBrush;
+class DoodadBrush;
+class TerrainBrush;
+class GroundBrush;
+class WallBrush;
+class WallDecorationBrush;
+class TableBrush;
+class CarpetBrush;
+class DoorBrush;
+class OptionalBorderBrush;
+class CreatureBrush;
+class HouseBrush;
+class HouseExitBrush;
+class WaypointBrush;
+class FlagBrush;
+class EraserBrush;
+
+// TODO(fusion): Remove these??
+#include <vector>
+#include <unordered_set>
+typedef std::vector<uint32_t> HouseExitList;
+typedef std::unordered_set<Tile*> TileSet;
+typedef std::vector<Brush*> BrushVector;
+
+#endif //RME_FORWARD_H_

@@ -25,6 +25,7 @@
 #include "map.h"
 #include "item.h"
 #include "raw_brush.h"
+#include "creature_brush.h"
 
 #include "palette_window.h"
 #include "application.h"
@@ -669,15 +670,11 @@ void FindDialogListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const
 		Sprite* spr = g_editor.gfx.getSprite(brushlist[n]->getLookID());
 		if(spr) {
 			spr->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetWidth(), rect.GetHeight());
-		} else {
-			auto creatureType = g_creatures[brushlist[n]->getName()];
-			if (!creatureType) {
-				return;
-			}
-
-			auto creatureSprite = g_editor.gfx.getCreatureSprite(creatureType->outfit.lookType);
+		} else if(CreatureBrush *creatureBrush = dynamic_cast<CreatureBrush*>(brushlist[n])) {
+			Outfit outfit = creatureBrush->getOutfit();
+			GameSprite *creatureSprite = g_editor.gfx.getCreatureSprite(outfit.lookType);
 			if (creatureSprite) {
-				creatureSprite->DrawTo(&dc, rect, creatureType->outfit);
+				creatureSprite->DrawTo(&dc, rect, outfit);
 			}
 		}
 
@@ -779,8 +776,7 @@ wxDialog(parent, wxID_ANY, title,
 	edit_map(map),
 	edit_tile(tile),
 	edit_item(item),
-	edit_creature(nullptr),
-	edit_spawn(nullptr)
+	edit_creature(nullptr)
 {
 	////
 }
@@ -791,20 +787,7 @@ wxDialog(parent, wxID_ANY, title,
 	edit_map(map),
 	edit_tile(tile),
 	edit_item(nullptr),
-	edit_creature(creature),
-	edit_spawn(nullptr)
-{
-	////
-}
-
-ObjectPropertiesWindowBase::ObjectPropertiesWindowBase(wxWindow* parent, wxString title, const Map* map, const Tile* tile, Spawn* spawn, wxPoint position /* = wxDefaultPosition */) :
-wxDialog(parent, wxID_ANY, title,
-	position, wxSize(600, 400), wxCAPTION | wxCLOSE_BOX | wxRESIZE_BORDER),
-	edit_map(map),
-	edit_tile(tile),
-	edit_item(nullptr),
-	edit_creature(nullptr),
-	edit_spawn(spawn)
+	edit_creature(creature)
 {
 	////
 }

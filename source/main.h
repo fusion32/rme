@@ -123,7 +123,7 @@ typedef wxFileName FileName;
 #include "threads.h"
 
 #include "const.h"
-#include "rme_forward_declarations.h"
+#include "forward.h"
 
 #if wxCHECK_VERSION(3, 1, 0)
         #define FROM_DIP(widget, size) widget->FromDIP(size)

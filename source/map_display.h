@@ -18,12 +18,10 @@
 #ifndef RME_DISPLAY_WINDOW_H_
 #define RME_DISPLAY_WINDOW_H_
 
-#include "action.h"
-#include "tile.h"
-#include "creature.h"
+#include "main.h"
+#include "brush.h"
+#include "position.h"
 
-class Item;
-class Creature;
 class MapWindow;
 class MapPopupMenu;
 class AnimationTimer;
@@ -86,7 +84,6 @@ public:
 	void OnSelectCarpetBrush(wxCommandEvent& event);
 	void OnSelectTableBrush(wxCommandEvent& event);
 	void OnSelectCreatureBrush(wxCommandEvent& event);
-	void OnSelectSpawnBrush(wxCommandEvent& event);
 	void OnSelectHouseBrush(wxCommandEvent& event);
 	// ---
 	void OnProperties(wxCommandEvent& event);
@@ -118,8 +115,11 @@ public:
 	void TakeScreenshot(wxFileName path, wxString format);
 
 protected:
-	void getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor, PositionVector* tilestodraw, PositionVector* tilestoborder, bool fill = false);
-	bool floodFill(Map *map, const Position& center, int x, int y, GroundBrush* brush, PositionVector* positions);
+	void getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
+						std::vector<Position> *tilesToDraw,
+						std::vector<Position> *tilesToBorder,
+						bool fill = false);
+	bool floodFill(Map *map, const Position& center, int x, int y, GroundBrush* brush, std::vector<Position> *positions);
 
 private:
 	enum {

@@ -19,6 +19,7 @@
 #define RME_RESULT_WINDOW_H_
 
 #include "main.h"
+#include "position.h"
 
 class SearchResultWindow : public wxPanel
 {

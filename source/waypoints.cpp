@@ -29,6 +29,7 @@ Waypoints::~Waypoints()
 
 void Waypoints::addWaypoint(Waypoint* wp)
 {
+#if TODO
 	removeWaypoint(wp->name);
 	if(wp->pos.isValid()) {
 		Tile* t = map.getTile(wp->pos);
@@ -37,6 +38,7 @@ void Waypoints::addWaypoint(Waypoint* wp)
 		t->getLocation()->increaseWaypointCount();
 	}
 	waypoints.insert(std::make_pair(as_lower_str(wp->name), wp));
+#endif
 }
 
 Waypoint* Waypoints::getWaypoint(std::string name)

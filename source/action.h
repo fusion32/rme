@@ -24,13 +24,6 @@
 #include <variant>
 #include <deque>
 
-class Tile;
-class House;
-class Waypoint;
-class Action;
-class BatchAction;
-class ActionQueue;
-
 enum ActionType {
 	ACTION_NONE,
 	ACTION_MOVE,

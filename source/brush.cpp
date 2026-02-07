@@ -25,7 +25,6 @@
 #include "house_brush.h"
 #include "house_exit_brush.h"
 #include "raw_brush.h"
-#include "spawn_brush.h"
 #include "table_brush.h"
 #include "wall_brush.h"
 #include "waypoint_brush.h"
@@ -35,7 +34,6 @@
 #include "sprites.h"
 
 #include "item.h"
-#include "creatures.h"
 #include "creature.h"
 #include "map.h"
 #include "editor.h"
@@ -69,7 +67,6 @@ void Brushes::init()
 {
 	addBrush(g_editor.optional_brush = newd OptionalBorderBrush());
 	addBrush(g_editor.eraser = newd EraserBrush());
-	addBrush(g_editor.spawn_brush = newd SpawnBrush());
 	addBrush(g_editor.normal_door_brush = newd DoorBrush(WALL_DOOR_NORMAL));
 	addBrush(g_editor.locked_door_brush = newd DoorBrush(WALL_DOOR_LOCKED));
 	addBrush(g_editor.magic_door_brush = newd DoorBrush(WALL_DOOR_MAGIC));

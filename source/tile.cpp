@@ -22,7 +22,6 @@
 #include "tile.h"
 #include "creature.h"
 #include "house.h"
-#include "spawn.h"
 #include "ground_brush.h"
 #include "wall_brush.h"
 #include "carpet_brush.h"
@@ -92,6 +91,27 @@ void Tile::mergeCopy(const Tile &other)
 
 	for(const Item *item = other.items; item != NULL; item = item->next){
 		addItem(item->deepCopy());
+	}
+}
+
+void Tile::merge(Tile &&other)
+{
+	flags |= other.flags;
+
+	if(other.houseId) {
+		houseId = other.houseId;
+	}
+
+	if(other.creature) {
+		delete creature;
+		creature = other.creature;
+		other.creature = NULL;
+	}
+
+	while(Item *first = other.items){
+		other.items = first->next;
+		first->next = NULL;
+		addItem(first);
 	}
 }
 

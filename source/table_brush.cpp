@@ -18,7 +18,7 @@
 #include "main.h"
 
 #include "table_brush.h"
-#include "items.h"
+#include "map.h"
 
 uint32_t TableBrush::table_types[256];
 
@@ -166,11 +166,9 @@ void TableBrush::doTables(Map *map, Tile* tile)
 		return;
 	}
 
-	const Position& position = tile->getPosition();
-
-	int32_t x = position.x;
-	int32_t y = position.y;
-	int32_t z = position.z;
+	int32_t x = tile->pos.x;
+	int32_t y = tile->pos.y;
+	int32_t z = tile->pos.z;
 
 	for(Item *item = tile->items; item != NULL; item = item->next){
 		TableBrush* table_brush = item->getTableBrush();

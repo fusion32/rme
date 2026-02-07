@@ -21,114 +21,53 @@
 #include "tile.h"
 #include "map.h"
 
-Houses::Houses(Map& map) :
-	map(map),
-	max_house_id(0)
+// House
+//==============================================================================
+void House::clean(Map *map)
 {
-	////
-}
-
-Houses::~Houses()
-{
-	for(auto it = houses.begin(); it != houses.end(); ++it)
-		delete it->second;
-	houses.clear();
-}
-
-uint32_t Houses::getEmptyID()
-{
-	return ++max_house_id;
-}
-
-void Houses::addHouse(House* new_house)
-{
-	ASSERT(new_house);
-	HouseMap::iterator it = houses.find(new_house->id);
-	ASSERT(it == houses.end());
-	new_house->map = &map;
-	if(new_house->id > max_house_id)
-		max_house_id = new_house->id;
-	houses[new_house->id] = new_house;
-}
-
-void Houses::removeHouse(House* house_to_remove)
-{
-	HouseMap::iterator it = houses.find(house_to_remove->id);
-	if(it != houses.end())
-		houses.erase(it);
-
-	house_to_remove->clean();
-	delete house_to_remove;
-}
-
-House* Houses::getHouse(uint32_t houseid)
-{
-	HouseMap::iterator it = houses.find(houseid);
-	if(it != houses.end()) {
-		return it->second;
-	}
-	return nullptr;
-}
-
-const House* Houses::getHouse(uint32_t houseid) const
-{
-	HouseMap::const_iterator it = houses.find(houseid);
-	if(it != houses.end())
-		return it->second;
-
-	return nullptr;
-}
-
-House::House(Map& map) :
-	id(0),
-	rent(0),
-	townid(0),
-	guildhall(false),
-	map(&map),
-	exit(0,0,0)
-{
-	////
-}
-
-void House::clean()
-{
-	for(PositionList::const_iterator pos_iter = tiles.begin(); pos_iter != tiles.end(); ++pos_iter) {
-		Tile* tile = map->getTile(*pos_iter);
-		if(tile)
-			tile->setHouse(nullptr);
+	for(Position pos: tiles){
+		if(Tile *tile = map->getTile(pos)){
+			tile->houseId = 0;
+		}
 	}
 
+#if TODO
 	Tile* tile = map->getTile(exit);
 	if(tile)
 		tile->removeHouseExit(this);
+#endif
 }
 
-size_t House::size() const
+size_t House::size(Map *map) const
 {
 	size_t count = 0;
-	for(PositionList::const_iterator pos_iter = tiles.begin(); pos_iter != tiles.end(); ++pos_iter) {
-		Tile* tile = map->getTile(*pos_iter);
-		if(tile && !tile->getFlag(UNPASS))
-			++count;
+	for(Position pos: tiles){
+		Tile* tile = map->getTile(pos);
+		if(tile && !tile->getFlag(UNPASS)){
+			count += 1;
+		}
 	}
 	return count;
 }
 
-void House::addTile(Tile* tile)
+void House::addTile(Map *map, Position pos)
 {
-	ASSERT(tile);
-	tile->setHouse(this);
-	tiles.push_back(tile->getPosition());
+	if(Tile *tile = map->getTile(pos)){
+		tile->houseId = houseId;
+		tiles.push_back(pos);
+	}
 }
 
-void House::removeTile(Tile* tile)
+void House::removeTile(Map *map, Position pos)
 {
-	ASSERT(tile);
-	for(PositionList::iterator tile_iter = tiles.begin(); tile_iter != tiles.end(); ++tile_iter) {
-		if(*tile_iter == tile->getPosition()) {
-			tiles.erase(tile_iter);
-			tile->setHouse(nullptr);
-			return;
+	if(Tile *tile = map->getTile(pos)){
+		for(auto it = tiles.begin(); it != tiles.end(); ++it){
+			if(*it == tile->pos){
+				ASSERT(tile->houseId == houseId);
+				tiles.erase(it);
+				tile->houseId = 0;
+				break;
+			}
 		}
 	}
 }
@@ -137,12 +76,13 @@ std::string House::getDescription()
 {
 	std::ostringstream os;
 	os << name;
-	os << " (ID:" << id << "; Rent: " << rent << ")";
+	os << " (ID:" << houseId << "; Rent: " << rent << ")";
 	return os.str();
 }
 
-void House::setExit(Map* targetmap, const Position& pos)
+void House::setExit(Map *map, Position pos)
 {
+#if TODO
 	// This might fail when the user decides to put an exit at 0,0,0, let's just hope noone does (Noone SHOULD, so there is no problem? Hm?)
 	if(pos == exit || !pos.isValid())
 		return;
@@ -161,9 +101,57 @@ void House::setExit(Map* targetmap, const Position& pos)
 
 	newexit->addHouseExit(this);
 	exit = pos;
+#endif
 }
 
-void House::setExit(const Position& pos)
+// Houses
+//==============================================================================
+Houses::~Houses()
 {
-	setExit(map, pos);
+	for(House *house: houses){
+		delete house;
+	}
+	houses.clear();
+}
+
+uint16_t Houses::getEmptyID(void)
+{
+	maxHouseId += 1;
+	return maxHouseId;
+}
+
+void Houses::addHouse(Map *map, House *house)
+{
+	uint16_t houseId = house->houseId;
+
+	if(houseId > maxHouseId){
+		maxHouseId = house->houseId;
+	}
+
+	if(houseId >= houses.size()){
+		houses.resize(houseId + 1);
+	}
+
+	ASSERT(houses[houseId] == NULL);
+	houses[houseId] = house;
+}
+
+void Houses::removeHouse(Map *map, House *house)
+{
+	uint16_t houseId = house->houseId;
+	if(houseId < houses.size() && houses[houseId] == house){
+		house->clean(map);
+		houses[houseId] = NULL;
+		delete house;
+	}
+}
+
+House* Houses::getHouse(uint16_t houseId)
+{
+	return houseId < houses.size() ? houses[houseId] : NULL;
+}
+
+const House *Houses::getHouse(uint16_t houseId) const
+{
+	return houseId < houses.size() ? houses[houseId] : NULL;
 }

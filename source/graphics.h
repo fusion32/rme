@@ -18,8 +18,8 @@
 #ifndef RME_GRAPHICS_H_
 #define RME_GRAPHICS_H_
 
-#include "outfit.h"
 #include "common.h"
+#include "creature.h"
 #include <deque>
 
 #include <wx/artprov.h>

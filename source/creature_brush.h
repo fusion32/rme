@@ -19,6 +19,7 @@
 #define RME_CREATURE_BRUSH_H
 
 #include "brush.h"
+#include "creature.h"
 
 //=============================================================================
 // CreatureBrush, place creatures
@@ -26,7 +27,7 @@
 class CreatureBrush : public Brush
 {
 public:
-	CreatureBrush(CreatureType* type); // Create a RAWBrush of the specified type
+	CreatureBrush(int raceId_);
 	virtual ~CreatureBrush();
 
 	bool isCreature() const { return true; }
@@ -37,16 +38,17 @@ public:
 	void draw_creature(Map *map, Tile* tile);
 	virtual void undraw(Map *map, Tile* tile);
 
-	CreatureType* getType() const { return creature_type; }
+	const CreatureType &getType() const { return GetCreatureType(raceId); }
+	Outfit getOutfit(void) const { return getType().outfit; }
 
-	virtual int getLookID() const; // We don't have a look type, this will always return 0
-	virtual std::string getName() const;
+	virtual int getLookID() const { return 0; }
+	virtual std::string getName() const { return getType().name; }
 	virtual bool canDrag() const { return false; }
 	virtual bool canSmear() const { return true; }
 	virtual bool oneSizeFitsAll() const { return true; }
 
 protected:
-	CreatureType* creature_type;
+	const int raceId;
 };
 
 #endif

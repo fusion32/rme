@@ -19,6 +19,7 @@
 
 #include "waypoint_brush.h"
 #include "waypoints.h"
+#include "map.h"
 
 //=============================================================================
 // Waypoint Brush

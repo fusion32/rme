@@ -22,7 +22,6 @@
 #include "editor.h"
 #include "palette_creature.h"
 #include "creature_brush.h"
-#include "spawn_brush.h"
 #include "materials.h"
 
 // ============================================================================
@@ -34,7 +33,6 @@ BEGIN_EVENT_TABLE(CreaturePalettePanel, PalettePanel)
 	EVT_LISTBOX(PALETTE_CREATURE_LISTBOX, CreaturePalettePanel::OnListBoxChange)
 
 	EVT_TOGGLEBUTTON(PALETTE_CREATURE_BRUSH_BUTTON, CreaturePalettePanel::OnClickCreatureBrushButton)
-	EVT_TOGGLEBUTTON(PALETTE_SPAWN_BRUSH_BUTTON, CreaturePalettePanel::OnClickSpawnBrushButton)
 
 	EVT_SPINCTRL(PALETTE_CREATURE_SPAWN_TIME, CreaturePalettePanel::OnChangeSpawnTime)
 	EVT_SPINCTRL(PALETTE_CREATURE_SPAWN_SIZE, CreaturePalettePanel::OnChangeSpawnSize)
@@ -107,11 +105,8 @@ Brush* CreaturePalettePanel::GetSelectedBrush() const
 			g_editor.SetSpawnTime(creature_spawntime_spin->GetValue());
 			return brush;
 		}
-	} else if(spawn_brush_button->GetValue()) {
-		g_settings.setInteger(Config::CURRENT_SPAWN_RADIUS, spawn_size_spin->GetValue());
-		g_settings.setInteger(Config::DEFAULT_SPAWNTIME, creature_spawntime_spin->GetValue());
-		return g_editor.spawn_brush;
 	}
+
 	return nullptr;
 }
 
@@ -148,10 +143,8 @@ bool CreaturePalettePanel::SelectBrush(const Brush* whatbrush)
 				}
 			}
 		}
-	} else if(whatbrush->isSpawn()) {
-		SelectSpawnBrush();
-		return true;
 	}
+
 	return false;
 }
 
@@ -242,17 +235,7 @@ void CreaturePalettePanel::SelectCreatureBrush()
 		creature_brush_button->Enable(true);
 		creature_brush_button->SetValue(true);
 		spawn_brush_button->SetValue(false);
-	} else {
-		creature_brush_button->Enable(false);
-		SelectSpawnBrush();
 	}
-}
-
-void CreaturePalettePanel::SelectSpawnBrush()
-{
-	//g_editor.house_exit_brush->setHouse(house);
-	creature_brush_button->SetValue(false);
-	spawn_brush_button->SetValue(true);
 }
 
 void CreaturePalettePanel::OnTilesetChange(wxCommandEvent& event)
@@ -272,13 +255,6 @@ void CreaturePalettePanel::OnListBoxChange(wxCommandEvent& event)
 void CreaturePalettePanel::OnClickCreatureBrushButton(wxCommandEvent& event)
 {
 	SelectCreatureBrush();
-	g_editor.ActivatePalette(GetParentPalette());
-	g_editor.SelectBrush();
-}
-
-void CreaturePalettePanel::OnClickSpawnBrushButton(wxCommandEvent& event)
-{
-	SelectSpawnBrush();
 	g_editor.ActivatePalette(GetParentPalette());
 	g_editor.SelectBrush();
 }

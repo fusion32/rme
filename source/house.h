@@ -18,74 +18,39 @@
 #ifndef RME_HOUSE_H_
 #define RME_HOUSE_H_
 
+#include "forward.h"
 #include "position.h"
+#include <vector>
 
-class Map;
-class Tile;
+// TODO(fusion): This will probably all change.
+struct House {
+	int rent = 0;
+	uint16_t houseId = 0;
+	bool guildHall = false;
+	uint32_t townId = 0;
+	std::string name = {};
+	Position exit = {};
+	std::vector<Position> tiles = {};
 
-class Houses;
-
-class House
-{
-public:
-	House(Map& map);
-
-	void clean();
-	void addTile(Tile* tile);
-	void removeTile(Tile* tile);
-	size_t size() const;
-	std::string getDescription();
-
-	uint32_t id;
-	int rent;
-	//HouseDoorList doorList;
-	std::string name;
-	uint32_t townid;
-	bool guildhall;
-
-	void setExit(const Position& pos);
-	void setExit(Map* map, const Position& pos);
-	const Position& getExit() const noexcept { return exit; }
-
-	const PositionList& getTiles() const { return tiles; }
-
-protected:
-	Map* map;
-	PositionList tiles;
-	Position exit;
-
-	friend class Houses;
+	size_t size(Map *map) const;
+	void clean(Map *map);
+	void addTile(Map *map, Position pos);
+	void removeTile(Map *map, Position pos);
+	void setExit(Map *map, Position pos);
+	std::string getDescription(void);
 };
 
-typedef std::map<uint32_t, House*> HouseMap;
-
 class Houses {
-public:
-	Houses(Map& map);
-	~Houses();
+	uint16_t maxHouseId = 0;
+	std::vector<House*> houses = {};
 
-	uint32_t count() const { return houses.size(); }
-
-	HouseMap::iterator begin() { return houses.begin(); }
-	HouseMap::iterator end() { return houses.end(); }
-	HouseMap::const_iterator begin() const { return houses.begin(); }
-	HouseMap::const_iterator end() const { return houses.end(); }
-#ifdef __VISUALC__ // C++0x compliance to some degree :)
-	HouseMap::iterator erase(HouseMap::iterator iter) { return houses.erase(iter); }
-#else
-	void erase(HouseMap::iterator iter) { houses.erase(iter); }
-#endif
-	HouseMap::iterator find(uint32_t val) { return houses.find(val); }
-
-	void removeHouse(House* house_to_remove);
-	void addHouse(House* new_house);
-	House* getHouse(uint32_t houseid);
-	const House* getHouse(uint32_t houseid) const;
-	uint32_t getEmptyID();
-protected:
-	Map& map;
-	uint32_t max_house_id;
-	HouseMap houses;
+	Houses(void) = default;
+	~Houses(void);
+	uint16_t getEmptyID(void);
+	void addHouse(Map *map, House *house);
+	void removeHouse(Map *map, House *house);
+	House *getHouse(uint16_t houseId);
+	const House *getHouse(uint16_t houseId) const;
 };
 
 #endif

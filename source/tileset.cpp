@@ -18,7 +18,7 @@
 #include "main.h"
 
 #include "tileset.h"
-#include "creatures.h"
+#include "creature.h"
 #include "creature_brush.h"
 #include "items.h"
 #include "raw_brush.h"
@@ -109,6 +109,7 @@ void Tileset::loadCategory(pugi::xml_node node, wxArrayString &warnings)
 	} else if(nodeName == "items_and_raw") {
 		category = getCategory(TILESET_ITEM);
 		subCategory = getCategory(TILESET_RAW);
+#if TODO
 	} else if(nodeName == "creatures") {
 		category = getCategory(TILESET_CREATURE);
 		for(pugi::xml_node brushNode = node.first_child(); brushNode; brushNode = brushNode.next_sibling()) {
@@ -139,6 +140,7 @@ void Tileset::loadCategory(pugi::xml_node node, wxArrayString &warnings)
 				warnings.push_back(wxString("Unknown creature type \"") << wxstr(creatureName) << "\"");
 			}
 		}
+#endif
 	}
 
 	if(!category) {

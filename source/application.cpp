@@ -404,6 +404,7 @@ bool MainFrame::DoQuerySave(bool doclose)
 
 bool MainFrame::DoQueryImportCreatures()
 {
+#if TODO
 	if(g_creatures.hasMissing()) {
 		long ret = g_editor.PopupDialog("Missing creatures", "There are missing creatures and/or NPC in the editor, do you want to load them from an OT monster/npc file?", wxYES | wxNO);
 		if(ret == wxID_YES) {
@@ -428,6 +429,7 @@ bool MainFrame::DoQueryImportCreatures()
 		}
 	}
 	g_editor.RefreshPalettes();
+#endif
 	return true;
 }
 

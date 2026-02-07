@@ -46,14 +46,14 @@ public:
 	virtual bool canSmear() const { return false; }
 	virtual bool oneSizeFitsAll() const { return true; }
 
-	void setHouse(House* house);
+	void setHouse(uint16_t houseId_) { houseId = houseId_; }
+	uint16_t getHouseID() const { return houseId; }
 
-	uint32_t getHouseID() const;
 	virtual int getLookID() const { return 0; } // We don't have a graphic
 	virtual std::string getName() const { return "House Exit Brush"; } // We don't have a name
 
 protected:
-	uint32_t draw_house;
+	uint16_t houseId;
 };
 
 #endif

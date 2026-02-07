@@ -25,38 +25,23 @@
 //=============================================================================
 // House Brush
 
-HouseBrush::HouseBrush() :
-	Brush(),
-	draw_house(nullptr)
+HouseBrush::HouseBrush() : Brush(), houseId(0)
 {
-	////
+	// no-op
 }
 
 HouseBrush::~HouseBrush()
 {
-	////
-}
-
-void HouseBrush::setHouse(House* house)
-{
-	draw_house = house;
-}
-
-uint32_t HouseBrush::getHouseID() const
-{
-	if(draw_house)
-		return draw_house->id;
-	return 0;
+	// no-op
 }
 
 void HouseBrush::undraw(Map *map, Tile* tile)
 {
-
 	// TODO(fusion): Same as HouseBrush::draw.
-	if(tile->isHouseTile()) {
+	if(tile->houseId != 0) {
 		tile->clearTileFlag(TILE_FLAG_PROTECTIONZONE);
 	}
-	tile->setHouse(nullptr);
+	tile->houseId = 0;
 }
 
 void HouseBrush::draw(Map *map, Tile* tile, void* parameter)
@@ -66,11 +51,9 @@ void HouseBrush::draw(Map *map, Tile* tile, void* parameter)
 	// permission list. We might want to have support to convert to and from
 	// NAMEDOOR versions of the same door (if that's even a thing) but this
 	// is a fundamentally different approach.
-	ASSERT(draw_house);
-	uint32_t old_house_id = tile->getHouseID();
-	tile->setHouse(draw_house);
+	ASSERT(houseId != 0);
+	tile->houseId = houseId;
 	tile->setTileFlag(TILE_FLAG_PROTECTIONZONE);
-
 	if(g_settings.getInteger(Config::HOUSE_BRUSH_REMOVE_ITEMS)) {
 		tile->removeItems([](const Item *item){ return !item->getFlag(UNMOVE); });
 	}

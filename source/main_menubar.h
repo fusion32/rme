@@ -80,7 +80,6 @@ namespace MenuBar
 		MAP_REMOVE_ITEMS,
 		MAP_REMOVE_CORPSES,
 		MAP_REMOVE_UNREACHABLE_TILES,
-		MAP_REMOVE_EMPTY_SPAWNS,
 		MAP_CLEAN_HOUSE_ITEMS,
 		MAP_STATISTICS,
 		VIEW_TOOLBARS_BRUSHES,
@@ -103,7 +102,6 @@ namespace MenuBar
 		SHOW_GRID,
 		SHOW_EXTRA,
 		SHOW_CREATURES,
-		SHOW_SPAWNS,
 		SHOW_SPECIAL,
 		SHOW_AS_MINIMAP,
 		SHOW_ONLY_COLORS,
@@ -205,7 +203,6 @@ public:
 	void OnMapRemoveUnreachable(wxCommandEvent& event);
 	void OnMapRemoveEmptySpawns(wxCommandEvent& event);
 	void OnClearHouseTiles(wxCommandEvent& event);
-	void OnClearModifiedState(wxCommandEvent& event);
 	void OnToggleAutomagic(wxCommandEvent& event);
 	void OnSelectionTypeChange(wxCommandEvent& event);
 	void OnCut(wxCommandEvent& event);

@@ -19,36 +19,9 @@
 #define RME_BRUSH_H_
 #include "main.h"
 
+#include "forward.h"
 #include "position.h"
-
 #include "brush_enums.h"
-
-// Thanks to a million forward declarations, we don't have to include any files!
-// TODO move to a declarations file.
-class ItemType;
-class CreatureType;
-class House;
-class Item;
-class Tile;
-class AutoBorder;
-class Brush;
-class RAWBrush;
-class DoodadBrush;
-class TerrainBrush;
-class GroundBrush;
-class WallBrush;
-class WallDecorationBrush;
-class TableBrush;
-class CarpetBrush;
-class DoorBrush;
-class OptionalBorderBrush;
-class CreatureBrush;
-class SpawnBrush;
-class HouseBrush;
-class HouseExitBrush;
-class WaypointBrush;
-class FlagBrush;
-class EraserBrush;
 
 //=============================================================================
 // Brushes, holds all brushes
@@ -131,7 +104,6 @@ public:
 	virtual bool isDoor() const { return false; }
 	virtual bool isOptionalBorder() const { return false; }
 	virtual bool isCreature() const { return false; }
-	virtual bool isSpawn() const { return false; }
 	virtual bool isHouse() const { return false; }
 	virtual bool isHouseExit() const { return false; }
 	virtual bool isWaypoint() const { return false; }
@@ -149,7 +121,6 @@ public:
 	virtual DoorBrush* asDoor() { return nullptr; }
 	virtual OptionalBorderBrush* asOptionalBorder() { return nullptr; }
 	virtual CreatureBrush* asCreature() { return nullptr; }
-	virtual SpawnBrush* asSpawn() { return nullptr; }
 	virtual HouseBrush* asHouse() { return nullptr; }
 	virtual HouseExitBrush* asHouseExit() { return nullptr; }
 	virtual WaypointBrush* asWaypoint() { return nullptr; }

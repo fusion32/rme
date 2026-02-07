@@ -30,7 +30,6 @@ class OldPropertiesWindow : public ObjectPropertiesWindowBase
 public:
 	OldPropertiesWindow(wxWindow* parent, const Map* map, const Tile* tile, Item* item, wxPoint = wxDefaultPosition);
 	OldPropertiesWindow(wxWindow* parent, const Map* map, const Tile* tile, Creature* creature, wxPoint = wxDefaultPosition);
-	OldPropertiesWindow(wxWindow* parent, const Map* map, const Tile* tile, Spawn* spawn, wxPoint = wxDefaultPosition);
 	virtual ~OldPropertiesWindow();
 
 	void OnFocusChange(wxFocusEvent&);
@@ -42,7 +41,6 @@ public:
 
 protected:
 	wxSpinCtrl* count_field;
-	wxChoice* direction_field;
 	PositionCtrl* destination_field;
 	wxChoice* splash_type_field;
 	wxTextCtrl* text_field;

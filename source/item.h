@@ -19,15 +19,9 @@
 #define RME_ITEM_H_
 
 #include "items.h"
+#include "graphics.h"
 
-class Creature;
-class Border;
-class Tile;
-
-struct SpriteLight;
-
-class Item {
-public:
+struct Item {
 	//Item *container = NULL; //unused
 	Item *next = NULL;
 	Item *content = NULL;
@@ -46,7 +40,7 @@ public:
 	uint16_t getID() const { return typeId; }
 	bool isValidID() const { return ItemTypeExists(typeId); }
 	const ItemType &getItemType() const noexcept { return GetItemType(typeId); }
-	const std::string getName() const { return getItemType().name; }
+	const std::string &getName() const { return getItemType().name; }
 	//const std::string &getDescription() const { return getItemType().description; }
 	bool getFlag(ObjectFlag flag) const;
 	int getAttribute(ObjectTypeAttribute attr) const;

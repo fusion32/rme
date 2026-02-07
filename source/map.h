@@ -21,7 +21,6 @@
 #include "tile.h"
 #include "town.h"
 #include "house.h"
-#include "spawn.h"
 #include "waypoints.h"
 
 #define MAP_SECTOR_SIZE 32
@@ -56,6 +55,15 @@ struct MapSector{
 		}
 	}
 
+	Tile *getTile(int offsetX, int offsetY){
+		Tile *tile = NULL;
+		int index = offsetY * MAP_SECTOR_SIZE + offsetX;
+		if(index >= 0 && index < NARRAY(tiles)){
+			tile = &tiles[index];
+		}
+		return tile;
+	}
+
 	Tile tiles[MAP_SECTOR_SIZE * MAP_SECTOR_SIZE];
 };
 
@@ -86,10 +94,14 @@ struct Map {
 
 	Tile *getTile(int x, int y, int z);
 	Tile *getOrCreateTile(int x, int y, int z);
+	MapSector *getSector(int sectorX, int sectorY, int sectorZ);
 	Tile *getTile(Position pos) { return getTile(pos.x, pos.y, pos.z); }
 	Tile *getOrCreateTile(Position pos) { return getOrCreateTile(pos.x, pos.y, pos.z); }
 	bool isEmpty(void) const { return sectors.empty(); }
 	bool isDirty(void) const { return !dirtySectors.empty(); }
+
+	const Tile *getTile(int x, int y, int z) const { return const_cast<Map*>(this)->getTile(x, y, z); }
+	const Tile *getTile(Position pos)        const { return const_cast<Map*>(this)->getTile(pos); }
 
 	Tile *swapTile(Tile &other) {
 		Tile *tile = getOrCreateTile(other.pos);

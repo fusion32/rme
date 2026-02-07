@@ -56,10 +56,8 @@ public:
 	void OnTilesetChange(wxCommandEvent& event);
 	void OnListBoxChange(wxCommandEvent& event);
 	void OnClickCreatureBrushButton(wxCommandEvent& event);
-	void OnClickSpawnBrushButton(wxCommandEvent& event);
 protected:
 	void SelectCreatureBrush();
-	void SelectSpawnBrush();
 
 	wxChoice* tileset_choice;
 	SortableListBox* creature_list;

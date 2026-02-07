@@ -22,17 +22,18 @@
 #include "settings.h"
 #include "tile.h"
 #include "creature.h"
-#include "spawn.h"
 
 //=============================================================================
 // Creature brush
 
-CreatureBrush::CreatureBrush(CreatureType* type) :
-	Brush(),
-	creature_type(type)
+CreatureBrush::CreatureBrush(int raceId_) : Brush(), raceId(raceId_)
 {
-	ASSERT(type->brush == nullptr);
-	type->brush = this;
+	// TODO(fusion): Do we want to fail here if there is no creature type with
+	// the requested race id?
+	if(CreatureType *type = GetMutableCreatureType(raceId)){
+		ASSERT(type->brush == NULL);
+		type->brush = this;
+	}
 }
 
 CreatureBrush::~CreatureBrush()
@@ -40,59 +41,40 @@ CreatureBrush::~CreatureBrush()
 	////
 }
 
-int CreatureBrush::getLookID() const
+bool CreatureBrush::canDraw(Map *map, const Position &position) const
 {
-	return 0;
-}
-
-std::string CreatureBrush::getName() const
-{
-	if(creature_type)
-		return creature_type->name;
-	return "Creature Brush";
-}
-
-bool CreatureBrush::canDraw(Map *map, const Position& position) const
-{
-	Tile* tile = map->getTile(position);
-	if(creature_type && tile && !tile->getFlag(UNPASS) && !tile->getFlag(AVOID)) {
-		if(tile->getLocation()->getSpawnCount() != 0 || g_settings.getInteger(Config::AUTO_CREATE_SPAWN)) {
- 		   if(tile->getTileFlag(TILE_FLAG_PROTECTIONZONE)) {
-				if(creature_type->isNpc) {
-					return true;
-				}
-			} else {
-				return true;
-			}
-		}
+	bool result = false;
+	Tile *tile = map->getTile(position);
+	if(tile && tile->creature == NULL && !tile->getFlag(UNPASS) && !tile->getFlag(AVOID)) {
+		result = !tile->getTileFlag(TILE_FLAG_PROTECTIONZONE);
 	}
-	return false;
+	return result;
 }
 
 void CreatureBrush::undraw(Map *map, Tile* tile)
 {
 	delete tile->creature;
-	tile->creature = nullptr;
+	tile->creature = NULL;
 }
 
-void CreatureBrush::draw(Map *map, Tile* tile, void* parameter)
+void CreatureBrush::draw(Map *map, Tile *tile, void *parameter)
 {
 	ASSERT(tile);
 	ASSERT(parameter);
 	draw_creature(map, tile);
 }
 
-void CreatureBrush::draw_creature(Map *map, Tile* tile)
+void CreatureBrush::draw_creature(Map *map, Tile *tile)
 {
-	if(canDraw(map, tile->getPosition())) {
+	if(canDraw(map, tile->pos)) {
 		undraw(map, tile);
-		if(creature_type) {
-			if(tile->spawn == nullptr && tile->getLocation()->getSpawnCount() == 0) {
-				// manually place spawn on location
-				tile->spawn = newd Spawn(1);
-			}
-			tile->creature = newd Creature(creature_type);
-			tile->creature->setSpawnTime(g_editor.GetSpawnTime());
-		}
+
+		Creature *creature = newd Creature();
+		creature->raceId = raceId;
+		creature->spawnRadius = 50;
+		creature->spawnAmount = 1;
+		creature->spawnInterval = 600;
+		creature->selected = false;
+		tile->creature = creature;
 	}
 }

@@ -102,11 +102,9 @@ MainMenuBar::MainMenuBar(MainFrame *frame) : frame(frame)
 	MAKE_ACTION(EDIT_MONSTERS, wxITEM_NORMAL, OnMapEditMonsters);
 
 	MAKE_ACTION(CLEAR_INVALID_HOUSES, wxITEM_NORMAL, OnClearHouseTiles);
-	MAKE_ACTION(CLEAR_MODIFIED_STATE, wxITEM_NORMAL, OnClearModifiedState);
 	MAKE_ACTION(MAP_REMOVE_ITEMS, wxITEM_NORMAL, OnMapRemoveItems);
 	MAKE_ACTION(MAP_REMOVE_CORPSES, wxITEM_NORMAL, OnMapRemoveCorpses);
 	MAKE_ACTION(MAP_REMOVE_UNREACHABLE_TILES, wxITEM_NORMAL, OnMapRemoveUnreachable);
-	MAKE_ACTION(MAP_REMOVE_EMPTY_SPAWNS, wxITEM_NORMAL, OnMapRemoveEmptySpawns);
 	MAKE_ACTION(MAP_CLEANUP, wxITEM_NORMAL, OnMapCleanup);
 	MAKE_ACTION(MAP_CLEAN_HOUSE_ITEMS, wxITEM_NORMAL, OnMapCleanHouseItems);
 	MAKE_ACTION(MAP_STATISTICS, wxITEM_NORMAL, OnMapStatistics);
@@ -132,7 +130,6 @@ MainMenuBar::MainMenuBar(MainFrame *frame) : frame(frame)
 	MAKE_ACTION(SHOW_LIGHTS, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_GRID, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_CREATURES, wxITEM_CHECK, OnChangeViewSettings);
-	MAKE_ACTION(SHOW_SPAWNS, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_SPECIAL, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_AS_MINIMAP, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_ONLY_COLORS, wxITEM_CHECK, OnChangeViewSettings);
@@ -222,15 +219,18 @@ namespace OnMapRemoveItems
 {
 	struct RemoveItemCondition
 	{
-		RemoveItemCondition(uint16_t itemId) :
-			itemId(itemId) { }
+		double nextUpdate = 0.0;
+		int itemId = 0;
+		bool selectedOnly = false;
 
-		uint16_t itemId;
+		bool operator()(const Item* item, double progress) {
+			if(progress >= nextUpdate){
+				g_editor.SetLoadDone((int)(progress * 100.0));
+				nextUpdate = progress + 0.01;
+			}
 
-		bool operator()(Map& map, const Item* item, int64_t removed, int64_t done) {
-			if(done % 0x8000 == 0)
-				g_editor.SetLoadDone((uint32_t)(100 * done / map.getTileCount()));
-			return item->getID() == itemId;
+			return item->getID() == itemId
+				&& (!selectedOnly || item->isSelected());
 		}
 	};
 }
@@ -335,7 +335,6 @@ void MainMenuBar::Update()
 	EnableItem(MAP_REMOVE_ITEMS, loaded);
 	EnableItem(MAP_REMOVE_CORPSES, loaded);
 	EnableItem(MAP_REMOVE_UNREACHABLE_TILES, loaded);
-	EnableItem(MAP_REMOVE_EMPTY_SPAWNS, loaded);
 	EnableItem(CLEAR_INVALID_HOUSES, loaded);
 	EnableItem(CLEAR_MODIFIED_STATE, loaded);
 
@@ -350,9 +349,6 @@ void MainMenuBar::Update()
 	EnableItem(ZOOM_IN, loaded);
 	EnableItem(ZOOM_OUT, loaded);
 	EnableItem(ZOOM_NORMAL, loaded);
-
-	if(loaded)
-		CheckItem(SHOW_SPAWNS, g_settings.getBoolean(Config::SHOW_SPAWNS));
 
 	EnableItem(WIN_MINIMAP, loaded);
 	EnableItem(NEW_PALETTE, loaded);
@@ -414,7 +410,6 @@ void MainMenuBar::LoadValues()
 	CheckItem(SHOW_GRID, g_settings.getBoolean(Config::SHOW_GRID));
 	CheckItem(HIGHLIGHT_ITEMS, g_settings.getBoolean(Config::HIGHLIGHT_ITEMS));
 	CheckItem(SHOW_CREATURES, g_settings.getBoolean(Config::SHOW_CREATURES));
-	CheckItem(SHOW_SPAWNS, g_settings.getBoolean(Config::SHOW_SPAWNS));
 	CheckItem(SHOW_SPECIAL, g_settings.getBoolean(Config::SHOW_SPECIAL_TILES));
 	CheckItem(SHOW_AS_MINIMAP, g_settings.getBoolean(Config::SHOW_AS_MINIMAP));
 	CheckItem(SHOW_ONLY_COLORS, g_settings.getBoolean(Config::SHOW_ONLY_TILEFLAGS));
@@ -494,7 +489,7 @@ bool MainMenuBar::Load(const FileName& path, wxArrayString& warnings, wxString& 
 	}
 
 #ifdef __LINUX__
-	const int count = 42;
+	const int count = 41;
 	wxAcceleratorEntry entries[count];
 	// Edit
 	entries[0].Set(wxACCEL_CTRL, (int)'Z', MAIN_FRAME_MENU + MenuBar::UNDO);
@@ -523,25 +518,24 @@ bool MainMenuBar::Load(const FileName& path, wxArrayString& warnings, wxString& 
 	entries[21].Set(wxACCEL_SHIFT, (int)'G', MAIN_FRAME_MENU + MenuBar::SHOW_GRID);
 	entries[22].Set(wxACCEL_NORMAL, (int)'V', MAIN_FRAME_MENU + MenuBar::HIGHLIGHT_ITEMS);
 	entries[23].Set(wxACCEL_NORMAL, (int)'F', MAIN_FRAME_MENU + MenuBar::SHOW_CREATURES);
-	entries[24].Set(wxACCEL_NORMAL, (int)'S', MAIN_FRAME_MENU + MenuBar::SHOW_SPAWNS);
-	entries[25].Set(wxACCEL_NORMAL, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_SPECIAL);
-	entries[26].Set(wxACCEL_SHIFT, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_AS_MINIMAP);
-	entries[27].Set(wxACCEL_CTRL, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_ONLY_COLORS);
-	entries[28].Set(wxACCEL_CTRL, (int)'M', MAIN_FRAME_MENU + MenuBar::SHOW_ONLY_MODIFIED);
-	entries[29].Set(wxACCEL_CTRL, (int)'H', MAIN_FRAME_MENU + MenuBar::SHOW_HOUSES);
-	entries[30].Set(wxACCEL_NORMAL, (int)'O', MAIN_FRAME_MENU + MenuBar::SHOW_PATHING);
-	entries[31].Set(wxACCEL_NORMAL, (int)'Y', MAIN_FRAME_MENU + MenuBar::SHOW_TOOLTIPS);
-	entries[32].Set(wxACCEL_NORMAL, (int)'L', MAIN_FRAME_MENU + MenuBar::SHOW_PREVIEW);
-	entries[33].Set(wxACCEL_NORMAL, (int)'K', MAIN_FRAME_MENU + MenuBar::SHOW_WALL_HOOKS);
+	entries[24].Set(wxACCEL_NORMAL, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_SPECIAL);
+	entries[25].Set(wxACCEL_SHIFT, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_AS_MINIMAP);
+	entries[26].Set(wxACCEL_CTRL, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_ONLY_COLORS);
+	entries[27].Set(wxACCEL_CTRL, (int)'M', MAIN_FRAME_MENU + MenuBar::SHOW_ONLY_MODIFIED);
+	entries[28].Set(wxACCEL_CTRL, (int)'H', MAIN_FRAME_MENU + MenuBar::SHOW_HOUSES);
+	entries[29].Set(wxACCEL_NORMAL, (int)'O', MAIN_FRAME_MENU + MenuBar::SHOW_PATHING);
+	entries[30].Set(wxACCEL_NORMAL, (int)'Y', MAIN_FRAME_MENU + MenuBar::SHOW_TOOLTIPS);
+	entries[31].Set(wxACCEL_NORMAL, (int)'L', MAIN_FRAME_MENU + MenuBar::SHOW_PREVIEW);
+	entries[32].Set(wxACCEL_NORMAL, (int)'K', MAIN_FRAME_MENU + MenuBar::SHOW_WALL_HOOKS);
 	// Window
-	entries[34].Set(wxACCEL_NORMAL, (int)'M', MAIN_FRAME_MENU + MenuBar::WIN_MINIMAP);
-	entries[35].Set(wxACCEL_NORMAL, (int)'T', MAIN_FRAME_MENU + MenuBar::SELECT_TERRAIN);
-	entries[36].Set(wxACCEL_NORMAL, (int)'D', MAIN_FRAME_MENU + MenuBar::SELECT_DOODAD);
-	entries[37].Set(wxACCEL_NORMAL, (int)'I', MAIN_FRAME_MENU + MenuBar::SELECT_ITEM);
-	entries[38].Set(wxACCEL_NORMAL, (int)'H', MAIN_FRAME_MENU + MenuBar::SELECT_HOUSE);
-	entries[39].Set(wxACCEL_NORMAL, (int)'C', MAIN_FRAME_MENU + MenuBar::SELECT_CREATURE);
-	entries[40].Set(wxACCEL_NORMAL, (int)'W', MAIN_FRAME_MENU + MenuBar::SELECT_WAYPOINT);
-	entries[41].Set(wxACCEL_NORMAL, (int)'R', MAIN_FRAME_MENU + MenuBar::SELECT_RAW);
+	entries[33].Set(wxACCEL_NORMAL, (int)'M', MAIN_FRAME_MENU + MenuBar::WIN_MINIMAP);
+	entries[34].Set(wxACCEL_NORMAL, (int)'T', MAIN_FRAME_MENU + MenuBar::SELECT_TERRAIN);
+	entries[35].Set(wxACCEL_NORMAL, (int)'D', MAIN_FRAME_MENU + MenuBar::SELECT_DOODAD);
+	entries[36].Set(wxACCEL_NORMAL, (int)'I', MAIN_FRAME_MENU + MenuBar::SELECT_ITEM);
+	entries[37].Set(wxACCEL_NORMAL, (int)'H', MAIN_FRAME_MENU + MenuBar::SELECT_HOUSE);
+	entries[38].Set(wxACCEL_NORMAL, (int)'C', MAIN_FRAME_MENU + MenuBar::SELECT_CREATURE);
+	entries[39].Set(wxACCEL_NORMAL, (int)'W', MAIN_FRAME_MENU + MenuBar::SELECT_WAYPOINT);
+	entries[40].Set(wxACCEL_NORMAL, (int)'R', MAIN_FRAME_MENU + MenuBar::SELECT_RAW);
 
 	wxAcceleratorTable accelerator(count, entries);
 	frame->SetAcceleratorTable(accelerator);
@@ -718,6 +712,7 @@ void MainMenuBar::OnImportMap(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnImportMonsterData(wxCommandEvent& WXUNUSED(event))
 {
+#if TODO
 	wxFileDialog dlg(g_editor.root, "Import monster/npc file", "","","*.xml", wxFD_OPEN | wxFD_MULTIPLE | wxFD_FILE_MUST_EXIST);
 	if(dlg.ShowModal() == wxID_OK) {
 		wxArrayString paths;
@@ -732,6 +727,7 @@ void MainMenuBar::OnImportMonsterData(wxCommandEvent& WXUNUSED(event))
 				wxMessageBox("Error OT data file \"" + paths[i] + "\".\n" + error, "Error", wxOK | wxICON_INFORMATION, g_editor.root);
 		}
 	}
+#endif
 }
 
 void MainMenuBar::OnImportMinimap(wxCommandEvent& WXUNUSED(event))
@@ -792,25 +788,25 @@ namespace OnSearchForItem
 {
 	struct Finder
 	{
-		Finder(uint16_t itemId, uint32_t maxCount) :
-			itemId(itemId), maxCount(maxCount) {}
+		double nextUpdate = 0.0;
+		int itemId = 0;
+		int maxCount = 0;
+		std::vector<std::pair<Tile*, Item*>> results;
 
-		uint16_t itemId;
-		uint32_t maxCount;
-		std::vector< std::pair<Tile*, Item*> > result;
+		bool limitReached() const { return results.size() >= (size_t)maxCount; }
 
-		bool limitReached() const { return result.size() >= (size_t)maxCount; }
-
-		void operator()(Map& map, Tile* tile, Item* item, long long done)
+		void operator()(Tile* tile, Item* item, double progress)
 		{
-			if(result.size() >= (size_t)maxCount)
+			if(progress >= nextUpdate){
+				g_editor.SetLoadDone((int)(progress * 100.0));
+				nextUpdate = progress + 0.01;
+			}
+
+			if(results.size() >= (size_t)maxCount)
 				return;
 
-			if(done % 0x8000 == 0)
-				g_editor.SetLoadDone((unsigned int)(100 * done / map.getTileCount()));
-
 			if(item->getID() == itemId)
-				result.push_back(std::make_pair(tile, item));
+				results.push_back(std::make_pair(tile, item));
 		}
 	};
 }
@@ -823,12 +819,12 @@ void MainMenuBar::OnSearchForItem(wxCommandEvent& WXUNUSED(event))
 	FindItemDialog dialog(frame, "Search for Item");
 	dialog.setSearchMode((FindItemDialog::SearchMode)g_settings.getInteger(Config::FIND_ITEM_MODE));
 	if(dialog.ShowModal() == wxID_OK) {
-		OnSearchForItem::Finder finder(dialog.getResultID(), (uint32_t)g_settings.getInteger(Config::REPLACE_SIZE));
+		OnSearchForItem::Finder finder;
+		finder.itemId = dialog.getResultID();
+		finder.maxCount = g_settings.getInteger(Config::REPLACE_SIZE);
+
 		g_editor.CreateLoadBar("Searching map...");
-
-		foreach_ItemOnMap(g_editor.map, finder, false);
-		std::vector< std::pair<Tile*, Item*> >& result = finder.result;
-
+		g_editor.map.forEachItem(finder, false);
 		g_editor.DestroyLoadBar();
 
 		if(finder.limitReached()) {
@@ -839,10 +835,8 @@ void MainMenuBar::OnSearchForItem(wxCommandEvent& WXUNUSED(event))
 
 		SearchResultWindow* window = g_editor.ShowSearchWindow();
 		window->Clear();
-		for(std::vector<std::pair<Tile*, Item*> >::const_iterator iter = result.begin(); iter != result.end(); ++iter) {
-			Tile* tile = iter->first;
-			Item* item = iter->second;
-			window->AddPosition(wxstr(item->getName()), tile->getPosition());
+		for(const auto &[tile, item]: finder.results){
+			window->AddPosition(wxstr(item->getName()), tile->pos);
 		}
 
 		g_settings.setInteger(Config::FIND_ITEM_MODE, (int)dialog.getSearchMode());
@@ -863,24 +857,31 @@ namespace OnSearchForStuff
 	struct Searcher
 	{
 		// TODO(fusion): Relevant srv flags/attributes instead?
-		bool search_container;
-		bool search_writable;
-		std::vector<std::pair<Tile*, Item*>> found;
+		double nextUpdate = 0.0;
+		bool selectedOnly = false;
+		bool searchContainer = false;
+		bool searchWritable = false;
+		std::vector<std::pair<Tile*, Item*>> results;
 
-		void operator()(Map& map, Tile* tile, Item* item, long long done)
+		void operator()(Tile *tile, Item *item, double progress)
 		{
-			if(done % 0x8000 == 0) {
-				g_editor.SetLoadDone((unsigned int)(100 * done / map.getTileCount()));
+			if(progress > nextUpdate){
+				g_editor.SetLoadDone((int)(progress * 100.0));
+				nextUpdate = progress + 0.01;
+			}
+
+			if(selectedOnly && !item->isSelected()){
+				return;
 			}
 
 			bool add = false;
-			if(!add && search_container){
+			if(!add && searchContainer){
 				if((item->getFlag(CONTAINER) || item->getFlag(CHEST)) && item->content != NULL){
 					add = true;
 				}
 			}
 
-			if(!add && search_writable){
+			if(!add && searchWritable){
 				if(item->getFlag(TEXT)){
 					const char *text = item->getTextAttribute(TEXTSTRING);
 					if(text && strlen(text) > 0){
@@ -890,7 +891,7 @@ namespace OnSearchForStuff
 			}
 
 			if(add){
-				found.push_back(std::make_pair(tile, item));
+				results.push_back(std::make_pair(tile, item));
 			}
 		}
 
@@ -962,12 +963,12 @@ void MainMenuBar::OnSearchForItemOnSelection(wxCommandEvent& WXUNUSED(event))
 	FindItemDialog dialog(frame, "Search on Selection");
 	dialog.setSearchMode((FindItemDialog::SearchMode)g_settings.getInteger(Config::FIND_ITEM_MODE));
 	if(dialog.ShowModal() == wxID_OK) {
-		OnSearchForItem::Finder finder(dialog.getResultID(), (uint32_t)g_settings.getInteger(Config::REPLACE_SIZE));
+		OnSearchForItem::Finder finder;
+		finder.itemId = dialog.getResultID();
+		finder.maxCount = g_settings.getInteger(Config::REPLACE_SIZE);
+
 		g_editor.CreateLoadBar("Searching on selected area...");
-
-		foreach_ItemOnMap(g_editor.map, finder, true);
-		std::vector<std::pair<Tile*, Item*> >& result = finder.result;
-
+		g_editor.map.forEachItem(finder, true);
 		g_editor.DestroyLoadBar();
 
 		if(finder.limitReached()) {
@@ -978,10 +979,8 @@ void MainMenuBar::OnSearchForItemOnSelection(wxCommandEvent& WXUNUSED(event))
 
 		SearchResultWindow* window = g_editor.ShowSearchWindow();
 		window->Clear();
-		for(std::vector<std::pair<Tile*, Item*> >::const_iterator iter = result.begin(); iter != result.end(); ++iter) {
-			Tile* tile = iter->first;
-			Item* item = iter->second;
-			window->AddPosition(wxstr(item->getName()), tile->getPosition());
+		for(const auto &[tile, item]: finder.results){
+			window->AddPosition(wxstr(item->getName()), tile->pos);
 		}
 
 		g_settings.setInteger(Config::FIND_ITEM_MODE, (int)dialog.getSearchMode());
@@ -1010,16 +1009,18 @@ void MainMenuBar::OnRemoveItemOnSelection(wxCommandEvent& WXUNUSED(event))
 
 	FindItemDialog dialog(frame, "Remove Item on Selection");
 	if(dialog.ShowModal() == wxID_OK) {
+		OnMapRemoveItems::RemoveItemCondition condition;
+		condition.itemId = dialog.getResultID();
+		condition.selectedOnly = true;
+
 		g_editor.clearActions();
 		g_editor.CreateLoadBar("Searching item on selection to remove...");
-		OnMapRemoveItems::RemoveItemCondition condition(dialog.getResultID());
-		int64_t count = RemoveItemOnMap(g_editor.map, condition, true);
+		int count = g_editor.map.removeItems(condition);
 		g_editor.DestroyLoadBar();
 
 		wxString msg;
 		msg << count << " items removed.";
 		g_editor.PopupDialog("Remove Item", msg, wxOK);
-		g_editor.map.doChange();
 		g_editor.RefreshView();
 	}
 	dialog.Destroy();
@@ -1163,41 +1164,24 @@ void MainMenuBar::OnMapRemoveItems(wxCommandEvent& WXUNUSED(event))
 
 	FindItemDialog dialog(frame, "Item Type to Remove");
 	if(dialog.ShowModal() == wxID_OK) {
-		uint16_t itemid = dialog.getResultID();
+		OnMapRemoveItems::RemoveItemCondition condition;
+		condition.itemId = dialog.getResultID();
+		condition.selectedOnly = false;
 
-		g_editor.getSelection().clear();
+		g_editor.selection.clear(NULL);
 		g_editor.clearActions();
 
-		OnMapRemoveItems::RemoveItemCondition condition(itemid);
 		g_editor.CreateLoadBar("Searching map for items to remove...");
-
-		int64_t count = RemoveItemOnMap(g_editor.map, condition, false);
-
+		int count = g_editor.map.removeItems(condition);
 		g_editor.DestroyLoadBar();
 
 		wxString msg;
 		msg << count << " items deleted.";
 
 		g_editor.PopupDialog("Search completed", msg, wxOK);
-		g_editor.map.doChange();
 		g_editor.RefreshView();
 	}
 	dialog.Destroy();
-}
-
-namespace OnMapRemoveCorpses
-{
-	struct condition
-	{
-		condition() {}
-
-		bool operator()(Map& map, const Item* item, long long removed, long long done){
-			if(done % 0x800 == 0)
-				g_editor.SetLoadDone((unsigned int)(100 * done / map.getTileCount()));
-
-			return g_materials.isInTileset(item, "Corpses");
-		}
-	};
 }
 
 void MainMenuBar::OnMapRemoveCorpses(wxCommandEvent& WXUNUSED(event))
@@ -1208,66 +1192,25 @@ void MainMenuBar::OnMapRemoveCorpses(wxCommandEvent& WXUNUSED(event))
 	int ok = g_editor.PopupDialog("Remove Corpses", "Do you want to remove all corpses from the map?", wxYES | wxNO);
 
 	if(ok == wxID_YES) {
-		g_editor.getSelection().clear();
+		g_editor.selection.clear(NULL);
 		g_editor.clearActions();
 
-		OnMapRemoveCorpses::condition func;
 		g_editor.CreateLoadBar("Searching map for items to remove...");
+		int count = g_editor.map.removeItems(
+			[nextUpdate = 0.0](const Item *item, double progress) mutable {
+				if(progress >= nextUpdate){
+					g_editor.SetLoadDone((int)(progress * 100.0));
+					nextUpdate = progress + 0.01;
+				}
 
-		int64_t count = RemoveItemOnMap(g_editor.map, func, false);
-
+				return g_materials.isInTileset(item, "Corpses");
+			});
 		g_editor.DestroyLoadBar();
 
 		wxString msg;
 		msg << count << " items deleted.";
 		g_editor.PopupDialog("Search completed", msg, wxOK);
-		g_editor.map.doChange();
 	}
-}
-
-namespace OnMapRemoveUnreachable
-{
-	struct condition
-	{
-		condition() {}
-
-		bool isReachable(Tile* tile)
-		{
-			return tile && !tile->getFlag(UNPASS);
-		}
-
-		bool operator()(Map& map, Tile* tile, long long removed, long long done, long long total)
-		{
-			if(done % 0x1000 == 0)
-				g_editor.SetLoadDone((unsigned int)(100 * done / total));
-
-			const Position& pos = tile->getPosition();
-			int sx = std::max(pos.x - 10, 0);
-			int ex = std::min(pos.x + 10, 65535);
-			int sy = std::max(pos.y - 8,  0);
-			int ey = std::min(pos.y + 8,  65535);
-			int sz, ez;
-
-			if(pos.z < 8) {
-				sz = 0;
-				ez = 9;
-			} else {
-				// underground
-				sz = std::max(pos.z - 2, rme::MapGroundLayer);
-				ez = std::min(pos.z + 2, rme::MapMaxLayer);
-			}
-
-			for(int z = sz; z <= ez; ++z) {
-				for(int y = sy; y <= ey; ++y) {
-					for(int x = sx; x <= ex; ++x) {
-						if(isReachable(map.getTile(x, y, z)))
-							return false;
-					}
-				}
-			}
-			return true;
-		}
-	};
 }
 
 void MainMenuBar::OnMapRemoveUnreachable(wxCommandEvent& WXUNUSED(event))
@@ -1278,94 +1221,46 @@ void MainMenuBar::OnMapRemoveUnreachable(wxCommandEvent& WXUNUSED(event))
 	int ok = g_editor.PopupDialog("Remove Unreachable Tiles", "Do you want to remove all unreachable items from the map?", wxYES | wxNO);
 
 	if(ok == wxID_YES) {
-		g_editor.getSelection().clear();
+		g_editor.selection.clear(NULL);
 		g_editor.clearActions();
 
-		OnMapRemoveUnreachable::condition func;
 		g_editor.CreateLoadBar("Searching map for tiles to remove...");
+		int removed = g_editor.map.clearTiles(
+			[nextUpdate = 0.0](const Tile *tile, double progress) mutable {
+				if(progress >= nextUpdate){
+					g_editor.SetLoadDone((int)(progress * 100.0));
+					nextUpdate = progress + 0.01;
+				}
 
-		long long removed = remove_if_TileOnMap(g_editor.map, func);
+				Position pos = tile->pos;
+				int minX = std::max<int>(pos.x - 10, 0);
+				int maxX = std::min<int>(pos.x + 10, rme::MapMaxWidth);
+				int minY = std::max<int>(pos.y - 8,  0);
+				int maxY = std::min<int>(pos.y + 8,  rme::MapMaxHeight);
+				int minZ = 0;
+				int maxZ = 9;
 
+				if(pos.x > 7){ // underground
+					minZ = std::max<int>(pos.z - 2, rme::MapGroundLayer);
+					maxZ = std::min<int>(pos.z + 2, rme::MapMaxLayer);
+				}
+
+				for(int z = minZ; z <= maxZ; z += 1)
+				for(int y = minY; y <= maxY; y += 1)
+				for(int x = minX; x <= maxX; x += 1){
+					Tile *other = g_editor.map.getTile(x, y, z);
+					if(other && !other->getFlag(UNPASS)){
+						return false;
+					}
+				}
+
+				return true;
+			});
 		g_editor.DestroyLoadBar();
 
 		wxString msg;
 		msg << removed << " tiles deleted.";
-
 		g_editor.PopupDialog("Search completed", msg, wxOK);
-
-		g_editor.map.doChange();
-	}
-}
-
-void MainMenuBar::OnMapRemoveEmptySpawns(wxCommandEvent& WXUNUSED(event))
-{
-	if(!g_editor.IsProjectOpen()) {
-		return;
-	}
-
-	int ok = g_editor.PopupDialog("Remove Empty Spawns", "Do you want to remove all empty spawns from the map?", wxYES | wxNO);
-	if(ok == wxID_YES) {
-		g_editor.getSelection().clear();
-		g_editor.CreateLoadBar("Searching map for empty spawns to remove...");
-
-		Map &map = g_editor.map;
-		CreatureVector creatures;
-		std::vector<Tile*> toDeleteSpawns;
-		for(const auto& spawnPosition : map.spawns) {
-			Tile* tile = map.getTile(spawnPosition);
-			if(!tile || !tile->spawn) {
-				continue;
-			}
-
-			const int32_t radius = tile->spawn->getSize();
-
-			bool empty = true;
-			for(int32_t y = -radius; y <= radius; ++y) {
-				for(int32_t x = -radius; x <= radius; ++x) {
-					Tile* creature_tile = map.getTile(spawnPosition + Position(x, y, 0));
-					if(creature_tile && creature_tile->creature && !creature_tile->creature->isSaved()) {
-						creature_tile->creature->save();
-						creatures.push_back(creature_tile->creature);
-						empty = false;
-					}
-				}
-			}
-
-			if(empty) {
-				toDeleteSpawns.push_back(tile);
-			}
-		}
-
-		for(Creature* creature : creatures) {
-			creature->reset();
-		}
-
-		BatchAction* batch = g_editor.createBatch(ACTION_DELETE_TILES);
-		Action* action = g_editor.createAction(batch);
-
-		const size_t count = toDeleteSpawns.size();
-		size_t removed = 0;
-		for(const auto& tile : toDeleteSpawns) {
-			Tile* newtile = tile->deepCopy(map);
-			map.removeSpawn(newtile);
-			delete newtile->spawn;
-			newtile->spawn = nullptr;
-			if(++removed % 5 == 0) {
-				// update progress bar for each 5 spawns removed
-				g_editor.SetLoadDone(100 * removed / count);
-			}
-			action->addChange(newd Change(newtile));
-		}
-
-		batch->addAndCommitAction(action);
-		g_editor.addBatch(batch);
-
-		g_editor.DestroyLoadBar();
-
-		wxString msg;
-		msg << removed << " empty spawns removed.";
-		g_editor.PopupDialog("Search completed", msg, wxOK);
-		g_editor.map.doChange();
 	}
 }
 
@@ -1380,22 +1275,6 @@ void MainMenuBar::OnClearHouseTiles(wxCommandEvent& WXUNUSED(event))
 	if(ret == wxID_YES) {
 		// Editor will do the work
 		g_editor.clearInvalidHouseTiles(true);
-	}
-
-	g_editor.RefreshView();
-}
-
-void MainMenuBar::OnClearModifiedState(wxCommandEvent& WXUNUSED(event))
-{
-	int ret = g_editor.PopupDialog(
-		"Clear Modified State",
-		"This will have the same effect as closing the map and opening it again. Do you want to proceed?",
-		wxYES | wxNO
-	);
-
-	if(ret == wxID_YES) {
-		// Editor will do the work
-		g_editor.clearModifiedTileState(true);
 	}
 
 	g_editor.RefreshView();
@@ -1426,12 +1305,12 @@ void MainMenuBar::OnMapEditTowns(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnMapEditItems(wxCommandEvent& WXUNUSED(event))
 {
-	;
+	// no-op
 }
 
 void MainMenuBar::OnMapEditMonsters(wxCommandEvent& WXUNUSED(event))
 {
-	;
+	// no-op
 }
 
 void MainMenuBar::OnMapStatistics(wxCommandEvent& WXUNUSED(event))
@@ -1439,6 +1318,7 @@ void MainMenuBar::OnMapStatistics(wxCommandEvent& WXUNUSED(event))
 	if(!g_editor.IsProjectOpen())
 		return;
 
+#if TODO
 	g_editor.CreateLoadBar("Collecting data...");
 
 	Map &map = g_editor.map;
@@ -1501,9 +1381,6 @@ void MainMenuBar::OnMapStatistics(wxCommandEvent& WXUNUSED(event))
 				}
 			}
 		}
-
-		if(tile->spawn)
-			spawn_count += 1;
 
 		if(tile->creature)
 			creature_count += 1;
@@ -1632,6 +1509,7 @@ void MainMenuBar::OnMapStatistics(wxCommandEvent& WXUNUSED(event))
 	} else if(ret == wxID_CANCEL) {
 		//std::cout << "OK";
 	}
+#endif
 }
 
 void MainMenuBar::OnMapCleanup(wxCommandEvent& WXUNUSED(event))
@@ -1733,7 +1611,6 @@ void MainMenuBar::OnChangeViewSettings(wxCommandEvent& event)
 	g_settings.setInteger(Config::SHOW_ONLY_TILEFLAGS, IsItemChecked(MenuBar::SHOW_ONLY_COLORS));
 	g_settings.setInteger(Config::SHOW_ONLY_MODIFIED_TILES, IsItemChecked(MenuBar::SHOW_ONLY_MODIFIED));
 	g_settings.setInteger(Config::SHOW_CREATURES, IsItemChecked(MenuBar::SHOW_CREATURES));
-	g_settings.setInteger(Config::SHOW_SPAWNS, IsItemChecked(MenuBar::SHOW_SPAWNS));
 	g_settings.setInteger(Config::SHOW_HOUSES, IsItemChecked(MenuBar::SHOW_HOUSES));
 	g_settings.setInteger(Config::HIGHLIGHT_ITEMS, IsItemChecked(MenuBar::HIGHLIGHT_ITEMS));
 	g_settings.setInteger(Config::SHOW_BLOCKING, IsItemChecked(MenuBar::SHOW_PATHING));
@@ -1824,10 +1701,10 @@ void MainMenuBar::SearchItems(bool container, bool writable, bool onSelection/* 
 		g_editor.CreateLoadBar("Searching on map...");
 
 	OnSearchForStuff::Searcher searcher;
-	searcher.search_container = container;
-	searcher.search_writable = writable;
-
-	foreach_ItemOnMap(g_editor.map, searcher, onSelection);
+	searcher.selectedOnly = onSelection;
+	searcher.searchContainer = container;
+	searcher.searchWritable = writable;
+	g_editor.map.forEachItem(searcher);
 	searcher.sort();
 
 	g_editor.DestroyLoadBar();
@@ -1835,8 +1712,8 @@ void MainMenuBar::SearchItems(bool container, bool writable, bool onSelection/* 
 	SearchResultWindow* result = g_editor.ShowSearchWindow();
 	result->Clear();
 
-	for(const auto &p: searcher.found){
-		result->AddPosition(searcher.desc(p.second), p.first->getPosition());
+	for(const auto &[tile, item]: searcher.results){
+		result->AddPosition(searcher.desc(item), tile->pos);
 	}
 }
 

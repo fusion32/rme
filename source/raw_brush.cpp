@@ -19,7 +19,7 @@
 
 #include "raw_brush.h"
 #include "settings.h"
-#include "items.h"
+#include "tile.h"
 
 //=============================================================================
 // RAW brush

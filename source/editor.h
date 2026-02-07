@@ -38,7 +38,6 @@ class HouseExitBrush;
 class WaypointBrush;
 class OptionalBorderBrush;
 class EraserBrush;
-class SpawnBrush;
 class DoorBrush;
 class FlagBrush;
 
@@ -344,10 +343,10 @@ public:
 	// Same as above although it applies to the entire map
 	// action queue is flushed when these functions are called
 	// showdialog is whether a progress bar should be shown
-	void borderizeMap(bool showdialog);
-	void randomizeMap(bool showdialog);
-	void clearInvalidHouseTiles(bool showdialog);
-	void clearModifiedTileState(bool showdialog);
+	void borderizeMap(bool showDialog);
+	void randomizeMap(bool showDialog);
+	void clearInvalidHouseTiles(bool showDialog);
+	void clearModifiedTileState(bool showDialog);
 
 	// Draw using the current brush to the target position
 	// alt is whether the ALT key is pressed
@@ -359,26 +358,29 @@ public:
 		drawInternal(offset, alt, false);
 	}
 
-	void draw(const PositionVector& posvec, bool alt){
-		drawInternal(posvec, alt, true);
+	void draw(const std::vector<Position> &tilesToDraw, bool alt){
+		drawInternal(tilesToDraw, alt, true);
 	}
 
-	void draw(const PositionVector& todraw, PositionVector& toborder, bool alt){
-		drawInternal(todraw, toborder, alt, true);
+	void draw(const std::vector<Position> &tilesToDraw,
+			std::vector<Position> &tilesToBorder, bool alt){
+		drawInternal(tilesToDraw, tilesToBorder, alt, true);
 	}
 
-	void undraw(const PositionVector& posvec, bool alt){
-		drawInternal(posvec, alt, false);
+	void undraw(const std::vector<Position> &tilesToDraw, bool alt){
+		drawInternal(tilesToDraw, alt, false);
 	}
 
-	void undraw(const PositionVector& todraw, PositionVector& toborder, bool alt){
-		drawInternal(todraw, toborder, alt, false);
+	void undraw(const std::vector<Position> &tilesToDraw,
+			std::vector<Position> &tilesToBorder, bool alt){
+		drawInternal(tilesToDraw, tilesToBorder, alt, false);
 	}
 
 protected:
-	void drawInternal(const Position offset, bool alt, bool dodraw);
-	void drawInternal(const PositionVector& posvec, bool alt, bool dodraw);
-	void drawInternal(const PositionVector& todraw, PositionVector& toborder, bool alt, bool dodraw);
+	void drawInternal(Position offset, bool alt, bool dodraw);
+	void drawInternal(const std::vector<Position> &tilesToDraw, bool alt, bool dodraw);
+	void drawInternal(const std::vector<Position> &tilesToDraw,
+			std::vector<Position> &tilesToBorder, bool alt, bool dodraw);
 
 public:
 	//=========================================================================
@@ -419,7 +421,6 @@ public:
 	WaypointBrush *waypoint_brush = NULL;
 	OptionalBorderBrush *optional_brush = NULL;
 	EraserBrush *eraser = NULL;
-	SpawnBrush *spawn_brush = NULL;
 	DoorBrush *normal_door_brush = NULL;
 	DoorBrush *locked_door_brush = NULL;
 	DoorBrush *magic_door_brush = NULL;

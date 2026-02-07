@@ -27,9 +27,6 @@
 #include "map_display.h"
 #include "welcome_dialog.h"
 
-class Item;
-class Creature;
-
 class MainFrame;
 class MapWindow;
 class wxEventLoopBase;

@@ -21,7 +21,7 @@
 
 #include "editor.h"
 #include "items.h"
-#include "creatures.h"
+#include "creature.h"
 
 #include "materials.h"
 #include "brush.h"
@@ -141,7 +141,7 @@ void Materials::createOtherTileset()
 	for(int typeId = GetMinItemTypeId();
 			typeId <= GetMaxItemTypeId();
 			typeId += 1) {
-		ItemType* type = GetMutableItemType(typeId);
+		ItemType *type = GetMutableItemType(typeId);
 		if(!type) {
 			continue;
 		}
@@ -166,24 +166,22 @@ void Materials::createOtherTileset()
 		//}
 	}
 
-	for(CreatureMap::iterator iter = g_creatures.begin(); iter != g_creatures.end(); ++iter) {
-		CreatureType* type = iter->second;
+	for(int raceId = GetMinRaceId();
+			raceId <= GetMaxRaceId();
+			raceId += 1){
+		CreatureType *type = GetMutableCreatureType(raceId);
+		if(!type){
+			continue;
+		}
+
 		if(type->in_other_tileset) {
-			if(type->isNpc) {
-				npc_tileset->getCategory(TILESET_CREATURE)->brushlist.push_back(type->brush);
-			} else {
-				others->getCategory(TILESET_CREATURE)->brushlist.push_back(type->brush);
-			}
+			others->getCategory(TILESET_CREATURE)->brushlist.push_back(type->brush);
 		} else if(type->brush == nullptr) {
-			type->brush = newd CreatureBrush(type);
+			type->brush = newd CreatureBrush(raceId);
 			g_brushes.addBrush(type->brush);
 			type->brush->flagAsVisible();
 			type->in_other_tileset = true;
-			if(type->isNpc) {
-				npc_tileset->getCategory(TILESET_CREATURE)->brushlist.push_back(type->brush);
-			} else {
-				others->getCategory(TILESET_CREATURE)->brushlist.push_back(type->brush);
-			}
+			others->getCategory(TILESET_CREATURE)->brushlist.push_back(type->brush);
 		}
 	}
 }

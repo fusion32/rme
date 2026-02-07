@@ -84,25 +84,18 @@ private:
 
 struct ItemFinder
 {
-	ItemFinder(uint16_t itemid, int32_t limit = -1) : itemid(itemid), limit(limit), exceeded(false) {}
-
-	void operator()(Map& map, Tile* tile, Item* item, long long done) {
-		if(exceeded)
+	int itemId = 0;
+	int maxCount = 0;
+	std::vector<std::pair<Tile*, Item*>> results;
+	void operator()(Tile* tile, Item* item, double progress) {
+		if((int)results.size() > maxCount){
 			return;
+		}
 
-		if(item->getID() == itemid) {
-			result.push_back(std::make_pair(tile, item));
-			if(limit > 0 && result.size() >= size_t(limit))
-				exceeded = true;
+		if(item->getID() == itemId) {
+			results.push_back(std::make_pair(tile, item));
 		}
 	}
-
-	std::vector<std::pair<Tile*, Item*>> result;
-
-private:
-	uint16_t itemid;
-	int32_t limit;
-	bool exceeded;
 };
 
 class ReplaceItemsDialog : public wxDialog

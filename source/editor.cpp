@@ -15,6 +15,8 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
+#include "action.h"
+#include "common.h"
 #include "main.h"
 #include "editor.h"
 
@@ -37,7 +39,6 @@
 #include "minimap_window.h"
 #include "palette_window.h"
 #include "result_window.h"
-#include "spawn_brush.h"
 #include "sprites.h"
 #include "waypoint_brush.h"
 #include "welcome_dialog.h"
@@ -211,7 +212,7 @@ bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWar
 	}
 
 	loadingBar.SetLoadDone(30, "Loading creatures.xml...");
-	if(!g_creatures.loadFromXML(dir, true, outError, outWarnings)){
+	if(!LoadCreatureTypes(dir, outError, outWarnings)){
 		outWarnings.push_back(wxString("Unable to load creatures.xml: ") << outError);
 		outError.Clear();
 	}
@@ -245,7 +246,6 @@ void Editor::UnloadProject(void)
 	waypoint_brush = NULL;
 	optional_brush = NULL;
 	eraser = NULL;
-	spawn_brush = NULL;
 	normal_door_brush = NULL;
 	locked_door_brush = NULL;
 	magic_door_brush = NULL;
@@ -259,71 +259,13 @@ void Editor::UnloadProject(void)
 	map.clear();
 	g_brushes.clear();
 	g_materials.clear();
-	g_creatures.clear();
+	ClearCreatureTypes();
 	gfx.clear();
 	ClearItemTypes();
 	projectDir.Clear();
 }
 
-#if 0
-bool Editor::LoadDataFiles(wxString& error, wxArrayString& warnings)
-{
-	// TODO(fusion): We want to move all this loading to when the map is loaded.
-	// This should also involve making the editor load a single map at a time,
-	// with all the loaded assets being related to it. And I'm still not sure
-	// what every asset here means, so we might still want to cull/merge some
-	// of them as well. Maybe have a single `editor.xml` that can be placed in
-	// the root directory of the project and loaded along with srv and sec files.
-
-	//wxString projectPath = ?.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
-	wxString projectPath = ".";
-
-	CreateLoadBar("Loading assets...");
-
-	SetLoadDone(0, "Loading DAT file...");
-	wxFileName metadata_path = gfx.getMetadataFileName();
-	if(!gfx.loadSpriteMetadata(metadata_path, error, warnings)) {
-		error = "Couldn't load metadata: " + error;
-		DestroyLoadBar();
-		UnloadVersion();
-		return false;
-	}
-
-	SetLoadDone(10, "Loading SPR file...");
-	wxFileName sprites_path = gfx.getSpritesFileName();
-	if(!gfx.loadSpriteData(sprites_path.GetFullPath(), error, warnings)) {
-		error = "Couldn't load sprites: " + error;
-		DestroyLoadBar();
-		UnloadVersion();
-		return false;
-	}
-
-	SetLoadDone(25, "Loading objects.srv file...");
-	if(!LoadItemTypes(projectPath + "objects.srv", error, warnings)){
-		error = "Couldn't load items.otb: " + error;
-		DestroyLoadBar();
-		UnloadVersion();
-		return false;
-	}
-
-	SetLoadDone(45, "Loading creatures.xml ...");
-	if(!g_creatures.loadFromXML(projectPath + "creatures.xml", true, error, warnings)) {
-		warnings.push_back("Couldn't load creatures.xml: " + error);
-	}
-
-	SetLoadDone(50, "Loading materials.xml ...");
-	if(!g_materials.loadMaterials(projectPath + "materials.xml", error, warnings)) {
-		warnings.push_back("Couldn't load materials.xml: " + error);
-	}
-
-	SetLoadDone(70, "Finishing...");
-	g_brushes.init();
-	g_materials.createOtherTileset();
-
-	DestroyLoadBar();
-	return true;
-}
-
+#if TODO
 bool Editor::LoadVersion(wxString& error, wxArrayString& warnings, bool force)
 {
 	if(ClientVersion::get(version) == nullptr) {
@@ -1239,9 +1181,7 @@ void Editor::DoPaste()
 void Editor::PreparePaste()
 {
 	SetSelectionMode();
-	selection.start();
-	selection.clear();
-	selection.finish();
+	selection.clear(NULL);
 	StartPasting();
 	RefreshView();
 }
@@ -1375,9 +1315,7 @@ void Editor::SetDrawingMode()
 		secondary_map = nullptr;
 	}
 
-	selection.start(Selection::NONE, ACTION_UNSELECT);
-	selection.clear();
-	selection.finish();
+	selection.clear(NULL);
 	selection.updateSelectionCount();
 	mapWindow->OnSwitchEditorMode(DRAWING_MODE);
 	mode = DRAWING_MODE;
@@ -1549,9 +1487,6 @@ Brush* Editor::GetCurrentBrush() const
 
 BrushShape Editor::GetBrushShape() const
 {
-	if(current_brush == spawn_brush)
-		return BRUSHSHAPE_SQUARE;
-
 	return brush_shape;
 }
 
@@ -1705,32 +1640,23 @@ void Editor::FillDoodadPreviewBuffer()
 					// Transfer items to the stack
 					for(const auto &composite: composites) {
 						Position pos = center_pos + composite.offset + Position(xpos, ypos, 0);
-						Tile* tile = doodad_buffer_map->getTile(pos);
-						if(!tile)
-							tile = doodad_buffer_map->allocator(doodad_buffer_map->createTileL(pos));
-
+						Tile *tile = doodad_buffer_map->getOrCreateTile(pos);
 						for(const Item *item = composite.first; item != NULL; item = item->next){
 							tile->addItem(item->deepCopy());
 						}
-
-						doodad_buffer_map->setTile(tile->getPosition(), tile);
 					}
 					exit = true;
 				} else if(brush->hasSingleObjects(GetBrushVariation())) {
 					Position pos = center_pos + Position(xpos, ypos, 0);
-					Tile* tile = doodad_buffer_map->getTile(pos);
-					if(tile) {
-						if(!tile->empty()) {
-							fail = true;
-							break;
-						}
-					} else {
-						tile = doodad_buffer_map->allocator(doodad_buffer_map->createTileL(pos));
+					Tile *tile = doodad_buffer_map->getOrCreateTile(pos);
+					if(!tile->empty()){
+						fail = true;
+						break;
 					}
+
 					int variation = GetBrushVariation();
 					brush->draw(doodad_buffer_map, tile, &variation);
 					//std::cout << "\tpos: " << tile->getPosition() << std::endl;
-					doodad_buffer_map->setTile(tile->getPosition(), tile);
 					exit = true;
 				}
 				if(fail) {
@@ -1747,20 +1673,15 @@ void Editor::FillDoodadPreviewBuffer()
 			// Transfer items to the buffer
 			for(const auto &composite : brush->getComposite(GetBrushVariation())) {
 				Position pos = center_pos + composite.offset;
-				Tile* tile = doodad_buffer_map->allocator(doodad_buffer_map->createTileL(pos));
-				//std::cout << pos << " = " << center_pos << " + " << buffer_tile->getPosition() << std::endl;
-
+				Tile *tile = doodad_buffer_map->getOrCreateTile(pos);
 				for(const Item *item = composite.first; item != NULL; item = item->next){
 					tile->addItem(item->deepCopy());
 				}
-
-				doodad_buffer_map->setTile(tile->getPosition(), tile);
 			}
 		} else if(brush->hasSingleObjects(GetBrushVariation())) {
-			Tile* tile = doodad_buffer_map->allocator(doodad_buffer_map->createTileL(center_pos));
+			Tile *tile = doodad_buffer_map->getOrCreateTile(center_pos);
 			int variation = GetBrushVariation();
 			brush->draw(doodad_buffer_map, tile, &variation);
-			doodad_buffer_map->setTile(center_pos, tile);
 		}
 	}
 }
@@ -1936,6 +1857,9 @@ bool Editor::importMiniMap(FileName filename, int import, int import_x_offset, i
 
 bool Editor::importMap(FileName filename, int import_x_offset, int import_y_offset, int import_z_offset, ImportType house_import_type, ImportType spawn_import_type)
 {
+	return false;
+
+#if TODO
 	selection.clear();
 	actionQueue->clear();
 
@@ -2260,6 +2184,7 @@ bool Editor::importMap(FileName filename, int import_x_offset, int import_y_offs
 	FitViewToMap();
 
 	return true;
+#endif
 }
 
 void Editor::borderizeSelection()
@@ -2269,37 +2194,35 @@ void Editor::borderizeSelection()
 		return;
 	}
 
-	Action* action = actionQueue->createAction(ACTION_BORDERIZE);
-	for(const Tile* tile : selection) {
-		Tile* new_tile = tile->deepCopy(map);
-		new_tile->borderize(&map);
-		new_tile->select();
-		action->addChange(new Change(new_tile));
+	Action *action = actionQueue->createAction(ACTION_BORDERIZE);
+	for(const Tile *tile : selection) {
+		Tile newTile; newTile.deepCopy(*tile);
+		newTile.borderize(&map);
+		newTile.select();
+		action->changeTile(std::move(newTile));
 	}
-	addAction(action);
+	action->commit();
 	updateActions();
 }
 
-void Editor::borderizeMap(bool showdialog)
+void Editor::borderizeMap(bool showDialog)
 {
-	if(showdialog) {
+	if(showDialog) {
 		CreateLoadBar("Borderizing map...");
 	}
 
-	uint64_t tiles_done = 0;
-	for(TileLocation* tileLocation : map) {
-		if(showdialog && tiles_done % 4096 == 0) {
-			SetLoadDone(static_cast<int32_t>(tiles_done / double(map.tilecount) * 100.0));
-		}
+	double nextUpdate = 0.0;
+	map.forEachTile(
+		[&nextUpdate, this, showDialog](Tile *tile, double progress){
+			if(showDialog && progress >= nextUpdate){
+				SetLoadDone((int)(progress * 100.0));
+				nextUpdate = progress + 0.01;
+			}
 
-		Tile* tile = tileLocation->get();
-		ASSERT(tile);
+			tile->borderize(&map);
+		});
 
-		tile->borderize(&map);
-		++tiles_done;
-	}
-
-	if(showdialog) {
+	if(showDialog) {
 		DestroyLoadBar();
 	}
 }
@@ -2311,52 +2234,52 @@ void Editor::randomizeSelection()
 		return;
 	}
 
-	Action* action = actionQueue->createAction(ACTION_RANDOMIZE);
-	for(const Tile* tile : selection) {
-		Tile* new_tile = tile->deepCopy(map);
-		GroundBrush* brush = new_tile->getGroundBrush();
-		if(brush && brush->isReRandomizable()) {
-			brush->draw(&map, new_tile, nullptr);
-			new_tile->select();
-			action->addChange(new Change(new_tile));
+	Action *action = actionQueue->createAction(ACTION_RANDOMIZE);
+	for(const Tile *tile: selection) {
+		GroundBrush *brush = tile->getGroundBrush();
+		if(brush && brush->isReRandomizable()){
+			Tile newTile; newTile.deepCopy(*tile);
+			brush->draw(&map, &newTile, NULL);
+			newTile.select();
+			action->changeTile(std::move(newTile));
 		}
 	}
-	addAction(action);
+	action->commit();
 	updateActions();
 }
 
-void Editor::randomizeMap(bool showdialog)
+void Editor::randomizeMap(bool showDialog)
 {
-	if(showdialog) {
+	if(showDialog) {
 		CreateLoadBar("Randomizing map...");
 	}
 
-	uint64_t tiles_done = 0;
-	for(TileLocation* tileLocation : map) {
-		if(showdialog && tiles_done % 4096 == 0) {
-			SetLoadDone(static_cast<int32_t>(tiles_done / double(map.tilecount) * 100.0));
-		}
+	double nextUpdate = 0.0;
+	map.forEachTile(
+		[&nextUpdate, this, showDialog](Tile *tile, double progress){
+			if(showDialog && progress >= nextUpdate){
+				SetLoadDone((int)(progress * 100.0));
+				nextUpdate = progress + 0.01;
+			}
 
-		Tile* tile = tileLocation->get();
-		ASSERT(tile);
+			GroundBrush *brush = tile->getGroundBrush();
+			if(brush && brush->isReRandomizable()){
+				brush->draw(&map, tile, NULL);
+			}
+		});
 
-		if(GroundBrush* groundBrush = tile->getGroundBrush()) {
-			groundBrush->draw(&map, tile, nullptr);
-		}
-		++tiles_done;
-	}
-
-	if(showdialog) {
+	if(showDialog) {
 		DestroyLoadBar();
 	}
 }
 
-void Editor::clearInvalidHouseTiles(bool showdialog)
+void Editor::clearInvalidHouseTiles(bool showDialog)
 {
-	if(showdialog) {
+	if(showDialog) {
 		CreateLoadBar("Clearing invalid house tiles...");
 	}
 
+#if TODO
 	Houses& houses = map.houses;
 
 	HouseMap::iterator iter = houses.begin();
@@ -2386,7 +2309,7 @@ void Editor::clearInvalidHouseTiles(bool showdialog)
 
 	uint64_t tiles_done = 0;
 	for(MapIterator map_iter = map.begin(); map_iter != map.end(); ++map_iter) {
-		if(showdialog && tiles_done % 4096 == 0) {
+		if(showDialog && tiles_done % 4096 == 0) {
 			SetLoadDone(int(tiles_done / double(map.tilecount) * 100.0));
 		}
 
@@ -2399,38 +2322,16 @@ void Editor::clearInvalidHouseTiles(bool showdialog)
 		}
 		++tiles_done;
 	}
+#endif
 
-	if(showdialog) {
-		DestroyLoadBar();
-	}
-}
-
-void Editor::clearModifiedTileState(bool showdialog)
-{
-	if(showdialog) {
-		CreateLoadBar("Clearing modified state from all tiles...");
-	}
-
-	uint64_t tiles_done = 0;
-	for(MapIterator map_iter = map.begin(); map_iter != map.end(); ++map_iter) {
-		if(showdialog && tiles_done % 4096 == 0) {
-			SetLoadDone(int(tiles_done / double(map.tilecount) * 100.0));
-		}
-
-		Tile* tile = (*map_iter)->get();
-		ASSERT(tile);
-		tile->unmodify();
-		++tiles_done;
-	}
-
-	if(showdialog) {
+	if(showDialog) {
 		DestroyLoadBar();
 	}
 }
 
 void Editor::moveSelection(const Position& offset)
 {
-	if(!hasSelection()) {
+	if(!hasSelection()){
 		return;
 	}
 
@@ -2439,172 +2340,155 @@ void Editor::moveSelection(const Position& offset)
 	bool create_borders = g_settings.getInteger(Config::USE_AUTOMAGIC)
 		&& g_settings.getInteger(Config::BORDERIZE_DRAG);
 
-	TileSet storage;
-	BatchAction* batch_action = actionQueue->createBatch(ACTION_MOVE);
-	Action* action = actionQueue->createAction(batch_action);
+	std::vector<Tile> buffer;
+	ActionGroup *group = actionQueue->createGroup(ACTION_MOVE);
+	{
+		// NOTE(fusion): Something similar to CopyBuffer::cut.
+		Action *action = group->createAction();
+		for(Tile *tile: selection) {
+			Tile copy;
+			Tile newTile; newTile.deepCopy(*tile);
 
-	// Update the tiles with the new positions
-	for(Tile* tile : selection) {
-		Tile* new_tile = tile->deepCopy(map);
-		Tile* storage_tile = map.allocator(tile->getLocation());
+			copy.addItems(newTile.popSelectedItems());
 
-		storage_tile->addItems(new_tile->popSelectedItems());
+			if(newTile.creature && newTile.creature->isSelected()) {
+				copy.creature = newTile.creature;
+				newTile.creature = NULL;
+			}
 
-		if(new_tile->spawn && new_tile->spawn->isSelected()) {
-			storage_tile->spawn = new_tile->spawn;
-			new_tile->spawn = nullptr;
+			if(copy.getFlag(BANK)){
+				copy.houseId     = newTile.houseId;
+				copy.flags       = newTile.flags;
+				newTile.houseId = 0;
+				newTile.flags   = 0;
+				borderize = true;
+			}
+
+			buffer.push_back(std::move(copy));
+			action->changeTile(std::move(newTile));
 		}
-
-		if(new_tile->creature && new_tile->creature->isSelected()) {
-			storage_tile->creature = new_tile->creature;
-			new_tile->creature = nullptr;
-		}
-
-		if(storage_tile->getFlag(BANK)){
-			storage_tile->house_id = new_tile->house_id;
-			storage_tile->flags = new_tile->flags;
-			new_tile->house_id = 0;
-			new_tile->flags = 0;
-			borderize = true;
-		}
-
-		storage.insert(storage_tile);
-		action->addChange(new Change(new_tile));
+		action->commit();
 	}
-	batch_action->addAndCommitAction(action);
 
 	// Remove old borders (and create some new?)
-	if(create_borders && selection.size() < static_cast<size_t>(drag_threshold)) {
-		action = actionQueue->createAction(batch_action);
-		std::vector<Tile*> borderize_tiles;
+	if(create_borders && selection.size() < static_cast<size_t>(drag_threshold)){
+		Action *action = group->createAction();
+		std::vector<Tile*> tilesToBorderize;
 		// Go through all modified (selected) tiles (might be slow)
-		for(const Tile* tile : storage) {
-			const Position& pos = tile->getPosition();
-			// Go through all neighbours
-			Tile* t;
-			t = map.getTile(pos.x  , pos.y  , pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); }
-			t = map.getTile(pos.x-1, pos.y-1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); }
-			t = map.getTile(pos.x  , pos.y-1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); }
-			t = map.getTile(pos.x+1, pos.y-1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); }
-			t = map.getTile(pos.x-1, pos.y  , pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); }
-			t = map.getTile(pos.x+1, pos.y  , pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); }
-			t = map.getTile(pos.x-1, pos.y+1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); }
-			t = map.getTile(pos.x  , pos.y+1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); }
-			t = map.getTile(pos.x+1, pos.y+1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); }
-		}
-
-		{ // Remove duplicates
-			std::sort(borderize_tiles.begin(), borderize_tiles.end());
-			auto end = std::unique(borderize_tiles.begin(), borderize_tiles.end());
-			borderize_tiles.erase(end, borderize_tiles.end());
-		}
-
-		// Create borders
-		for(const Tile* tile : borderize_tiles) {
-			Tile* new_tile = tile->deepCopy(map);
-			if(borderize) {
-				new_tile->borderize(&map);
-			}
-			new_tile->wallize(&map);
-			new_tile->tableize(&map);
-			new_tile->carpetize(&map);
-			if(Item *ground = new_tile->getFirstItem(BANK)){
-				if(ground->isSelected()){
-					new_tile->selectGround();
+		for(const Tile &copy: buffer){
+			for(int offsetY = -1; offsetY <= 1; offsetY += 1)
+			for(int offsetX = -1; offsetX <= 1; offsetX += 1){
+				if(offsetX == 0 && offsetY == 0){
+					continue;
 				}
-			}
-			action->addChange(new Change(new_tile));
-		}
-		batch_action->addAndCommitAction(action);
-	}
 
-	// New action for adding the destination tiles
-	action = actionQueue->createAction(batch_action);
-	for(Tile* tile : storage) {
-		const Position& old_pos = tile->getPosition();
-		Position new_pos = old_pos - offset;
-		if(new_pos.z < rme::MapMinLayer && new_pos.z > rme::MapMaxLayer) {
-			delete tile;
-			continue;
-		}
-
-		TileLocation* location = map.createTileL(new_pos);
-		Tile* old_dest_tile = location->get();
-		Tile* new_dest_tile = nullptr;
-
-		if(!tile->getFlag(BANK) || g_settings.getInteger(Config::MERGE_MOVE)) {
-			// Move items
-			if(old_dest_tile) {
-				new_dest_tile = old_dest_tile->deepCopy(map);
-			} else {
-				new_dest_tile = map.allocator(location);
-			}
-			new_dest_tile->merge(tile);
-			delete tile;
-		} else {
-			// Replace tile instead of just merge
-			tile->setLocation(location);
-			new_dest_tile = tile;
-		}
-		action->addChange(new Change(new_dest_tile));
-	}
-	batch_action->addAndCommitAction(action);
-
-	if(create_borders && selection.size() < static_cast<size_t>(drag_threshold)) {
-		action = actionQueue->createAction(batch_action);
-		std::vector<Tile*> borderize_tiles;
-		// Go through all modified (selected) tiles (might be slow)
-		for(Tile* tile : selection) {
-			bool add_me = false; // If this tile is touched
-			const Position& pos = tile->getPosition();
-			// Go through all neighbours
-			Tile* t;
-			t = map.getTile(pos.x-1, pos.y-1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x-1, pos.y-1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x  , pos.y-1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x+1, pos.y-1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x-1, pos.y  , pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x+1, pos.y  , pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x-1, pos.y+1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x  , pos.y+1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			t = map.getTile(pos.x+1, pos.y+1, pos.z); if(t && !t->isSelected()) { borderize_tiles.push_back(t); add_me = true; }
-			if(add_me) {
-				borderize_tiles.push_back(tile);
-			}
-		}
-
-		{ // Remove duplicates
-			std::sort(borderize_tiles.begin(), borderize_tiles.end());
-			auto end = std::unique(borderize_tiles.begin(), borderize_tiles.end());
-			borderize_tiles.erase(end, borderize_tiles.end());
-		}
-
-		// Create borders
-		for(const Tile* tile : borderize_tiles) {
-			if(!tile || !tile->getFlag(BANK)){
-				continue;
-			}
-			if(tile->getGroundBrush()) {
-				Tile* new_tile = tile->deepCopy(map);
-				if(borderize) {
-					new_tile->borderize(&map);
-				}
-				new_tile->wallize(&map);
-				new_tile->tableize(&map);
-				new_tile->carpetize(&map);
-				if(Item *ground = new_tile->getFirstItem(BANK)){
-					if(ground->isSelected()){
-						new_tile->selectGround();
+				if(Tile *neighbor = map.getTile(copy.pos.x + offsetX, copy.pos.y + offsetY, copy.pos.z)){
+					if(!neighbor->isSelected()){
+						tilesToBorderize.push_back(neighbor);
 					}
 				}
-				action->addChange(new Change(new_tile));
 			}
 		}
-		batch_action->addAndCommitAction(action);
+
+		VectorSortUnique(tilesToBorderize);
+
+		// Create borders
+		for(const Tile *tile: tilesToBorderize){
+			Tile newTile; newTile.deepCopy(*tile);
+
+			if(borderize) {
+				newTile.borderize(&map);
+			}
+			newTile.wallize(&map);
+			newTile.tableize(&map);
+			newTile.carpetize(&map);
+
+			if(Item *ground = newTile.getFirstItem(BANK)){
+				if(ground->isSelected()){
+					newTile.selectGround();
+				}
+			}
+
+			action->changeTile(std::move(newTile));
+		}
+		action->commit();
 	}
 
-	// Store the action for undo
-	addBatch(batch_action);
+	{ // New action for adding the destination tiles
+		Action *action = group->createAction();
+		for(Tile &copy: buffer){
+			// TODO(fusion): Why are we subtracting the offset?
+			copy.pos = (copy.pos - offset);
+			if(!copy.pos.isValid()){
+				continue;
+			}
+
+			// NOTE(fusion): Something similar to CopyBuffer::paste.
+			if(g_settings.getBoolean(Config::MERGE_MOVE) || !copy.getFlag(BANK)){
+				if(Tile *tile = map.getTile(copy.pos)){
+					Tile tmp = std::move(copy);
+					copy.deepCopy(*tile);
+					copy.merge(std::move(tmp));
+				}
+			}
+
+			action->changeTile(std::move(copy));
+		}
+		action->commit();
+	}
+
+	if(create_borders && selection.size() < static_cast<size_t>(drag_threshold)) {
+		Action *action = group->createAction();
+		std::vector<Tile*> tilesToBorderize;
+		// Go through all modified (selected) tiles (might be slow)
+		for(Tile *tile: selection){
+			bool addMe = false;
+			for(int offsetY = -1; offsetY <= 1; offsetY += 1)
+			for(int offsetX = -1; offsetX <= 1; offsetX += 1){
+				if(offsetX == 0 && offsetY == 0){
+					continue;
+				}
+
+				if(Tile *neighbor = map.getTile(tile->pos.x + offsetX, tile->pos.y + offsetY, tile->pos.z)){
+					if(!neighbor->isSelected()){
+						tilesToBorderize.push_back(neighbor);
+						addMe = true;
+					}
+				}
+			}
+
+			if(addMe){
+				tilesToBorderize.push_back(tile);
+			}
+		}
+
+		VectorSortUnique(tilesToBorderize);
+
+		// Create borders
+		for(Tile *tile: tilesToBorderize) {
+			if(!tile->getGroundBrush()){
+				continue;
+			}
+
+			Tile newTile; newTile.deepCopy(*tile);
+			if(borderize){
+				newTile.borderize(&map);
+			}
+			newTile.wallize(&map);
+			newTile.tableize(&map);
+			newTile.carpetize(&map);
+
+			if(Item *ground = tile->getFirstItem(BANK)){
+				if(ground->isSelected()){
+					newTile.selectGround();
+				}
+			}
+
+			action->changeTile(std::move(newTile));
+		}
+		action->commit();
+	}
+
 	updateActions();
 	selection.updateSelectionCount();
 }
@@ -2613,116 +2497,98 @@ void Editor::destroySelection()
 {
 	if(selection.size() == 0) {
 		SetStatusText("No selected items to delete.");
-	} else {
-		int tile_count = 0;
-		int item_count = 0;
-		PositionList tilestoborder;
-
-		BatchAction* batch = actionQueue->createBatch(ACTION_DELETE_TILES);
-		Action* action = actionQueue->createAction(batch);
-
-		for(TileSet::iterator it = selection.begin(); it != selection.end(); ++it) {
-			tile_count++;
-
-			Tile* tile = *it;
-			Tile* newtile = tile->deepCopy(map);
-
-
-			newtile->removeItems([](const Item *item){ return item->isSelected(); });
-
-			if(newtile->creature && newtile->creature->isSelected()) {
-				delete newtile->creature;
-				newtile->creature = nullptr;
-			}
-
-			if(newtile->spawn && newtile->spawn->isSelected()) {
-				delete newtile->spawn;
-				newtile->spawn = nullptr;
-			}
-
-			if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-				for(int y = -1; y <= 1; y++) {
-					for(int x = -1; x <= 1; x++) {
-						const Position& position = tile->getPosition();
-						tilestoborder.push_back(Position(position.x + x, position.y + y, position.z));
-					}
-				}
-			}
-			action->addChange(newd Change(newtile));
-		}
-
-		batch->addAndCommitAction(action);
-
-		if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-			// Remove duplicates
-			tilestoborder.sort();
-			tilestoborder.unique();
-
-			action = actionQueue->createAction(batch);
-			for(PositionList::iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
-				TileLocation* location = map.createTileL(*it);
-				Tile* tile = location->get();
-
-				if(tile) {
-					Tile* new_tile = tile->deepCopy(map);
-					new_tile->borderize(&map);
-					new_tile->wallize(&map);
-					new_tile->tableize(&map);
-					new_tile->carpetize(&map);
-					action->addChange(newd Change(new_tile));
-				} else {
-					Tile* new_tile = map.allocator(location);
-					new_tile->borderize(&map);
-					if(new_tile->size()) {
-						action->addChange(newd Change(new_tile));
-					} else {
-						delete new_tile;
-					}
-				}
-			}
-
-			batch->addAndCommitAction(action);
-		}
-
-		addBatch(batch);
-		updateActions();
-
-		wxString ss;
-		ss << "Deleted " << tile_count << " tile" << (tile_count > 1 ? "s" : "") <<  " (" << item_count << " item" << (item_count > 1? "s" : "") << ")";
-		SetStatusText(ss);
-	}
-}
-
-	// Macro to avoid useless code repetition
-void doSurroundingBorders(DoodadBrush* doodad_brush, PositionList& tilestoborder, Tile* buffer_tile, Tile* new_tile)
-{
-	if(doodad_brush->doNewBorders() && g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-		const Position& position = new_tile->getPosition();
-		tilestoborder.push_back(Position(position));
-		if(buffer_tile->getFlag(BANK)) {
-			for(int y = -1; y <= 1; y++) {
-				for(int x = -1; x <= 1; x++) {
-					tilestoborder.push_back(Position(position.x + x, position.y + y, position.z));
-				}
-			}
-		} else if(buffer_tile->getWall()) {
-			tilestoborder.push_back(Position(position.x,   position.y-1, position.z));
-			tilestoborder.push_back(Position(position.x-1, position.y,   position.z));
-			tilestoborder.push_back(Position(position.x+1, position.y,   position.z));
-			tilestoborder.push_back(Position(position.x,   position.y+1, position.z));
-		}
-	}
-}
-
-void removeDuplicateWalls(Tile* buffer, Tile* tile)
-{
-	if (!buffer || !buffer->items || !tile || !tile->items) {
 		return;
 	}
 
-	for(const Item *item = buffer->items; item != NULL; item = item->next){
+	int numTiles = 0;
+	int numItems = 0;
+	std::vector<Position> tilesToBorderize;
+
+	ActionGroup *group = actionQueue->createGroup(ACTION_DELETE_TILES);
+
+	{
+		Action *action = group->createAction();
+		for(const Tile *tile: selection){
+			Tile newTile; newTile.deepCopy(*tile);
+			newTile.removeItems([](const Item *item){ return item->isSelected(); });
+
+			if(newTile.creature && newTile.creature->isSelected()) {
+				delete newTile.creature;
+				newTile.creature = nullptr;
+			}
+
+			if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
+				for(int offsetY = -1; offsetY <= 1; offsetY += 1)
+				for(int offsetX = -1; offsetX <= 1; offsetX += 1){
+					tilesToBorderize.push_back(Position(newTile.pos.x + offsetX, newTile.pos.y + offsetY, newTile.pos.z));
+				}
+			}
+
+			action->changeTile(std::move(newTile));
+			numTiles += 1;
+		}
+		action->commit();
+	}
+
+	if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
+		VectorSortUnique(tilesToBorderize);
+
+		Action *action = group->createAction();
+		for(const Position &pos: tilesToBorderize){
+			Tile newTile;
+			if(Tile *tile = map.getTile(pos)){
+				newTile.deepCopy(*tile);
+				newTile.borderize(&map);
+				newTile.wallize(&map);
+				newTile.tableize(&map);
+				newTile.carpetize(&map);
+				action->changeTile(std::move(newTile));
+			}else{
+				newTile.pos = pos;
+				newTile.borderize(&map);
+				if(!newTile.empty()){
+					action->changeTile(std::move(newTile));
+				}
+			}
+		}
+		action->commit();
+	}
+
+	updateActions();
+	SetStatusText(wxString() << "Deleted " << numTiles << " tile"
+			<< (numTiles == 1 ? "" : "s") <<  " (" << numItems << " item"
+			<< (numItems == 1 ? "" : "s") << ")");
+}
+
+// Macro to avoid useless code repetition
+static void doSurroundingBorders(DoodadBrush *brush, std::vector<Position> &tilesToBorderize, Tile *bufferTile, Tile *newTile)
+{
+	if(g_settings.getInteger(Config::USE_AUTOMAGIC) && brush->doNewBorders()) {
+		Position pos = newTile->pos;
+		tilesToBorderize.push_back(pos);
+		if(bufferTile->getFlag(BANK)) {
+			for(int offsetY = -1; offsetY <= 1; offsetY += 1)
+			for(int offsetX = -1; offsetX <= 1; offsetX += 1){
+				tilesToBorderize.push_back(Position(pos.x + offsetX, pos.y + offsetY, pos.z));
+			}
+		} else if(bufferTile->getWall()) {
+			tilesToBorderize.push_back(Position(pos.x    , pos.y - 1, pos.z));
+			tilesToBorderize.push_back(Position(pos.x - 1, pos.y    , pos.z));
+			tilesToBorderize.push_back(Position(pos.x + 1, pos.y    , pos.z));
+			tilesToBorderize.push_back(Position(pos.x    , pos.y + 1, pos.z));
+		}
+	}
+}
+
+static void removeDuplicateWalls(Tile *bufferTile, Tile *newTile)
+{
+	if(!bufferTile || !bufferTile->items || !newTile || !newTile->items){
+		return;
+	}
+
+	for(const Item *item = bufferTile->items; item != NULL; item = item->next){
 		if(WallBrush *brush = item->getWallBrush()){
-			tile->removeWalls(brush);
+			newTile->removeWalls(brush);
 		}
 	}
 }
@@ -2735,92 +2601,66 @@ void Editor::drawInternal(Position offset, bool alt, bool dodraw)
 	}
 
 	if(brush->isDoodad()) {
-		BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
-		Action* action = actionQueue->createAction(batch);
-		Map *buffer_map = doodad_buffer_map;
+		ActionGroup *group = actionQueue->createGroup(ACTION_DRAW, 2);
+		std::vector<Position> tilesToBorderize;
+		{
+			Action* action = group->createAction();
+			DoodadBrush *doodadBrush = brush->asDoodad();
+			Position deltaPos = offset - Position(0x8000, 0x8000, 0x8);
+			doodad_buffer_map->forEachTile(
+				[this, action, doodadBrush, deltaPos, &tilesToBorderize, alt](Tile *bufferTile, double progress){
+					Position pos = (bufferTile->pos + deltaPos);
+					if(!pos.isValid()){
+						return;
+					}
 
-		Position delta_pos = offset - Position(0x8000, 0x8000, 0x8);
-		PositionList tilestoborder;
-
-		for(MapIterator it = buffer_map->begin(); it != buffer_map->end(); ++it) {
-			Tile* buffer_tile = (*it)->get();
-			Position pos = buffer_tile->getPosition() + delta_pos;
-			if(!pos.isValid()) {
-				continue;
-			}
-
-			TileLocation* location = map.createTileL(pos);
-			Tile* tile = location->get();
-			DoodadBrush* doodad_brush = brush->asDoodad();
-
-			if(doodad_brush->placeOnBlocking() || alt) {
-				if(tile) {
-					bool place = true;
-					if(!doodad_brush->placeOnDuplicate() && !alt) {
-						for(Item *item = tile->items; item != NULL; item = item->next){
-							if(doodad_brush->ownsItem(item)) {
-								place = false;
-								break;
+					// TODO(fusion): We could probably simplify this a little bit further.
+					Tile *tile = map.getTile(pos);
+					if(tile && (alt || doodadBrush->placeOnBlocking() || !tile->getFlag(UNPASS))){
+						bool place = true;
+						if(!doodadBrush->placeOnDuplicate() && !alt){
+							for(const Item *item = tile->items; item != NULL; item = item->next){
+								if(doodadBrush->ownsItem(item)){
+									place = false;
+									break;
+								}
 							}
 						}
-					}
-					if(place) {
-						Tile* new_tile = tile->deepCopy(map);
-						removeDuplicateWalls(buffer_tile, new_tile);
-						doSurroundingBorders(doodad_brush, tilestoborder, buffer_tile, new_tile);
-						new_tile->merge(buffer_tile);
-						action->addChange(newd Change(new_tile));
-					}
-				} else {
-					Tile* new_tile = map.allocator(location);
-					removeDuplicateWalls(buffer_tile, new_tile);
-					doSurroundingBorders(doodad_brush, tilestoborder, buffer_tile, new_tile);
-					new_tile->merge(buffer_tile);
-					action->addChange(newd Change(new_tile));
-				}
-			} else {
-				if(tile && !tile->getFlag(UNPASS)) {
-					bool place = true;
-					if(!doodad_brush->placeOnDuplicate() && !alt) {
-						for(Item *item = tile->items; item != NULL; item = item->next){
-							if(doodad_brush->ownsItem(item)) {
-								place = false;
-								break;
-							}
+
+						if(place){
+							Tile newTile; newTile.deepCopy(*tile);
+							removeDuplicateWalls(bufferTile, &newTile);
+							doSurroundingBorders(doodadBrush, tilesToBorderize, bufferTile, &newTile);
+							newTile.mergeCopy(*bufferTile);
+							action->changeTile(std::move(newTile));
 						}
+					}else if(!tile && (alt || doodadBrush->placeOnBlocking())){
+						Tile newTile; newTile.pos = pos;
+						removeDuplicateWalls(bufferTile, &newTile);
+						doSurroundingBorders(doodadBrush, tilesToBorderize, bufferTile, &newTile);
+						newTile.mergeCopy(*bufferTile);
+						action->changeTile(std::move(newTile));
 					}
-					if(place) {
-						Tile* new_tile = tile->deepCopy(map);
-						removeDuplicateWalls(buffer_tile, new_tile);
-						doSurroundingBorders(doodad_brush, tilestoborder, buffer_tile, new_tile);
-						new_tile->merge(buffer_tile);
-						action->addChange(newd Change(new_tile));
-					}
+				});
+			action->commit();
+		}
+
+		if(!tilesToBorderize.empty()){
+			Action* action = group->createAction();
+			VectorSortUnique(tilesToBorderize);
+			for(Position pos: tilesToBorderize){
+				if(Tile* tile = map.getTile(pos)){
+					Tile newTile; newTile.deepCopy(*tile);
+					newTile.borderize(&map);
+					newTile.wallize(&map);
+					action->changeTile(std::move(newTile));
 				}
 			}
+			action->commit();
 		}
-		batch->addAndCommitAction(action);
 
-		if(tilestoborder.size() > 0) {
-			Action* action = actionQueue->createAction(batch);
-
-			// Remove duplicates
-			tilestoborder.sort();
-			tilestoborder.unique();
-
-			for(PositionList::const_iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
-				Tile* tile = map.getTile(*it);
-				if(tile) {
-					Tile* new_tile = tile->deepCopy(map);
-					new_tile->borderize(&map);
-					new_tile->wallize(&map);
-					action->addChange(newd Change(new_tile));
-				}
-			}
-			batch->addAndCommitAction(action);
-		}
-		addBatch(batch, 2);
 	} else if(brush->isHouseExit()) {
+#if TODO
 		HouseExitBrush* house_exit_brush = brush->asHouseExit();
 		if(!house_exit_brush->canDraw(&map, offset))
 			return;
@@ -2834,7 +2674,9 @@ void Editor::drawInternal(Position offset, bool alt, bool dodraw)
 		action->addChange(Change::Create(house, offset));
 		batch->addAndCommitAction(action);
 		addBatch(batch, 2);
+#endif
 	} else if(brush->isWaypoint()) {
+#if TODO
 		WaypointBrush* waypoint_brush = brush->asWaypoint();
 		if(!waypoint_brush->canDraw(&map, offset))
 			return;
@@ -2848,375 +2690,337 @@ void Editor::drawInternal(Position offset, bool alt, bool dodraw)
 		action->addChange(Change::Create(waypoint, offset));
 		batch->addAndCommitAction(action);
 		addBatch(batch, 2);
+#endif
 	} else if(brush->isWall()) {
-		BatchAction* batch = actionQueue->createBatch(dodraw ? ACTION_DRAW : ACTION_ERASE);
-		Action* action = actionQueue->createAction(batch);
-		// This will only occur with a size 0, when clicking on a tile (not drawing)
-		Tile* tile = map.getTile(offset);
-		Tile* new_tile = nullptr;
-		if(tile) {
-			new_tile = tile->deepCopy(map);
-		} else {
-			new_tile = map.allocator(map.createTileL(offset));
+		Action *action = actionQueue->createAction(dodraw ? ACTION_DRAW : ACTION_ERASE, 2);
+
+		Tile newTile;
+		if(Tile *tile = map.getTile(offset)){
+			newTile.deepCopy(*tile);
+		}else{
+			newTile.pos = offset;
 		}
 
 		if(dodraw) {
 			bool b = true;
-			brush->asWall()->draw(&map, new_tile, &b);
+			brush->asWall()->draw(&map, &newTile, &b);
 		} else {
-			brush->asWall()->undraw(&map, new_tile);
+			brush->asWall()->undraw(&map, &newTile);
 		}
-		action->addChange(newd Change(new_tile));
-		batch->addAndCommitAction(action);
-		addBatch(batch, 2);
-	} else if(brush->isSpawn() || brush->isCreature()) {
-		BatchAction* batch = actionQueue->createBatch(dodraw ? ACTION_DRAW : ACTION_ERASE);
-		Action* action = actionQueue->createAction(batch);
 
-		Tile* tile = map.getTile(offset);
-		Tile* new_tile = nullptr;
-		if(tile) {
-			new_tile = tile->deepCopy(map);
-		} else {
-			new_tile = map.allocator(map.createTileL(offset));
+		action->changeTile(std::move(newTile));
+		action->commit();
+	} else if(brush->isCreature()) {
+		Action *action = actionQueue->createAction(dodraw ? ACTION_DRAW : ACTION_ERASE, 2);
+
+		Tile newTile;
+		if(Tile *tile = map.getTile(offset)){
+			newTile.deepCopy(*tile);
+		}else{
+			newTile.pos = offset;
 		}
-		int param;
-		if(!brush->isCreature()) {
-			param = GetBrushSize();
-		}
+
 		if(dodraw) {
-			brush->draw(&map, new_tile, &param);
+			int param = !brush->isCreature() ? GetBrushSize() : 0;
+			brush->draw(&map, &newTile, &param);
 		} else {
-			brush->undraw(&map, new_tile);
+			brush->undraw(&map, &newTile);
 		}
-		action->addChange(newd Change(new_tile));
-		batch->addAndCommitAction(action);
-		addBatch(batch, 2);
+
+		action->changeTile(std::move(newTile));
+		action->commit();
 	}
 }
 
-void Editor::drawInternal(const PositionVector& tilestodraw, bool alt, bool dodraw)
+void Editor::drawInternal(const std::vector<Position> &tilesToDraw, bool alt, bool dodraw)
 {
 	Brush* brush = GetCurrentBrush();
-	if(!brush) {
+	if(!brush){
 		return;
 	}
 
 #ifdef __DEBUG__
-	if(brush->isGround() || brush->isWall()) {
+	if(brush->isGround() || brush->isWall()){
 		// Wrong function, end call
 		return;
 	}
 #endif
 
-	Action* action = actionQueue->createAction(dodraw ? ACTION_DRAW : ACTION_ERASE);
-
-	if(brush->isOptionalBorder()) {
-		// We actually need to do borders, but on the same tiles we draw to
-		for(PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
-			TileLocation* location = map.createTileL(*it);
-			Tile* tile = location->get();
-			if(tile) {
+	Action *action = actionQueue->createAction(dodraw ? ACTION_DRAW : ACTION_ERASE, 2);
+	if(brush->isOptionalBorder()){
+		for(Position pos: tilesToDraw){
+			if(Tile *tile = map.getTile(pos)){
+				Tile newTile; newTile.deepCopy(*tile);
 				if(dodraw) {
-					Tile* new_tile = tile->deepCopy(map);
-					brush->draw(&map, new_tile);
-					new_tile->borderize(&map);
-					action->addChange(newd Change(new_tile));
+					brush->draw(&map, &newTile);
 				} else if(!dodraw && tile->hasOptionalBorder()) {
-					Tile* new_tile = tile->deepCopy(map);
-					brush->undraw(&map, new_tile);
-					new_tile->borderize(&map);
-					action->addChange(newd Change(new_tile));
+					brush->undraw(&map, &newTile);
 				}
-			} else if(dodraw) {
-				Tile* new_tile = map.allocator(location);
-				brush->draw(&map, new_tile);
-				new_tile->borderize(&map);
-				if(new_tile->size() == 0) {
-					delete new_tile;
-					continue;
+				newTile.borderize(&map);
+				action->changeTile(std::move(newTile));
+			}else if(dodraw){
+				Tile newTile; newTile.pos = pos;
+				brush->draw(&map, &newTile);
+				newTile.borderize(&map);
+				if(!newTile.empty()){
+					action->changeTile(std::move(newTile));
 				}
-				action->addChange(newd Change(new_tile));
 			}
 		}
 	} else {
-
-		for(PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
-			TileLocation* location = map.createTileL(*it);
-			Tile* tile = location->get();
-			if(tile) {
-				Tile* new_tile = tile->deepCopy(map);
-				if(dodraw) {
-					brush->draw(&map, new_tile, &alt);
-				} else {
-					brush->undraw(&map, new_tile);
+		for(Position pos: tilesToDraw){
+			if(Tile *tile = map.getTile(pos)) {
+				Tile newTile; newTile.deepCopy(*tile);
+				if(dodraw){
+					brush->draw(&map, &newTile, &alt);
+				}else{
+					brush->undraw(&map, &newTile);
 				}
-				action->addChange(newd Change(new_tile));
-			} else if(dodraw) {
-				Tile* new_tile = map.allocator(location);
-				brush->draw(&map, new_tile, &alt);
-				action->addChange(newd Change(new_tile));
+				action->changeTile(std::move(newTile));
+			}else if(dodraw){
+				Tile newTile; newTile.pos = pos;
+				brush->draw(&map, &newTile, &alt);
+				if(!newTile.empty()){
+					action->changeTile(std::move(newTile));
+				}
 			}
 		}
 	}
-	addAction(action, 2);
+	action->commit();
 }
 
-void Editor::drawInternal(const PositionVector& tilestodraw, PositionVector& tilestoborder, bool alt, bool dodraw)
+void Editor::drawInternal(const std::vector<Position> &tilesToDraw,
+		std::vector<Position> &tilesToBorderize, bool alt, bool dodraw)
 {
-	Brush* brush = GetCurrentBrush();
-	if(!brush) {
+	Brush *brush = GetCurrentBrush();
+	if(!brush){
 		return;
 	}
 
-	if(brush->isGround() || brush->isEraser()) {
+	if(brush->isGround() || brush->isEraser()){
 		ActionType type = (dodraw && !brush->isEraser()) ? ACTION_DRAW : ACTION_ERASE;
-		BatchAction* batch = actionQueue->createBatch(type);
-		Action* action = actionQueue->createAction(batch);
+		ActionGroup *group = actionQueue->createGroup(type, 2);
 
-		for(PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
-			TileLocation* location = map.createTileL(*it);
-			Tile* tile = location->get();
-			if(tile) {
-				Tile* new_tile = tile->deepCopy(map);
-				if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-					new_tile->removeBorders();
-				}
-				if (dodraw) {
-					GetCurrentBrush()->draw(&map, new_tile, nullptr);
-				} else {
-					GetCurrentBrush()->undraw(&map, new_tile);
-					tilestoborder.push_back(*it);
-				}
-				action->addChange(newd Change(new_tile));
-			} else if(dodraw) {
-				Tile* new_tile = map.allocator(location);
-				GetCurrentBrush()->draw(&map, new_tile, nullptr);
-				action->addChange(newd Change(new_tile));
-			}
-		}
+		{
+			Action *action = group->createAction();
+			for(Position pos: tilesToDraw){
+				if(Tile *tile = map.getTile(pos)){
+					Tile newTile; newTile.deepCopy(*tile);
 
-		// Commit changes to map
-		batch->addAndCommitAction(action);
-
-		if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-			// Do borders!
-			action = actionQueue->createAction(batch);
-			for(PositionVector::const_iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
-				TileLocation* location = map.createTileL(*it);
-				Tile* tile = location->get();
-				if(tile) {
-					Tile* new_tile = tile->deepCopy(map);
-					if(brush->isEraser()) {
-						new_tile->wallize(&map);
-						new_tile->tableize(&map);
-						new_tile->carpetize(&map);
+					if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
+						newTile.removeBorders();
 					}
-					new_tile->borderize(&map);
-					action->addChange(newd Change(new_tile));
-				} else {
-					Tile* new_tile = map.allocator(location);
-					if(brush->isEraser()) {
-						// There are no carpets/tables/walls on empty tiles...
-						//new_tile->wallize(map);
-						//new_tile->tableize(map);
-						//new_tile->carpetize(map);
-					}
-					new_tile->borderize(&map);
-					if(new_tile->size() > 0) {
-						action->addChange(newd Change(new_tile));
+
+					if (dodraw) {
+						brush->draw(&map, &newTile, nullptr);
 					} else {
-						delete new_tile;
+						brush->undraw(&map, &newTile);
+						tilesToBorderize.push_back(pos);
+					}
+
+					action->changeTile(std::move(newTile));
+				} else if(dodraw) {
+					Tile newTile; newTile.pos = pos;
+					brush->draw(&map, &newTile, nullptr);
+					if(!newTile.empty()){
+						action->changeTile(std::move(newTile));
 					}
 				}
 			}
-			batch->addAndCommitAction(action);
+			action->commit();
 		}
 
-		addBatch(batch, 2);
-	} else if(brush->isTable() || brush->isCarpet()) {
-		BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
-		Action* action = actionQueue->createAction(batch);
-
-		for(PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
-			TileLocation* location = map.createTileL(*it);
-			Tile* tile = location->get();
-			if(tile) {
-				Tile* new_tile = tile->deepCopy(map);
-				if(dodraw)
-					GetCurrentBrush()->draw(&map, new_tile, nullptr);
-				else
-					GetCurrentBrush()->undraw(&map, new_tile);
-				action->addChange(newd Change(new_tile));
-			} else if(dodraw) {
-				Tile* new_tile = map.allocator(location);
-				GetCurrentBrush()->draw(&map, new_tile, nullptr);
-				action->addChange(newd Change(new_tile));
-			}
-		}
-
-		// Commit changes to map
-		batch->addAndCommitAction(action);
-
-		// Do borders!
-		action = actionQueue->createAction(batch);
-		for(PositionVector::const_iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
-			Tile* tile = map.getTile(*it);
-			if(brush->isTable()) {
-				if(tile && tile->getTable()) {
-					Tile* new_tile = tile->deepCopy(map);
-					new_tile->tableize(&map);
-					action->addChange(newd Change(new_tile));
-				}
-			} else if(brush->isCarpet()) {
-				if(tile && tile->getCarpet()) {
-					Tile* new_tile = tile->deepCopy(map);
-					new_tile->carpetize(&map);
-					action->addChange(newd Change(new_tile));
-				}
-			}
-		}
-		batch->addAndCommitAction(action);
-
-		addBatch(batch, 2);
-	} else if(brush->isWall()) {
-		BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
-		Action* action = actionQueue->createAction(batch);
-
-		if(alt && dodraw) {
-			// This is exempt from USE_AUTOMAGIC
-			doodad_buffer_map->clear();
-			Map *draw_map = doodad_buffer_map;
-
-			for(PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
-				TileLocation* location = map.createTileL(*it);
-				Tile* tile = location->get();
-				if(tile) {
-					Tile* new_tile = tile->deepCopy(map);
-					new_tile->removeWalls(brush->isWall());
-					GetCurrentBrush()->draw(draw_map, new_tile);
-					draw_map->setTile(*it, new_tile, true);
-				} else if(dodraw) {
-					Tile* new_tile = map.allocator(location);
-					GetCurrentBrush()->draw(draw_map, new_tile);
-					draw_map->setTile(*it, new_tile, true);
-				}
-			}
-			for(PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
-				// Get the correct tiles from the draw map instead of the editor map
-				Tile* tile = draw_map->getTile(*it);
-				if(tile) {
-					tile->wallize(draw_map);
-					action->addChange(newd Change(tile));
-				}
-			}
-			draw_map->clear(false);
-			// Commit
-			batch->addAndCommitAction(action);
-		} else {
-			for(PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
-				TileLocation* location = map.createTileL(*it);
-				Tile* tile = location->get();
-				if(tile) {
-					Tile* new_tile = tile->deepCopy(map);
-					// Wall cleaning is exempt from automagic
-					new_tile->removeWalls(brush->isWall());
-					if(dodraw)
-						GetCurrentBrush()->draw(&map, new_tile);
-					else
-						GetCurrentBrush()->undraw(&map, new_tile);
-					action->addChange(newd Change(new_tile));
-				} else if(dodraw) {
-					Tile* new_tile = map.allocator(location);
-					GetCurrentBrush()->draw(&map, new_tile);
-					action->addChange(newd Change(new_tile));
-				}
-			}
-
-			// Commit changes to map
-			batch->addAndCommitAction(action);
-
-			if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-				// Do borders!
-				action = actionQueue->createAction(batch);
-				for(PositionVector::const_iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
-					Tile* tile = map.getTile(*it);
-					if(tile) {
-						Tile* new_tile = tile->deepCopy(map);
-						new_tile->wallize(&map);
-						//if(*tile == *new_tile) delete new_tile;
-						action->addChange(newd Change(new_tile));
+		if(g_settings.getInteger(Config::USE_AUTOMAGIC)){
+			Action *action = group->createAction();
+			for(Position pos: tilesToBorderize){
+				if(Tile *tile = map.getTile(pos)){
+					Tile newTile; newTile.deepCopy(*tile);
+					if(brush->isEraser()){
+						newTile.wallize(&map);
+						newTile.tableize(&map);
+						newTile.carpetize(&map);
+					}
+					newTile.borderize(&map);
+					action->changeTile(std::move(newTile));
+				}else{
+					Tile newTile; newTile.pos = pos;
+					newTile.borderize(&map);
+					if(!newTile.empty()){
+						action->changeTile(std::move(newTile));
 					}
 				}
-				batch->addAndCommitAction(action);
 			}
+			action->commit();
+		}
+	}else if(brush->isTable() || brush->isCarpet()){
+		ActionGroup *group = actionQueue->createGroup(ACTION_DRAW, 2);
+
+		{
+			Action *action = group->createAction();
+			for(Position pos: tilesToDraw){
+				if(Tile *tile = map.getTile(pos)){
+					Tile newTile; newTile.deepCopy(*tile);
+					if(dodraw){
+						brush->draw(&map, &newTile, nullptr);
+					}else{
+						brush->undraw(&map, &newTile);
+					}
+					action->changeTile(std::move(newTile));
+				}else if(dodraw){
+					Tile newTile; newTile.pos = pos;
+					brush->draw(&map, &newTile, nullptr);
+					if(!newTile.empty()){
+						action->changeTile(std::move(newTile));
+					}
+				}
+			}
+			action->commit();
 		}
 
-		actionQueue->addBatch(batch, 2);
-	} else if(brush->isDoor()) {
-		BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
-		Action* action = actionQueue->createAction(batch);
-		DoorBrush* door_brush = brush->asDoor();
+		{
+			Action *action = group->createAction();
+			for(Position pos: tilesToBorderize){
+				if(Tile *tile = map.getTile(pos)){
+					if(brush->isTable() && tile->getTable()){
+						Tile newTile; newTile.deepCopy(*tile);
+						newTile.tableize(&map);
+						action->changeTile(std::move(newTile));
+					}else if(brush->isCarpet() && tile->getCarpet()){
+						Tile newTile; newTile.deepCopy(*tile);
+						newTile.carpetize(&map);
+						action->changeTile(std::move(newTile));
+					}
+				}
+			}
+			action->commit();
+		}
+	}else if(brush->isWall()){
+		ActionGroup *group = actionQueue->createGroup(ACTION_DRAW, 2);
+		if(alt && dodraw){
+			// NOTE(fusion): This branch is almost the same as the one below, except
+			// that we're using a map buffer, probably to avoid external walls from
+			// from altering the result of Tile::wallize.
+			Map *buffer = doodad_buffer_map;
+			buffer->clear();
 
-		// Loop is kind of redundant since there will only ever be one index.
-		for(PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
-			TileLocation* location = map.createTileL(*it);
-			Tile* tile = location->get();
-			if(tile) {
-				Tile* new_tile = tile->deepCopy(map);
-				// Wall cleaning is exempt from automagic
-				if(brush->isWall())
-					new_tile->removeWalls(brush->asWall());
-				if(dodraw)
-					door_brush->draw(&map, new_tile, &alt);
-				else
-					door_brush->undraw(&map, new_tile);
-				action->addChange(newd Change(new_tile));
-			} else if(dodraw) {
-				Tile* new_tile = map.allocator(location);
-				door_brush->draw(&map, new_tile, &alt);
-				action->addChange(newd Change(new_tile));
+			for(Position pos: tilesToDraw){
+				Tile *bufferTile = buffer->getOrCreateTile(pos);
+				if(Tile *tile = map.getTile(pos)){
+					bufferTile->deepCopy(*tile);
+					bufferTile->removeWalls();
+				}
+				brush->draw(buffer, bufferTile);
+			}
+
+			{
+				Action *action = group->createAction();
+				for(Position pos: tilesToDraw){
+					if(Tile *bufferTile = buffer->getTile(pos)){
+						bufferTile->wallize(buffer);
+
+						// TODO(fusion): We could probably move the tile directly
+						// here but then it would probably mess with the wallization
+						// of the other tiles...
+						Tile newTile; newTile.deepCopy(*bufferTile);
+						action->changeTile(std::move(newTile));
+					}
+				}
+				action->commit();
+			}
+
+			buffer->clear();
+		}else{
+			{
+				Action *action = group->createAction();
+				for(Position pos: tilesToDraw){
+					if(Tile *tile = map.getTile(pos)){
+						Tile newTile; newTile.deepCopy(*tile);
+						newTile.removeWalls();
+						if(dodraw){
+							brush->draw(&map, &newTile);
+						}else{
+							brush->undraw(&map, &newTile);
+						}
+						action->changeTile(std::move(newTile));
+					}else if(dodraw){
+						Tile newTile; newTile.pos = pos;
+						brush->draw(&map, &newTile);
+						if(!newTile.empty()){
+							action->changeTile(std::move(newTile));
+						}
+					}
+				}
+				action->commit();
+			}
+
+			if(g_settings.getInteger(Config::USE_AUTOMAGIC)){
+				Action *action = group->createAction();
+				for(Position pos: tilesToBorderize){
+					if(Tile *tile = map.getTile(pos)){
+						Tile newTile; newTile.deepCopy(*tile);
+						newTile.wallize(&map);
+						action->changeTile(std::move(newTile));
+					}
+				}
+				action->commit();
 			}
 		}
+	}else if(brush->isDoor()){
+		ActionGroup *group = actionQueue->createGroup(ACTION_DRAW, 2);
 
-		// Commit changes to map
-		batch->addAndCommitAction(action);
+		{
+			Action *action = group->createAction();
+			for(Position pos: tilesToDraw){
+				if(Tile *tile = map.getTile(pos)){
+					Tile newTile; newTile.deepCopy(*tile);
+					if(dodraw){
+						brush->draw(&map, &newTile, &alt);
+					}else{
+						brush->undraw(&map, &newTile);
+					}
+					action->changeTile(std::move(newTile));
+				}else if(dodraw){
+					Tile newTile; newTile.pos = pos;
+					brush->draw(&map, &newTile, &alt);
+					if(!newTile.empty()){
+						action->changeTile(std::move(newTile));
+					}
+				}
+			}
+			action->commit();
+		}
 
 		if(g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-			// Do borders!
-			action = actionQueue->createAction(batch);
-			for(PositionVector::const_iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
-				Tile* tile = map.getTile(*it);
-				if(tile) {
-					Tile* new_tile = tile->deepCopy(map);
-					new_tile->wallize(&map);
-					//if(*tile == *new_tile) delete new_tile;
-					action->addChange(newd Change(new_tile));
+			Action *action = group->createAction();
+			for(Position pos: tilesToBorderize){
+				if(Tile *tile = map.getTile(pos)) {
+					Tile newTile; newTile.deepCopy(*tile);
+					newTile.wallize(&map);
+					action->changeTile(std::move(newTile));
 				}
 			}
-			batch->addAndCommitAction(action);
+			action->commit();
 		}
-
-		addBatch(batch, 2);
-	} else {
-		Action* action = actionQueue->createAction(ACTION_DRAW);
-		for(PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
-			TileLocation* location = map.createTileL(*it);
-			Tile* tile = location->get();
-			if(tile) {
-				Tile* new_tile = tile->deepCopy(map);
-				if(dodraw)
-					GetCurrentBrush()->draw(&map, new_tile);
-				else
-					GetCurrentBrush()->undraw(&map, new_tile);
-				action->addChange(newd Change(new_tile));
-			} else if(dodraw) {
-				Tile* new_tile = map.allocator(location);
-				GetCurrentBrush()->draw(&map, new_tile);
-				action->addChange(newd Change(new_tile));
+	}else{
+		Action *action = actionQueue->createAction(ACTION_DRAW, 2);
+		for(Position pos: tilesToDraw){
+			if(Tile *tile = map.getTile(pos)) {
+				Tile newTile; newTile.deepCopy(*tile);
+				if(dodraw){
+					brush->draw(&map, &newTile);
+				}else{
+					brush->undraw(&map, &newTile);
+				}
+				action->changeTile(std::move(newTile));
+			}else if(dodraw){
+				Tile newTile; newTile.pos = pos;
+				brush->draw(&map, &newTile);
+				if(!newTile.empty()){
+					action->changeTile(std::move(newTile));
+				}
 			}
 		}
-		addAction(action, 2);
+		action->commit();
 	}
 }
 

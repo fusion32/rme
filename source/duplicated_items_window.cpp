@@ -72,56 +72,45 @@ void DuplicatedItemsWindow::StartSearch(bool selection)
 {
 	Clear();
 
-	auto message = wxString::Format("Searching on %s...", selection ? "selected area" : "map");
-	g_editor.CreateLoadBar(message);
+	g_editor.CreateLoadBar(wxString::Format("Searching on %s...", selection ? "selected area" : "map"));
 
-	Map &map = g_editor.map;
-	auto ibegin = map.begin();
-	auto iend = map.end();
-	long progress = 0;
-	std::vector<DuplicatedItem*> result;
-
-	while(ibegin != iend) {
-		++progress;
-		Tile* tile = (*ibegin)->get();
-		if(selection && !tile->isSelected()) {
-			++ibegin;
-			continue;
-		}
-
-		if(progress % 0x8000 == 0) {
-			g_editor.SetLoadDone((int)(100 * progress / map.getTileCount()));
-		}
-
-		auto& position = tile->getPosition();
-		uint16_t prevId = 0;
-		uint16_t count = 0;
-
-		for(Item *item = tile->items; item != NULL; item = item->next){
-			uint16_t id = item->getID();
-			if(id == prevId) {
-				count++;
-			} else if(count > 0) {
-				result.push_back(new DuplicatedItem(position, prevId, count));
-				count = 0;
+	double nextUpdate = 0.0;
+	std::vector<DuplicatedItem*> duplicates;
+	g_editor.map.forEachTile(
+		[&nextUpdate, &duplicates, selection](Tile *tile, double progress){
+			if(progress >= nextUpdate){
+				g_editor.SetLoadDone((int)(progress * 100.0));
+				nextUpdate = progress + 0.01;
 			}
-			prevId = id;
-		}
 
-		// Check for the last item
-		if(count > 0) {
-			result.push_back(new DuplicatedItem(position, prevId, count));
-		}
+			if(selection && !tile->isSelected()){
+				return;
+			}
 
-		++ibegin;
-	}
+			int count  = 0;
+			int prevId = 0;
+			for(const Item *item = tile->items; item != NULL; item = item->next){
+				if(item->typeId == prevId){
+					count += 1;
+				}else if(count > 0){
+					duplicates.push_back(newd DuplicatedItem(tile->pos, prevId, count));
+					count = 0;
+				}
+			}
+
+			if(count > 0){
+				duplicates.push_back(newd DuplicatedItem(tile->pos, prevId, count));
+			}
+		});
 
 	g_editor.DestroyLoadBar();
 
-	for(auto item : result) {
-		auto label = wxString::Format("item: %d, count: %d, pos: (%d,%d,%d)",
-			item->itemId, item->count, item->position.x, item->position.y, item->position.z);
-		items_list->Append(label, item);
+	for(DuplicatedItem *item: duplicates) {
+		items_list->Append(
+				wxString::Format("item: %d, count: %d, pos: (%d,%d,%d)",
+						item->itemId, item->count, item->position.x,
+						item->position.y, item->position.z),
+				item);
 	}
 
 	UpdateButtons();
@@ -160,43 +149,43 @@ void DuplicatedItemsWindow::OnClickRemove(wxCommandEvent& WXUNUSED(event))
 		return;
 	}
 
-	BatchAction* batch = g_editor.createBatch(ACTION_DELETE_TILES);
-	Action* action = g_editor.createAction(batch);
-	DuplicatedItem* data = reinterpret_cast<DuplicatedItem*>(items_list->GetClientData(index));
-	removeItem(data, action);
+	DuplicatedItem *data = reinterpret_cast<DuplicatedItem*>(items_list->GetClientData(index));
+	ActionGroup *group = g_editor.actionQueue->createGroup(ACTION_DELETE_TILES);
+	{
+		Action *action = group->createAction();
+		removeItem(data, action);
+		action->commit();
+	}
 
-	batch->addAndCommitAction(action);
-	g_editor.addBatch(batch);
 	g_editor.updateActions();
 
 	items_list->Delete(index);
 	delete data;
-
 	UpdateButtons();
 }
 
 void DuplicatedItemsWindow::OnClickRemoveAll(wxCommandEvent& WXUNUSED(event))
 {
-	uint32_t count = items_list->GetCount();
+	int count = (int)items_list->GetCount();
 	if (count == 0) {
 		return;
 	}
 
 	g_editor.CreateLoadBar("Removing items...");
-
-	BatchAction* batch = g_editor.createBatch(ACTION_DELETE_TILES);
-	Action* action = g_editor.createAction(batch);
-
-	for(uint32_t i = 0; i < count; ++i) {
-		DuplicatedItem* data = reinterpret_cast<DuplicatedItem*>(items_list->GetClientData(i));
-		removeItem(data, action);
-		g_editor.SetLoadScale((int32_t)i, (int32_t)count);
+	ActionGroup *group = g_editor.actionQueue->createGroup(ACTION_DELETE_TILES);
+	{
+		Action *action = group->createAction();
+		for(int i = 0; i < count; i += 1) {
+			DuplicatedItem* data = reinterpret_cast<DuplicatedItem*>(items_list->GetClientData(i));
+			removeItem(data, action);
+			g_editor.SetLoadScale(i, count);
+		}
+		action->commit();
 	}
 
-	batch->addAndCommitAction(action);
-	g_editor.addBatch(batch);
-	g_editor.updateActions();
+	// TODO(fusion): Remove entries from items_list?
 
+	g_editor.updateActions();
 	g_editor.DestroyLoadBar();
 	Clear();
 }
@@ -236,20 +225,19 @@ void DuplicatedItemsWindow::UpdateButtons()
 	export_button->Enable(enable);
 }
 
-bool DuplicatedItemsWindow::removeItem(DuplicatedItem* data, Action* action)
+bool DuplicatedItemsWindow::removeItem(DuplicatedItem *data, Action *action)
 {
-	Tile* tile = g_editor.map.getTile(data->position);
+	Tile *tile = g_editor.map.getTile(data->position);
 	if(!tile) {
 		return false;
 	}
 
 	int count = 0;
-	Tile* new_tile = tile->deepCopy(g_editor.map);
-	new_tile->removeItems(
+	Tile newTile; newTile.deepCopy(*tile);
+	newTile.removeItems(
 		[&count, data](const Item *item){
 			return item->getID() == data->itemId && ++count > 1;
 		});
-
-	action->addChange(new Change(new_tile));
+	action->changeTile(std::move(newTile));
 	return true;
 }

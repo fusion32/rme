@@ -157,58 +157,47 @@ bool IOMinimap::saveImage(const std::string& directory, const std::string& name)
 bool IOMinimap::exportMinimap(const std::string& directory)
 {
 	Map &map = g_editor.map;
-	if(map.size() == 0) {
+	if(map.isEmpty()) {
 		return true;
 	}
 
-	wxRect bounds[rme::MapLayers];
-	int min_z = m_floor == -1 ? 0 : m_floor;
-	int max_z = m_floor == -1 ? rme::MapMaxLayer : m_floor;
-
-	for (size_t z = min_z; z <= max_z; z++) {
-		auto& rect = bounds[z];
-		rect.x = rme::MapMaxWidth + 1;
-		rect.y = rme::MapMaxHeight + 1;
-		rect.width = 0;
-		rect.height = 0;
+	struct { int minX, minY, maxX, maxY; } bounds[rme::MapLayers] = {};
+	int minZ = m_floor == -1 ? 0 : m_floor;
+	int maxZ = m_floor == -1 ? rme::MapMaxLayer : m_floor;
+	for(int z = minZ; z <= maxZ; z += 1){
+		auto &rect = bounds[z];
+		rect.minX = rme::MapMaxWidth;
+		rect.minY = rme::MapMaxHeight;
+		rect.maxX = 0;
+		rect.maxY = 0;
 	}
 
-	for(auto it = map.begin(); it != map.end(); ++it) {
-		auto tile = (*it)->get();
-		if(!tile || !tile->items) {
-			continue;
-		}
+	map.forEachTile(
+		[&bounds](const Tile *tile, double progress){
+			if(!tile->items){
+				return;
+			}
 
-		const auto& position = tile->getPosition();
-		auto& rect = bounds[position.z];
-		if(position.x < rect.x) {
-			rect.x = position.x;
-		}
-		if(position.y < rect.y) {
-			rect.y = position.y;
-		}
-		if (position.x > rect.width) {
-			rect.width = position.x;
-		}
-		if (position.y > rect.height) {
-			rect.height = position.y;
-		}
-	}
+			auto &rect = bounds[tile->pos.z];
+			if(rect.minX > tile->pos.x) rect.minX = tile->pos.x;
+			if(rect.minY > tile->pos.y) rect.minY = tile->pos.y;
+			if(rect.maxX < tile->pos.x) rect.maxX = tile->pos.x;
+			if(rect.maxY < tile->pos.y) rect.maxY = tile->pos.y;
+		});
 
 	constexpr int image_size = 1024;
 	constexpr int pixels_size = image_size * image_size * rme::PixelFormatRGB;
 	uint8_t* pixels = new uint8_t[pixels_size];
 	auto image = new wxImage(image_size, image_size, pixels, true);
-
-	for(size_t z = min_z; z <= max_z; z++) {
-		auto& rect = bounds[z];
-		if(rect.IsEmpty()) {
+	for(int z = minZ; z <= maxZ; z += 1){
+		auto &rect = bounds[z];
+		if(rect.minX > rect.maxX || rect.minY > rect.maxY){
 			continue;
 		}
 
-		for (int h = 0; h < rme::MapMaxHeight; h += image_size) {
-			for (int w = 0; w < rme::MapMaxWidth; w += image_size) {
-				if (w < rect.x || w > rect.width || h < rect.y || h > rect.height) {
+		for (int y = 0; y < rme::MapMaxHeight; y += image_size) {
+			for (int x = 0; x < rme::MapMaxWidth; x += image_size) {
+				if(x < rect.minX || x > rect.maxX || y < rect.minY || y > rect.maxY){
 					continue;
 				}
 
@@ -216,9 +205,9 @@ bool IOMinimap::exportMinimap(const std::string& directory)
 				memset(pixels, 0, pixels_size);
 
 				int index = 0;
-				for (int y = 0; y < image_size; y++) {
-					for (int x = 0; x < image_size; x++) {
-						auto tile = map.getTile(w + x, h + y, z);
+				for (int offsetY = 0; offsetY < image_size; offsetY += 1) {
+					for (int offsetX = 0; offsetX < image_size; offsetX += 1) {
+						auto tile = map.getTile(x + offsetX, y + offsetY, z);
 						if(!tile || !tile->items) {
 							index += rme::PixelFormatRGB;
 							continue;
@@ -236,7 +225,7 @@ bool IOMinimap::exportMinimap(const std::string& directory)
 					image->SetData(pixels, true);
 					wxString extension = m_format == MinimapExportFormat::Png ? "png" : "bmp";
 					wxBitmapType type = m_format == MinimapExportFormat::Png ? wxBITMAP_TYPE_PNG : wxBITMAP_TYPE_BMP;
-					wxFileName file = wxString::Format("%d-%d-%d.%s", h, w, z, extension);
+					wxFileName file = wxString::Format("%d-%d-%d.%s", x, y, z, extension);
 					int normalizeFlags = wxPATH_NORM_ENV_VARS
 							| wxPATH_NORM_DOTS
 							| wxPATH_NORM_TILDE
@@ -265,12 +254,12 @@ bool IOMinimap::exportSelection(const std::string& directory, const std::string&
 	const Selection &selection = g_editor.getSelection();
 	const auto &tiles = selection.getTiles();
 
-	for(auto tile : tiles) {
+	for(Tile *tile: tiles) {
 		if(!tile || !tile->items){
 			continue;
 		}
 
-		const auto& position = tile->getPosition();
+		const auto& position = tile->pos;
 		if(position.x < min_x) {
 			min_x = position.x;
 		}
@@ -313,8 +302,8 @@ bool IOMinimap::exportSelection(const std::string& directory, const std::string&
 	for(int z = min_z; z <= max_z; z++) {
 		bool empty = true;
 		memset(pixels, 0, pixels_size);
-		for(auto tile : tiles) {
-			if(tile->getZ() != z) {
+		for(Tile *tile: tiles) {
+			if(tile->pos.z != z) {
 				continue;
 			}
 
@@ -330,7 +319,7 @@ bool IOMinimap::exportSelection(const std::string& directory, const std::string&
 			}
 
 			uint8_t color = tile->getMiniMapColor();
-			uint32_t index = ((tile->getY() - min_y) * image_width + (tile->getX() - min_x)) * 3;
+			uint32_t index = ((tile->pos.y - min_y) * image_width + (tile->pos.x - min_x)) * 3;
 			pixels[index  ] = (uint8_t)(static_cast<int>(color / 36) % 6 * 51); // red
 			pixels[index+1] = (uint8_t)(static_cast<int>(color / 6) % 6 * 51);  // green
 			pixels[index+2] = (uint8_t)(color % 6 * 51);                        // blue
@@ -360,57 +349,55 @@ bool IOMinimap::exportSelection(const std::string& directory, const std::string&
 
 void IOMinimap::readBlocks()
 {
-	if (m_mode == MinimapExportMode::SelectedArea && !g_editor.hasSelection()) {
+	if(m_mode == MinimapExportMode::SelectedArea && !g_editor.hasSelection()){
 		return;
 	}
 
 	Map &map = g_editor.map;
 
-	int tiles_iterated = 0;
-	for(auto it = map.begin(); it != map.end(); ++it) {
-		auto tile = (*it)->get();
-
-		if (m_updateLoadbar) {
-			++tiles_iterated;
-			if (tiles_iterated % 8192 == 0) {
-				g_editor.SetLoadDone(int(tiles_iterated / double(map.size()) * 90.0));
+	double nextUpdate = 0.0;
+	map.forEachTile(
+		[&nextUpdate, this](Tile *tile, double progress){
+			if(m_updateLoadbar && progress >= nextUpdate){
+				g_editor.SetLoadDone((int)(progress * 90.0));
+				nextUpdate = progress + 0.01;
 			}
-		}
 
-		if(!tile || !tile->items){
-			continue;
-		}
-
-		const auto& position = tile->getPosition();
-
-		if (m_mode == MinimapExportMode::SelectedArea) {
-			if (!tile->isSelected()) {
-				continue;
+			if(!tile->items){
+				return;
 			}
-		} else if (m_floor != -1 && position.z != m_floor) {
-			continue;
-		}
 
-		MinimapTile minimapTile;
-		minimapTile.color = tile->getMiniMapColor();
-		minimapTile.flags |= MinimapTileWasSeen;
-		if (tile->getFlag(UNPASS)) {
-			minimapTile.flags |= MinimapTileNotWalkable;
-		}
-		//if (!tile->getFlag(AVOID)) {
-			//minimapTile.flags |= MinimapTileNotPathable;
-		//}
-		minimapTile.speed = std::min<int>((int)std::ceil(tile->getGroundSpeed() / 10.f), 0xFF);
+			Position position = tile->pos;
 
-		auto& blocks = m_blocks[position.z];
-		uint32_t index = getBlockIndex(position);
-		if (blocks.find(index) == blocks.end()) {
-			blocks.insert({ index, MinimapBlock() });
-		}
+			if (m_mode == MinimapExportMode::SelectedArea) {
+				if (!tile->isSelected()) {
+					return;
+				}
+			} else if (m_floor != -1 && position.z != m_floor) {
+				return;
+			}
 
-		auto& block = blocks.at(index);
-		int offset_x = position.x - (position.x % MMBLOCK_SIZE);
-		int offset_y = position.y - (position.y % MMBLOCK_SIZE);
-		block.updateTile(position.x - offset_x, position.y - offset_y, minimapTile);
-	}
+			MinimapTile minimapTile;
+			minimapTile.color = tile->getMiniMapColor();
+			minimapTile.flags |= MinimapTileWasSeen;
+			if (tile->getFlag(UNPASS)) {
+				minimapTile.flags |= MinimapTileNotWalkable;
+			}
+			//if (!tile->getFlag(AVOID)) {
+				//minimapTile.flags |= MinimapTileNotPathable;
+			//}
+			minimapTile.speed = std::min<int>((int)std::ceil(tile->getGroundSpeed() / 10.f), 0xFF);
+
+			auto& blocks = m_blocks[position.z];
+			uint32_t index = getBlockIndex(position);
+			if (blocks.find(index) == blocks.end()) {
+				blocks.insert({ index, MinimapBlock() });
+			}
+
+
+			auto& block = blocks.at(index);
+			int offset_x = position.x - (position.x % MMBLOCK_SIZE);
+			int offset_y = position.y - (position.y % MMBLOCK_SIZE);
+			block.updateTile(position.x - offset_x, position.y - offset_y, minimapTile);
+		});
 }

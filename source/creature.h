@@ -18,63 +18,59 @@
 #ifndef RME_CREATURE_H_
 #define RME_CREATURE_H_
 
-#include "creatures.h"
-
-enum Direction
-{
+enum Direction {
 	NORTH = 0,
-	EAST = 1,
+	EAST  = 1,
 	SOUTH = 2,
-	WEST = 3,
-
-	DIRECTION_FIRST = NORTH,
-	DIRECTION_LAST = WEST
+	WEST  = 3,
 };
 
-IMPLEMENT_INCREMENT_OP(Direction)
+struct Outfit {
+	int lookType = 0;
+	int lookItem = 0;
+	int lookMount = 0;
+	int lookAddon = 0;
+	int lookHead = 0;
+	int lookBody = 0;
+	int lookLegs = 0;
+	int lookFeet = 0;
 
-class Creature
-{
-public:
-	Creature(CreatureType* type);
-	Creature(const std::string& type_name);
-
-	Creature* deepCopy() const;
-
-	const Outfit& getLookType() const;
-
-	bool isSaved() const noexcept { return saved; }
-	void save() noexcept { saved = true; }
-	void reset() noexcept { saved = false; }
-
-	bool isSelected() const noexcept { return selected; }
-	void deselect() noexcept { selected = false; }
-	void select() noexcept { selected = true; }
-
-	bool isNpc() const;
-
-	std::string getName() const;
-	CreatureBrush* getBrush() const;
-
-	int getSpawnTime() const noexcept { return spawntime; }
-	void setSpawnTime(int time) noexcept { spawntime = time; }
-
-	Direction getDirection() const noexcept { return direction; }
-	void setDirection(Direction _direction) noexcept { direction = _direction; }
-
-	// Static conversions
-	static std::string DirID2Name(uint16_t id);
-	static uint16_t DirName2ID(std::string id);
-
-protected:
-	std::string type_name;
-	Direction direction;
-	int spawntime;
-	bool saved;
-	bool selected;
+	uint32_t getColorHash() const {
+		return lookHead << 24 | lookBody << 16 | lookLegs << 8 | lookFeet;
+	}
 };
 
-typedef std::vector<Creature*> CreatureVector;
-typedef std::list<Creature*> CreatureList;
+class CreatureBrush;
+struct Creature {
+	int raceId = 0;
+	int spawnRadius = 0;
+	int spawnAmount = 0;
+	int spawnInterval = 0;
+	bool selected = false;
 
-#endif
+	bool isSelected(void) const { return selected; }
+	void select(void) { selected = true; }
+	void deselect(void) { selected = false; }
+
+	Creature *deepCopy(void) const;
+	const std::string &getName(void) const;
+	Outfit getOutfit(void) const;
+	CreatureBrush *getBrush(void) const;
+};
+
+struct CreatureType {
+	int raceId = 0;
+	Outfit outfit = {};
+	CreatureBrush *brush = NULL;
+	bool in_other_tileset = false;
+	std::string name = {};
+};
+
+int GetMinRaceId(void);
+int GetMaxRaceId(void);
+const CreatureType &GetCreatureType(int raceId);
+CreatureType *GetMutableCreatureType(int raceId);
+bool LoadCreatureTypes(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
+void ClearCreatureTypes(void);
+
+#endif //RME_CREATURE_H_

@@ -127,6 +127,21 @@ Tile *Map::getOrCreateTile(int x, int y, int z)
 	return &ret.first->second.tiles[offsetY * MAP_SECTOR_SIZE + offsetX];
 }
 
+MapSector *Map::getSector(int sectorX, int sectorY, int sectorZ){
+	// NOTE(fusion): GetMapSectorId uses regular coordinates.
+	uint32_t sectorId = GetMapSectorId(
+			sectorX * MAP_SECTOR_SIZE,
+			sectorY * MAP_SECTOR_SIZE,
+			sectorZ);
+
+	auto it = sectors.find(sectorId);
+	if(it != NULL){
+		return &it->second;
+	}else{
+		return NULL;
+	}
+}
+
 void Map::cleanInvalidTiles(bool showDialog /*= false*/)
 {
 	if(showDialog)

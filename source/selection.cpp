@@ -17,6 +17,7 @@
 
 #include "main.h"
 
+#include "action.h"
 #include "selection.h"
 #include "tile.h"
 #include "creature.h"
@@ -24,314 +25,174 @@
 #include "editor.h"
 #include "settings.h"
 
-Selection::Selection(void) :
-	session(nullptr),
-	subsession(nullptr),
-	busy(false)
+void Selection::getBounds(Position &minPos, Position &maxPos) const
 {
-	////
-}
-
-Selection::~Selection()
-{
-	tiles.clear();
-
-	delete subsession;
-	delete session;
-}
-
-Position Selection::minPosition() const
-{
-	Position min_pos(0x10000, 0x10000, 0x10);
-	for(const Tile* tile : tiles) {
-		if(!tile) continue;
-		const Position& tile_pos = tile->getPosition();
-		if(min_pos.x > tile_pos.x)
-			min_pos.x = tile_pos.x;
-		if(min_pos.y > tile_pos.y)
-			min_pos.y = tile_pos.y;
-		if(min_pos.z > tile_pos.z)
-			min_pos.z = tile_pos.z;
-	}
-	return min_pos;
-}
-
-Position Selection::maxPosition() const
-{
-	Position max_pos;
-	for(const Tile* tile : tiles) {
-		if(!tile) continue;
-		const Position& tile_pos = tile->getPosition();
-		if(max_pos.x < tile_pos.x)
-			max_pos.x = tile_pos.x;
-		if(max_pos.y < tile_pos.y)
-			max_pos.y = tile_pos.y;
-		if(max_pos.z < tile_pos.z)
-			max_pos.z = tile_pos.z;
-	}
-	return max_pos;
-}
-
-void Selection::add(const Tile* tile, Item* item)
-{
-	ASSERT(subsession);
-	ASSERT(tile);
-	ASSERT(item);
-
-	if(item->isSelected()) return;
-
-	// Make a copy of the tile with the item selected
-	item->select();
-	Tile* new_tile = tile->deepCopy(g_editor.map);
-	item->deselect();
-
-	if(g_settings.getInteger(Config::BORDER_IS_GROUND)) {
-		if(item->getFlag(CLIP))
-			new_tile->selectGround();
+	if(tiles.empty()){
+		minPos = Position(0, 0, 0);
+		maxPos = Position(0, 0, 0);
+		return;
 	}
 
-	subsession->addChange(newd Change(new_tile));
+	minPos = Position(0x10000, 0x10000, 0x10);
+	maxPos = Position(0, 0, 0);
+	for(const Tile *tile: tiles) {
+		ASSERT(tile);
+		Position pos = tile->pos;
+		if(minPos.x > pos.x) minPos.x = pos.x;
+		if(minPos.y > pos.y) minPos.y = pos.y;
+		if(minPos.z > pos.z) minPos.z = pos.z;
+		if(maxPos.x < pos.x) maxPos.x = pos.x;
+		if(maxPos.y < pos.y) maxPos.y = pos.y;
+		if(maxPos.z < pos.z) maxPos.z = pos.z;
+	}
 }
 
-void Selection::add(const Tile* tile, Spawn* spawn)
+// IMPORTANT(fusion): The actual tile set isn't modified in these functions but
+// rather delayed until Action::commit is called.
+
+void Selection::add(Action *action, Tile *tile, Item *item)
 {
-	ASSERT(subsession);
-	ASSERT(tile);
-	ASSERT(spawn);
 
-	if(spawn->isSelected()) return;
+	ASSERT(tile->getIndexOf(item) != wxNOT_FOUND);
+	if(!item->isSelected()){
+		item->select();
+		Tile newTile; newTile.deepCopy(*tile);
+		item->deselect();
 
-	// Make a copy of the tile with the item selected
-	spawn->select();
-	Tile* new_tile = tile->deepCopy(g_editor.map);
-	spawn->deselect();
+		if(g_settings.getInteger(Config::BORDER_IS_GROUND)) {
+			if(item->getFlag(CLIP))
+				newTile.selectGround();
+		}
 
-	subsession->addChange(newd Change(new_tile));
+		if(action == NULL){
+			action = g_editor.actionQueue->createAction(ACTION_SELECT, 1);
+			action->changeTile(std::move(newTile));
+			action->commit();
+		}else{
+			action->changeTile(std::move(newTile));
+		}
+	}
 }
 
-void Selection::add(const Tile* tile, Creature* creature)
+void Selection::add(Action *action, Tile *tile, Creature *creature)
 {
-	ASSERT(subsession);
-	ASSERT(tile);
-	ASSERT(creature);
+	ASSERT(tile->creature == creature);
+	if(!creature->isSelected()){
+		creature->select();
+		Tile newTile; newTile.deepCopy(*tile);
+		creature->deselect();
 
-	if(creature->isSelected()) return;
-
-	// Make a copy of the tile with the item selected
-	creature->select();
-	Tile* new_tile = tile->deepCopy(g_editor.map);
-	creature->deselect();
-
-	subsession->addChange(newd Change(new_tile));
+		if(action == NULL){
+			action = g_editor.actionQueue->createAction(ACTION_SELECT, 1);
+			action->changeTile(std::move(newTile));
+			action->commit();
+		}else{
+			action->changeTile(std::move(newTile));
+		}
+	}
 }
 
-void Selection::add(const Tile* tile)
+void Selection::add(Action *action, Tile *tile)
 {
-	ASSERT(subsession);
-	ASSERT(tile);
+	Tile newTile; newTile.deepCopy(*tile);
+	newTile.select();
 
-	Tile* new_tile = tile->deepCopy(g_editor.map);
-	new_tile->select();
-
-	subsession->addChange(newd Change(new_tile));
+	if(action == NULL){
+		action = g_editor.actionQueue->createAction(ACTION_SELECT, 1);
+		action->changeTile(std::move(newTile));
+		action->commit();
+	}else{
+		action->changeTile(std::move(newTile));
+	}
 }
 
-void Selection::remove(Tile* tile, Item* item)
+void Selection::remove(Action *action, Tile *tile, Item *item)
 {
-	ASSERT(subsession);
-	ASSERT(tile);
-	ASSERT(item);
+	ASSERT(tile->getIndexOf(item) != wxNOT_FOUND);
+	if(item->isSelected()){
+		item->deselect();
+		Tile newTile; newTile.deepCopy(*tile);
+		item->select();
 
-	bool selected = item->isSelected();
-	item->deselect();
-	Tile* new_tile = tile->deepCopy(g_editor.map);
-	if(selected) item->select();
-	if(item->getFlag(CLIP) && g_settings.getInteger(Config::BORDER_IS_GROUND)) new_tile->deselectGround();
+		if(g_settings.getInteger(Config::BORDER_IS_GROUND)){
+			if(item->getFlag(CLIP)){
+				newTile.deselectGround();
+			}
+		}
 
-	subsession->addChange(newd Change(new_tile));
+		if(action == NULL){
+			action = g_editor.actionQueue->createAction(ACTION_UNSELECT, 1);
+			action->changeTile(std::move(newTile));
+			action->commit();
+		}else{
+			action->changeTile(std::move(newTile));
+		}
+	}
 }
 
-void Selection::remove(Tile* tile, Spawn* spawn)
+void Selection::remove(Action *action, Tile* tile, Creature* creature)
 {
-	ASSERT(subsession);
-	ASSERT(tile);
-	ASSERT(spawn);
+	ASSERT(tile->creature == creature);
+	if(creature->isSelected()){
+		creature->deselect();
+		Tile newTile; newTile.deepCopy(*tile);
+		creature->select();
 
-	bool selected = spawn->isSelected();
-	spawn->deselect();
-	Tile* new_tile = tile->deepCopy(g_editor.map);
-	if(selected) spawn->select();
-
-	subsession->addChange(newd Change(new_tile));
+		if(action == NULL){
+			action = g_editor.actionQueue->createAction(ACTION_UNSELECT, 1);
+			action->changeTile(std::move(newTile));
+			action->commit();
+		}else{
+			action->changeTile(std::move(newTile));
+		}
+	}
 }
 
-void Selection::remove(Tile* tile, Creature* creature)
+void Selection::remove(Action *action, Tile* tile)
 {
-	ASSERT(subsession);
-	ASSERT(tile);
-	ASSERT(creature);
+	Tile newTile; newTile.deepCopy(*tile);
+	newTile.deselect();
 
-	bool selected = creature->isSelected();
-	creature->deselect();
-	Tile* new_tile = tile->deepCopy(g_editor.map);
-	if(selected) creature->select();
-
-	subsession->addChange(newd Change(new_tile));
+	if(action == NULL){
+		action = g_editor.actionQueue->createAction(ACTION_UNSELECT, 1);
+		action->changeTile(std::move(newTile));
+		action->commit();
+	}else{
+		action->changeTile(std::move(newTile));
+	}
 }
 
-void Selection::remove(Tile* tile)
+void Selection::clear(ActionGroup *group)
 {
-	ASSERT(subsession);
+	Action *action = group ? group->createAction()
+			: g_editor.actionQueue->createAction(ACTION_UNSELECT);
 
-	Tile* new_tile = tile->deepCopy(g_editor.map);
-	new_tile->deselect();
+	for(Tile *tile: tiles){
+		remove(action, tile);
+	}
 
-	subsession->addChange(newd Change(new_tile));
+	action->commit();
 }
 
 void Selection::addInternal(Tile* tile)
 {
-	ASSERT(tile);
-
+	ASSERT(tile != NULL);
 	tiles.insert(tile);
 }
 
 void Selection::removeInternal(Tile* tile)
 {
-	ASSERT(tile);
+	ASSERT(tile != NULL);
 	tiles.erase(tile);
-}
-
-void Selection::clear()
-{
-	if(session) {
-		for(Tile* tile : tiles) {
-			Tile* new_tile = tile->deepCopy(g_editor.map);
-			new_tile->deselect();
-			subsession->addChange(newd Change(new_tile));
-		}
-	} else {
-		for(Tile* tile : tiles) {
-			tile->deselect();
-		}
-		tiles.clear();
-	}
-}
-
-void Selection::start(SessionFlags flags, ActionType type)
-{
-	if(!(flags & INTERNAL)) {
-		if(!(flags & SUBTHREAD)) {
-			session = g_editor.createBatch(type);
-		}
-		subsession = g_editor.createAction(type);
-	}
-	busy = true;
-}
-
-void Selection::commit()
-{
-	if(session) {
-		ASSERT(subsession);
-		// We need to step out of the session before we do the action, else peril awaits us!
-		BatchAction* batch = session;
-		session = nullptr;
-
-		// Do the action
-		batch->addAndCommitAction(subsession);
-
-		// Create a newd action for subsequent selects
-		subsession = g_editor.createAction(ACTION_SELECT);
-		session = batch;
-	}
-}
-
-void Selection::finish(SessionFlags flags)
-{
-	if(!(flags & INTERNAL)) {
-		if(flags & SUBTHREAD) {
-			ASSERT(subsession);
-			subsession = nullptr;
-		} else {
-			ASSERT(session);
-			ASSERT(subsession);
-			// We need to exit the session before we do the action, else peril awaits us!
-			BatchAction* batch = session;
-			session = nullptr;
-
-			batch->addAndCommitAction(subsession);
-			g_editor.addBatch(batch, 2);
-			g_editor.updateActions();
-
-			session = nullptr;
-			subsession = nullptr;
-		}
-	}
-	busy = false;
 }
 
 void Selection::updateSelectionCount()
 {
-	if(size() > 0) {
-		wxString ss;
-		if(size() == 1) {
-			ss << "One tile selected.";
-		} else {
-			ss << size() << " tiles selected.";
-		}
-		g_editor.SetStatusText(ss);
+	size_t count = tiles.size();
+	if(count > 1){
+		g_editor.SetStatusText(wxString() << count << " tiles selected.");
+	}else if(count == 1){
+		g_editor.SetStatusText("One tile selected.");
 	}
 }
 
-void Selection::join(SelectionThread* thread)
-{
-	thread->Wait();
-
-	ASSERT(session);
-	session->addAction(thread->result);
-	thread->selection.subsession = nullptr;
-
-	delete thread;
-}
-
-SelectionThread::SelectionThread(Position start, Position end) :
-	wxThread(wxTHREAD_JOINABLE),
-	start(start),
-	end(end),
-	selection(),
-	result(nullptr)
-{
-	////
-}
-
-void SelectionThread::Execute()
-{
-	Create();
-	Run();
-}
-
-wxThread::ExitCode SelectionThread::Entry()
-{
-	// IMPORTANT(fusion): This can only work if the map is kept constant while
-	// we're reading from it, but I assume that should be the case?
-	selection.start(Selection::SUBTHREAD);
-	bool compesated = g_settings.getInteger(Config::COMPENSATED_SELECT);
-	for(int z = start.z; z >= end.z; --z) {
-		for(int x = start.x; x <= end.x; ++x) {
-			for(int y = start.y; y <= end.y; ++y) {
-				Tile* tile = g_editor.map.getTile(x, y, z);
-				if(!tile)
-					continue;
-
-				selection.add(tile);
-			}
-		}
-		if(compesated && z <= rme::MapGroundLayer) {
-			++start.x; ++start.y;
-			++end.x; ++end.y;
-		}
-	}
-	result = selection.subsession;
-	selection.finish(Selection::SUBTHREAD);
-	return nullptr;
-}

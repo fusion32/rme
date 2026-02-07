@@ -33,9 +33,7 @@ enum {
 	INVALID_MINIMAP_COLOR = 0xFF
 };
 
-class Tile
-{
-public:
+struct Tile {
 	Item     *items       = NULL;
 	Creature *creature    = NULL;
 	Position pos          = {};
@@ -62,6 +60,7 @@ public:
 	void deepCopy(const Tile &other);
 	Tile *deepCopy(void) const;
 	void mergeCopy(const Tile &other);
+	void merge(Tile &&other);
 	uint32_t memsize(void) const;
 	int countItems(void) const;
 	int size(void) const;
