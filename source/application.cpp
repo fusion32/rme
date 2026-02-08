@@ -258,7 +258,6 @@ void Application::Unload()
 	g_editor.SavePerspective();
 	g_editor.SaveRecentFiles();
 	g_settings.save(true);
-	g_editor.root = nullptr;
 }
 
 int Application::OnExit()
@@ -307,7 +306,9 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
 	SetStatusText(wxString("Welcome to ") << __W_RME_APPLICATION_NAME__ << " " << __W_RME_VERSION__);
 }
 
-MainFrame::~MainFrame() = default;
+MainFrame::~MainFrame(){
+	// no-op
+}
 
 void MainFrame::OnIdle(wxIdleEvent& event)
 {
@@ -395,7 +396,6 @@ bool MainFrame::DoQuerySave(bool doclose)
 	}
 
 	if(doclose) {
-		UnnamedRenderingLock();
 		g_editor.CloseProject();
 	}
 
@@ -451,13 +451,10 @@ void MainFrame::OnExit(wxCloseEvent& event)
 			return;
 		}
 	}
-	g_editor.aui_manager->UnInit();
-	((Application&)wxGetApp()).Unload();
-#ifdef __RELEASE__
-	// Hack, "crash" gracefully in release builds, let OS handle cleanup of windows
-	exit(0);
-#endif
-	Destroy();
+
+	Application &app = static_cast<Application&>(wxGetApp());
+	app.Unload();
+	app.ExitMainLoop();
 }
 
 void MainFrame::PrepareDC(wxDC& dc)

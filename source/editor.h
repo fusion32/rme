@@ -118,7 +118,7 @@ public:
 
 	void LoadRecentFiles();
 	void SaveRecentFiles();
-	void AddRecentFile(FileName file);
+	void AddRecentFile(const wxString &file);
 	std::vector<wxString> GetRecentFiles();
 
 	void SavePerspective();
@@ -128,6 +128,7 @@ public:
 	void DestroyLoadBar();
 	bool SetLoadDone(int32_t done, const wxString& newMessage = "");
 	void SetLoadScale(int32_t from, int32_t to);
+	bool HasLoadingBar(void) const { return progressBar != NULL; }
 
 	void ShowWelcomeDialog(const wxBitmap &icon);
 	void FinishWelcomeDialog();
@@ -244,8 +245,6 @@ public:
 	void SetScreenCenterPosition(const Position& position, bool showIndicator = true);
 	// Refresh the view canvas
 	void RefreshView();
-	// Fit all/specified current map view to map dimensions
-	void FitViewToMap();
 
 	void DoCut();
 	void DoCopy();

@@ -321,7 +321,10 @@ void MapDrawer::DrawMap()
 
 			for(int sectorY = minSectorY; sectorY <= maxSectorY; sectorY += 1)
 			for(int sectorX = minSectorX; sectorX <= maxSectorX; sectorX += 1){
-				MapSector *sector = g_editor.map.getSector(sectorX, sectorY, map_z);
+				MapSector *sector = g_editor.map.getSectorAt(
+						sectorX * MAP_SECTOR_SIZE,
+						sectorY * MAP_SECTOR_SIZE,
+						map_z);
 				if(!sector){
 					continue;
 				}
@@ -349,6 +352,11 @@ void MapDrawer::DrawMap()
 					for(int offsetX = 0; offsetX < MAP_SECTOR_SIZE; offsetX += 1){
 						Tile *tile = sector->getTile(offsetX, offsetY);
 						if(!tile || tile->empty()){
+							continue;
+						}
+
+						if(tile->pos.x < start_x || tile->pos.x > end_x
+						|| tile->pos.y < start_y || tile->pos.y > end_y){
 							continue;
 						}
 

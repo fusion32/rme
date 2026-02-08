@@ -308,36 +308,36 @@ int ItemType::getStackPriority(void) const {
 }
 
 int GetFlagByName(const char *name){
-	int Result = -1;
+	int result = -1;
 	for(int i = 0; i < NUM_FLAGS; i += 1){
 		if(strcmp_ci(g_flagNames[i], name) == 0){
-			Result = i;
+			result = i;
 			break;
 		}
 	}
-	return Result;
+	return result;
 }
 
 int GetTypeAttributeByName(const char *name){
-	int Result = -1;
+	int result = -1;
 	for(int i = 0; i < NUM_TYPE_ATTRIBUTES; i += 1){
 		if(strcmp_ci(g_typeAttrNames[i], name) == 0){
-			Result = i;
+			result = i;
 			break;
 		}
 	}
-	return Result;
+	return result;
 }
 
 int GetInstanceAttributeByName(const char *name){
-	int Result = -1;
+	int result = -1;
 	for(int i = 0; i < NUM_INSTANCE_ATTRIBUTES; i += 1){
 		if(strcmp_ci(g_instanceAttrNames[i], name) == 0){
-			Result = i;
+			result = i;
 			break;
 		}
 	}
-	return Result;
+	return result;
 }
 
 const char *GetFlagName(int flag){
@@ -395,18 +395,18 @@ int GetLiquidColor(int liquidType){
 	return liquidColor;
 }
 
-bool ItemTypeExists(uint16_t typeId){
-	return typeId >= GetMinItemTypeId()
-		&& typeId <= GetMaxItemTypeId()
-		&& g_itemTypes[typeId].typeId == typeId;
-}
-
 int GetMinItemTypeId(void){
 	return 0;
 }
 
 int GetMaxItemTypeId(void){
 	return (int)g_itemTypes.size() - 1;
+}
+
+bool ItemTypeExists(uint16_t typeId){
+	return typeId >= GetMinItemTypeId()
+		&& typeId <= GetMaxItemTypeId()
+		&& g_itemTypes[typeId].typeId == typeId;
 }
 
 const ItemType &GetItemType(uint16_t typeId){

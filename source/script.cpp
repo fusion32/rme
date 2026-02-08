@@ -2,6 +2,13 @@
 
 // Script
 //==============================================================================
+Script::Script(const char *filename){
+	// NOTE(fusion): Make sure we don't jam the lexer off the bat by initializing
+	// the token with some dummy value.
+	token.kind = TOKEN_NUMBER;
+	token.number = 0;
+	push(filename);
+}
 
 void Script::error(const char *text){
 	// NOTE(fusion): Keep only the first error set.
@@ -368,7 +375,7 @@ const char *Script::getIdentifier(void){
 	const char *ident = "";
 	if(token.kind == TOKEN_IDENTIFIER){
 		for(char *p = token.string; *p != 0; p += 1){
-			*p = tolower(*p);
+			*p = tolower((unsigned char)*p);
 		}
 		ident = token.string;
 	}else{

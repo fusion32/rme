@@ -81,8 +81,8 @@ void MapWindow::SetSize(int x, int y, bool center)
 
 	canvas->GetSize(&windowSizeX, &windowSizeY);
 
-	hScroll->SetScrollbar(center? (x - windowSizeX)/2 : hScroll->GetThumbPosition(), windowSizeX / x,  x, windowSizeX / x);
-	vScroll->SetScrollbar(center? (y - windowSizeY)/2 : vScroll->GetThumbPosition(), windowSizeY / y,  y, windowSizeX / y);
+	hScroll->SetScrollbar(center ? (x - windowSizeX)/2 : hScroll->GetThumbPosition(), windowSizeX / x,  x, windowSizeX / x);
+	vScroll->SetScrollbar(center ? (y - windowSizeY)/2 : vScroll->GetThumbPosition(), windowSizeY / y,  y, windowSizeX / y);
 	//wxPanel::SetSize(x, y);
 }
 
@@ -101,8 +101,9 @@ void MapWindow::UpdateDialogs(bool show)
 
 void MapWindow::GetViewStart(int* x, int* y)
 {
-	*x = hScroll->GetThumbPosition();
-	*y = vScroll->GetThumbPosition();
+	Position minPos = g_editor.map.getMinPosition();
+	*x = hScroll->GetThumbPosition() + minPos.x * rme::TileSize;
+	*y = vScroll->GetThumbPosition() + minPos.y * rme::TileSize;
 }
 
 void MapWindow::GetViewSize(int* x, int* y)
@@ -131,8 +132,9 @@ void MapWindow::SetScreenCenterPosition(const Position& position, bool showIndic
 	if(!position.isValid())
 		return;
 
-	int x = position.x * rme::TileSize;
-	int y = position.y * rme::TileSize;
+	Position minPos = g_editor.map.getMinPosition();
+	int x = (position.x - minPos.x) * rme::TileSize;
+	int y = (position.y - minPos.y) * rme::TileSize;
 	int z = position.z;
 	if(position.z < 8) {
 		// Compensate for floor offset above ground

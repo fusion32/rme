@@ -470,6 +470,10 @@ bool GraphicManager::loadSpriteMetadata(const wxString &projectDir, wxString &ou
 			}
 			sType->spriteList.push_back(static_cast<GameSprite::NormalImage*>(image_space[sprite_id]));
 		}
+
+		if(ItemType *type = GetMutableItemType(typeId)){
+			type->sprite = sType;
+		}
 	}
 
 	return true;

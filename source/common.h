@@ -56,7 +56,7 @@ void to_upper_str(std::string& source);
 std::string as_lower_str(const std::string& other);
 std::string as_upper_str(const std::string& other);
 // Compare two strings in a case insensitive manner
-bool strcmp_ci(std::string_view a, std::string_view b);
+int strcmp_ci(std::string_view a, std::string_view b);
 
 // isFalseString returns true if the string is either "0", "false", "no", "not" or blank
 // isTrueString returns the opposite value of isFalseString

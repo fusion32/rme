@@ -84,9 +84,9 @@ void Editor::SaveRecentFiles()
 	recentFiles.Save(g_settings.getConfigObject());
 }
 
-void Editor::AddRecentFile(FileName file)
+void Editor::AddRecentFile(const wxString &file)
 {
-	recentFiles.AddFileToHistory(file.GetFullPath());
+	recentFiles.AddFileToHistory(file);
 }
 
 std::vector<wxString> Editor::GetRecentFiles()
@@ -129,6 +129,9 @@ bool Editor::OpenProject(const wxString &dir)
 		return false;
 	}
 
+	// TODO(fusion): Do we need to lock the renderer here?
+	// UnnamedRenderingLock();
+
 	wxString error;
 	wxArrayString warnings;
 	if(!LoadProject(dir, error, warnings)){
@@ -137,11 +140,18 @@ bool Editor::OpenProject(const wxString &dir)
 	}
 
 	projectDir = dir;
+	AddRecentFile(projectDir);
 	SetStatusText("");
 	SetTitle(projectDir);
+	LoadPerspective();
 	RefreshPalettes();
 	UpdateMenubar();
 	root->Refresh();
+
+	// TODO(fusion): Just save session info like palettes, map position, zoom,
+	// on a file inside the project directory...
+	mapWindow->FitToMap();
+	mapWindow->SetScreenCenterPosition(map.getCenterPosition());
 
 	ListDialog("Warnings", warnings);
 
@@ -154,9 +164,17 @@ bool Editor::CloseProject(void)
 		return false;
 	}
 
-	// prompt for a save?
+	// prompt for a save? then actually save
 
-	UnloadProject();
+	SavePerspective();
+
+	{
+		UnnamedRenderingLock();
+		DestroyPalettes();
+		DestroyMinimap();
+		UnloadProject();
+	}
+
 	return true;
 }
 
@@ -188,52 +206,54 @@ bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWar
 
 	dir = NormalizeDir(dir);
 
-	ScopedLoadingBar loadingBar("Opening project...");
+	{
+		ScopedLoadingBar loadingBar("Loading project assets...");
+		loadingBar.SetLoadDone(0, "Loading item types...");
+		if(!LoadItemTypes(dir, outError, outWarnings)){
+			outError = "Unable to load item types: " + outError;
+			UnloadProject();
+			return false;
+		}
 
-	loadingBar.SetLoadDone(0, "Loading item types...");
-	if(!LoadItemTypes(dir, outError, outWarnings)){
-		outError = "Unable to load item types: " + outError;
-		UnloadProject();
-		return false;
+		loadingBar.SetLoadDone(20, "Loading DAT...");
+		if(!gfx.loadSpriteMetadata(dir, outError, outWarnings)){
+			outError = "Unable to load DAT: " + outError;
+			UnloadProject();
+			return false;
+		}
+
+		loadingBar.SetLoadDone(40, "Loading SPR...");
+		if(!gfx.loadSpriteData(dir, outError, outWarnings)){
+			outError = "Unable to load SPR: " + outError;
+			UnloadProject();
+			return false;
+		}
+
+		loadingBar.SetLoadDone(60, "Loading creatures.xml...");
+		if(!LoadCreatureTypes(dir, outError, outWarnings)){
+			outWarnings.push_back(wxString("Unable to load creatures.xml: ") << outError);
+			outError.Clear();
+		}
+
+		loadingBar.SetLoadDone(80, "Loading materials.xml...");
+		if(!g_materials.loadMaterials(dir, outError, outWarnings)){
+			outWarnings.push_back(wxString("Unable to load materials.xml: ") << outError);
+			outError.Clear();
+		}
+
+		g_brushes.init();
+		g_materials.createOtherTileset();
 	}
 
-	loadingBar.SetLoadDone(10, "Loading DAT...");
-	if(!gfx.loadSpriteMetadata(dir, outError, outWarnings)){
-		outError = "Unable to load DAT: " + outError;
-		UnloadProject();
-		return false;
+	{
+		ScopedLoadingBar loadingBar("Loading project map...");
+		if(!map.load(dir, outError, outWarnings)){
+			outError = "Unable to load map: " + outError;
+			UnloadProject();
+			return false;
+		}
 	}
 
-	loadingBar.SetLoadDone(20, "Loading SPR...");
-	if(!gfx.loadSpriteData(dir, outError, outWarnings)){
-		outError = "Unable to load SPR: " + outError;
-		UnloadProject();
-		return false;
-	}
-
-	loadingBar.SetLoadDone(30, "Loading creatures.xml...");
-	if(!LoadCreatureTypes(dir, outError, outWarnings)){
-		outWarnings.push_back(wxString("Unable to load creatures.xml: ") << outError);
-		outError.Clear();
-	}
-
-	loadingBar.SetLoadDone(40, "Loading materials.xml...");
-	if(!g_materials.loadMaterials(dir, outError, outWarnings)){
-		outWarnings.push_back(wxString("Unable to load materials.xml: ") << outError);
-		outError.Clear();
-	}
-
-	g_brushes.init();
-	g_materials.createOtherTileset();
-
-	SetLoadDone(50, "Loading map...");
-	if(!map.load(dir, outError, outWarnings)){
-		outError = "Unable to load map: " + outError;
-		UnloadProject();
-		return false;
-	}
-
-	loadingBar.SetLoadDone(100);
 	return true;
 }
 
@@ -266,46 +286,6 @@ void Editor::UnloadProject(void)
 }
 
 #if TODO
-bool Editor::LoadVersion(wxString& error, wxArrayString& warnings, bool force)
-{
-	if(ClientVersion::get(version) == nullptr) {
-		error = "Unsupported client version! (8)";
-		return false;
-	}
-
-	if(version != loaded_version || force) {
-		if(getLoadedVersion() != nullptr)
-			// There is another version loaded right now, save window layout
-			SavePerspective();
-
-		// Disable all rendering so the data is not accessed while reloading
-		UnnamedRenderingLock();
-		DestroyPalettes();
-		DestroyMinimap();
-
-		// Destroy the previous version
-		UnloadVersion();
-
-		loaded_version = version;
-		if(!getLoadedVersion()->hasValidPaths()) {
-			if(!getLoadedVersion()->loadValidPaths()) {
-				error = "Couldn't load relevant asset files";
-				loaded_version = CLIENT_VERSION_NONE;
-				return false;
-			}
-		}
-
-		bool ret = LoadDataFiles(error, warnings);
-		if(ret)
-			LoadPerspective();
-		else
-			loaded_version = CLIENT_VERSION_NONE;
-
-		return ret;
-	}
-	return true;
-}
-
 void Editor::SaveCurrentMap(FileName filename, bool showdialog)
 {
 	MapTab* mapTab = GetCurrentMapTab();
@@ -326,85 +306,6 @@ void Editor::SaveCurrentMap(FileName filename, bool showdialog)
 	UpdateTitle();
 	UpdateMenubar();
 	root->Refresh();
-}
-
-void Editor::FitViewToMap(MapTab* mt)
-{
-	for(int index = 0; index < tabbook->GetTabCount(); ++index) {
-		if(auto *tab = dynamic_cast<MapTab*>(tabbook->GetTab(index))) {
-			if(tab->HasSameReference(mt)) {
-				tab->GetView()->FitToMap();
-			}
-		}
-	}
-}
-
-bool Editor::NewMap()
-{
-    FinishWelcomeDialog();
-
-	Editor* editor;
-	try
-	{
-		editor = newd Editor(copybuffer);
-	}
-	catch(std::runtime_error& e)
-	{
-		PopupDialog(root, "Error!", wxString(e.what(), wxConvUTF8), wxOK);
-		return false;
-	}
-
-	auto *mapTab = newd MapTab(tabbook, editor);
-	mapTab->OnSwitchEditorMode(mode);
-    editor->clearChanges();
-
-	SetStatusText("Created new map");
-	UpdateTitle();
-	RefreshPalettes();
-	UpdateMenubar();
-	root->Refresh();
-	return true;
-}
-
-void Editor::OpenMap()
-{
-	wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? MAP_LOAD_FILE_WILDCARD_OTGZ : MAP_LOAD_FILE_WILDCARD;
-	wxFileDialog dialog(root, "Open map file", wxEmptyString, wxEmptyString, wildcard, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-
-	if(dialog.ShowModal() == wxID_OK)
-		LoadMap(dialog.GetPath());
-}
-
-void Editor::SaveMap()
-{
-	if(!IsProjectOpen())
-		return;
-
-	if(GetCurrentMap().hasFile()) {
-		SaveCurrentMap(true);
-	} else {
-		wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? MAP_SAVE_FILE_WILDCARD_OTGZ : MAP_SAVE_FILE_WILDCARD;
-		wxFileDialog dialog(root, "Save...", wxEmptyString, wxEmptyString, wildcard, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
-
-		if(dialog.ShowModal() == wxID_OK)
-			SaveCurrentMap(dialog.GetPath(), true);
-	}
-}
-
-void Editor::SaveMapAs()
-{
-	if(!IsProjectOpen())
-		return;
-
-	wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? MAP_SAVE_FILE_WILDCARD_OTGZ : MAP_SAVE_FILE_WILDCARD;
-	wxFileDialog dialog(root, "Save As...", "", "", wildcard, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
-
-	if(dialog.ShowModal() == wxID_OK) {
-		SaveCurrentMap(dialog.GetPath(), true);
-		UpdateTitle();
-		AddRecentFile(dialog.GetPath());
-		UpdateMenubar();
-	}
 }
 
 bool Editor::LoadMap(const FileName& fileName)
@@ -645,11 +546,6 @@ double Editor::GetCurrentZoom()
 void Editor::SetCurrentZoom(double zoom)
 {
 	mapWindow->GetCanvas()->SetZoom(zoom);
-}
-
-void Editor::FitViewToMap()
-{
-	mapWindow->FitToMap();
 }
 
 void Editor::AddPendingMapEvent(wxEvent &event)
@@ -1038,6 +934,8 @@ void Editor::RefreshView()
 
 void Editor::CreateLoadBar(wxString message, bool canCancel /* = false */)
 {
+	DestroyLoadBar();
+
 	progressText = message;
 
 	progressFrom = 0;
@@ -2346,7 +2244,7 @@ void Editor::moveSelection(const Position& offset)
 		// NOTE(fusion): Something similar to CopyBuffer::cut.
 		Action *action = group->createAction();
 		for(Tile *tile: selection) {
-			Tile copy;
+			Tile copy; copy.pos = tile->pos;
 			Tile newTile; newTile.deepCopy(*tile);
 
 			copy.addItems(newTile.popSelectedItems());

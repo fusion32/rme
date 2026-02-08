@@ -39,6 +39,10 @@ size_t Action::memsize(void) const
 	return result;
 }
 
+void Action::changeTile(Tile tile){
+	changes.emplace_back(ChangeTile(std::move(tile)));
+}
+
 void Action::commit(void)
 {
 	if(commited){

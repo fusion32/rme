@@ -19,37 +19,216 @@
 
 #include "map.h"
 #include "editor.h"
+#include "script.h"
 
 #include <wx/dir.h>
 
+static Item *LoadObjects(Script *script){
+	Item *items = NULL;
+	Item **tail = &items;
+	Item *currentItem = NULL;
+	script->readSymbol('{');
+	script->nextToken();
+	while(!script->eof()){
+		if(currentItem == NULL){
+			if(script->token.kind != TOKEN_SPECIAL){
+				int typeId = script->getNumber();
+				if(!ItemTypeExists(typeId)){
+					script->error("invalid object type");
+					break;
+				}
+
+				currentItem = newd Item(typeId);
+				*tail = currentItem;
+				tail = &currentItem->next;
+			}else{
+				int special = script->getSpecial();
+				if(special == '}') break;
+				if(special != ','){
+					script->error("expected comma");
+					break;
+				}
+			}
+			script->nextToken();
+		}else{
+			if(script->token.kind != TOKEN_SPECIAL){
+				int attr = GetInstanceAttributeByName(script->getIdentifier());
+				if(attr == -1){
+					script->error("unknown attribute");
+					break;
+				}
+
+				script->readSymbol('=');
+				if(attr == CONTENT){
+					// NOTE(fusion): Just to be sure...
+					Item **contentTail = &currentItem->content;
+					while(*contentTail){
+						contentTail = &(*contentTail)->next;
+					}
+
+					*contentTail = LoadObjects(script);
+				}else if(attr == TEXTSTRING || attr == EDITOR){
+					currentItem->setTextAttribute((ObjectInstanceAttribute)attr, script->readString());
+				}else{
+					currentItem->setAttribute((ObjectInstanceAttribute)attr, script->readNumber());
+				}
+
+				script->nextToken();
+			}else{
+				// NOTE(fusion): Attributes are key-value pairs separated by space.
+				// If we find a special token (probably ',' or '}'), then we're done
+				// parsing attributes for the current object.
+				currentItem = NULL;
+			}
+		}
+	}
+	return items;
+}
+
+bool Map::loadSector(const wxString &filename, int sectorX, int sectorY, int sectorZ,
+					 wxString &outError, wxArrayString &outWarnings){
+	if(!SectorValid(sectorX, sectorY, sectorZ)){
+		outError << "Invalid sector coordinates "
+				<< sectorX << "-" << sectorY << "-" << sectorZ;
+		return false;
+	}
+
+	Tile *tile = NULL;
+	std::string ident;
+	Script script(filename.mb_str());
+	MapSector *sector = getOrCreateSectorAt(
+			sectorX * MAP_SECTOR_SIZE,
+			sectorY * MAP_SECTOR_SIZE,
+			sectorZ);
+	while(true){
+		script.nextToken();
+		if(script.eof()){
+			break;
+		}
+
+		if(script.token.kind == TOKEN_SPECIAL && script.getSpecial() == ','){
+			continue;
+		}
+
+		if(script.token.kind == TOKEN_BYTES){
+			const uint8_t *offset = script.getBytes();
+			int offsetX = (int)offset[0];
+			int offsetY = (int)offset[1];
+			tile = sector->getTile(offsetX, offsetY);
+			if(tile == NULL){
+				script.error("invalid sector offset");
+				break;
+			}
+			script.readSymbol(':');
+		}else if(script.token.kind == TOKEN_IDENTIFIER){
+			if(tile == NULL){
+				script.error("coordinate expected");
+				break;
+			}
+
+			ident = script.getIdentifier();
+			if(ident == "refresh"){
+				tile->setTileFlag(TILE_FLAG_REFRESH);
+			}else if(ident == "nologout"){
+				tile->setTileFlag(TILE_FLAG_NOLOGOUT);
+			}else if(ident == "protectionzone"){
+				tile->setTileFlag(TILE_FLAG_PROTECTIONZONE);
+			}else if(ident == "content"){
+				script.readSymbol('=');
+				tile->addItems(LoadObjects(&script));
+			}else{
+				script.error("unknown map flag");
+				break;
+			}
+
+		}else{
+			script.error("next map point expected");
+			break;
+		}
+
+	}
+
+	if(const char *error = script.getError()){
+		outError << error;
+		return false;
+	}
+
+	return true;
+}
+
 bool Map::load(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings)
 {
+	// TODO(fusion): Not sure about creating the directory and whether we should
+	// attempt to locate some directory with .sec files in it.
+
 	wxString mapDirAttempt = projectDir + "origmap";
 	if(!wxDir::Exists(mapDirAttempt)){
-		outError << "Unable to locate map directory";
-		return false;
+		if(!wxDir::Make(mapDirAttempt)){
+			outError << "Unable to create new map directory";
+			return false;
+		}
+
+		outWarnings.push_back(wxString()
+				<< "Unable to locate existing map directory so "
+				<< mapDirAttempt << " was created");
 	}
 
 	wxString saveDirAttempt = projectDir + "save";
 	if(!wxDir::Exists(saveDirAttempt)){
-		outError << "Unable to locate save directory";
-		return false;
+		if(!wxDir::Make(saveDirAttempt)){
+			outError << "Unable to locate nor create save directory";
+			return false;
+		}
+
+		outWarnings.push_back(wxString()
+				<< "Unable to locate existing save directory so "
+				<< saveDirAttempt << " was created");
 	}
 
+	if(g_editor.HasLoadingBar()){
+		g_editor.SetLoadDone(0, "Discovering sector files...");
+	}
+
+	int numSectors = 0;
 	wxString filename;
 	wxDir dir(mapDirAttempt);
 	if(dir.GetFirst(&filename, "*.sec")){
 		do{
-			// TODO(fusion): Load sectors...
-			std::cout << filename << std::endl;
+			numSectors += 1;
 		}while(dir.GetNext(&filename));
 	}
 
-	//mapDir = std::move(mapDir);
-	//saveDir = std::move(saveDirAttempt);
+	int numLoaded = 0;
+	if(dir.GetFirst(&filename, "*.sec")){
+		do{
+			int sectorX, sectorY, sectorZ;
+			if(sscanf(filename.mb_str(), "%d-%d-%d.sec", &sectorX, &sectorY, &sectorZ) != 3){
+				//outWarnings.push_back(wxString()
+				//		<< "Non sector file " << filename << " in map directory " << mapDirAttempt);
+				numSectors -= 1;
+				continue;
+			}
 
-	outError << "OK";
-	return false;
+			if(g_editor.HasLoadingBar()){
+				g_editor.SetLoadDone((numLoaded * 100 / numSectors),
+						wxString::Format("Loading sector %s (%d/%d)",
+							filename, numLoaded, numSectors));
+			}
+
+
+			FileName fn(mapDirAttempt, filename);
+			if(!loadSector(fn.GetFullPath(), sectorX, sectorY, sectorZ, outError, outWarnings)){
+				outError.Prepend(wxString() << "Unable to load sector " << filename << ": ");
+				return false;
+			}
+
+			numLoaded += 1;
+		}while(dir.GetNext(&filename));
+	}
+
+	mapDir = std::move(mapDir);
+	saveDir = std::move(saveDirAttempt);
+	return true;
 }
 
 bool Map::save(void)
@@ -76,21 +255,27 @@ void Map::clear(void)
 	dirtySectors.clear();
 }
 
-Tile *Map::getTile(int x, int y, int z)
-{
-	uint32_t sectorId = GetMapSectorId(x, y, z);
-	auto it = sectors.find(sectorId);
-	if(it == sectors.end()){
+MapSector *Map::getSectorAt(int x, int y, int z){
+	if(!PositionValid(x, y, z)){
 		return NULL;
 	}
 
-	int offsetX = x & MAP_SECTOR_MASK;
-	int offsetY = y & MAP_SECTOR_MASK;
-	return &it->second.tiles[offsetY * MAP_SECTOR_SIZE + offsetX];
+	uint32_t sectorId = GetMapSectorId(x, y, z);
+	auto it = sectors.find(sectorId);
+	if(it != NULL){
+		return &it->second;
+	}else{
+		return NULL;
+	}
 }
 
-Tile *Map::getOrCreateTile(int x, int y, int z)
-{
+MapSector *Map::getOrCreateSectorAt(int x, int y, int z){
+	if(!PositionValid(x, y, z)){
+		// NOTE(fusion): This is just to make sure we don't return a NULL
+		static MapSector outOfBounder;
+		return &outOfBounder;
+	}
+
 	uint32_t sectorId = GetMapSectorId(x, y, z);
 	auto ret = sectors.try_emplace(sectorId);
 	if(ret.second){
@@ -98,21 +283,30 @@ Tile *Map::getOrCreateTile(int x, int y, int z)
 		int sectorY = y / MAP_SECTOR_SIZE;
 		int sectorZ = z;
 
-		if(sectorX < minSectorX){
+		if(sectors.size() > 1){
+			if(sectorX < minSectorX){
+				minSectorX = sectorX;
+			}else if(sectorX > maxSectorX){
+				maxSectorX = sectorX;
+			}
+
+			if(sectorY < minSectorY){
+				minSectorY = sectorY;
+			}else if(sectorY > maxSectorY){
+				maxSectorY = sectorY;
+			}
+
+			if(sectorZ < minSectorZ){
+				minSectorZ = sectorZ;
+			}else if(sectorZ > maxSectorZ){
+				maxSectorZ = sectorZ;
+			}
+		}else{
 			minSectorX = sectorX;
-		}else if(sectorX > maxSectorX){
-			maxSectorX = sectorX;
-		}
-
-		if(sectorY < minSectorY){
 			minSectorY = sectorY;
-		}else if(sectorY > maxSectorY){
-			maxSectorY = sectorY;
-		}
-
-		if(sectorZ < minSectorZ){
 			minSectorZ = sectorZ;
-		}else if(sectorZ > maxSectorZ){
+			maxSectorX = sectorX;
+			maxSectorY = sectorY;
 			maxSectorZ = sectorZ;
 		}
 
@@ -122,24 +316,27 @@ Tile *Map::getOrCreateTile(int x, int y, int z)
 				sectorZ);
 	}
 
-	int offsetX = x & MAP_SECTOR_MASK;
-	int offsetY = y & MAP_SECTOR_MASK;
-	return &ret.first->second.tiles[offsetY * MAP_SECTOR_SIZE + offsetX];
+	return &ret.first->second;
 }
 
-MapSector *Map::getSector(int sectorX, int sectorY, int sectorZ){
-	// NOTE(fusion): GetMapSectorId uses regular coordinates.
-	uint32_t sectorId = GetMapSectorId(
-			sectorX * MAP_SECTOR_SIZE,
-			sectorY * MAP_SECTOR_SIZE,
-			sectorZ);
-
-	auto it = sectors.find(sectorId);
-	if(it != NULL){
-		return &it->second;
+Tile *Map::getTile(int x, int y, int z)
+{
+	if(MapSector *sector = getSectorAt(x, y, z)){
+		int offsetX = x & MAP_SECTOR_MASK;
+		int offsetY = y & MAP_SECTOR_MASK;
+		return sector->getTile(offsetX, offsetY);
 	}else{
 		return NULL;
 	}
+}
+
+Tile *Map::getOrCreateTile(int x, int y, int z)
+{
+	MapSector *sector = getOrCreateSectorAt(x, y, z);
+	ASSERT(sector != NULL);
+	int offsetX = x & MAP_SECTOR_MASK;
+	int offsetY = y & MAP_SECTOR_MASK;
+	return sector->getTile(offsetX, offsetY);
 }
 
 void Map::cleanInvalidTiles(bool showDialog /*= false*/)

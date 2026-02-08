@@ -18,6 +18,7 @@
 #ifndef RME_MAP_H_
 #define RME_MAP_H_
 
+#include "const.h"
 #include "tile.h"
 #include "town.h"
 #include "house.h"
@@ -28,10 +29,21 @@
 STATIC_ASSERT(MAP_SECTOR_SIZE >= 16);
 STATIC_ASSERT(ISPOW2(MAP_SECTOR_SIZE));
 
-inline uint32_t GetMapSectorId(int x, int y, int z){
-	ASSERT(x >= 0 && x <= UINT16_MAX
+inline bool PositionValid(int x, int y, int z){
+	return x >= 0 && x <= UINT16_MAX
 		&& y >= 0 && y <= UINT16_MAX
-		&& z >= 0 && z <= UINT8_MAX);
+		&& z >= 0 && z <= UINT8_MAX;
+}
+
+inline bool SectorValid(int sectorX, int sectorY, int sectorZ){
+	return PositionValid(
+			sectorX * MAP_SECTOR_SIZE,
+			sectorY * MAP_SECTOR_SIZE,
+			sectorZ);
+}
+
+inline uint32_t GetMapSectorId(int x, int y, int z){
+	ASSERT(PositionValid(x, y, z));
 
 	// IMPORTANT(fusion): Each position has 40 bits of information so if we trim
 	// 4 bits from both the x and y coordinates, we can obtain an unique identifier
@@ -42,6 +54,8 @@ inline uint32_t GetMapSectorId(int x, int y, int z){
 }
 
 struct MapSector{
+	MapSector(void) = default;
+
 	void setTilePositions(int baseX, int baseY, int baseZ){
 		for(int offsetY = 0; offsetY < MAP_SECTOR_SIZE; offsetY += 1)
 		for(int offsetX = 0; offsetX < MAP_SECTOR_SIZE; offsetX += 1){
@@ -88,13 +102,16 @@ struct Map {
 	//std::vector<House> houses;
 	//std::vector<Waypoint> waypoints;
 
+	bool loadSector(const wxString &filename, int sectorX, int sectorY, int sectorZ,
+					wxString &outError, wxArrayString &outWarnings);
 	bool load(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
 	bool save(void);
 	void clear(void);
 
+	MapSector *getSectorAt(int x, int y, int z);
+	MapSector *getOrCreateSectorAt(int x, int y, int z);
 	Tile *getTile(int x, int y, int z);
 	Tile *getOrCreateTile(int x, int y, int z);
-	MapSector *getSector(int sectorX, int sectorY, int sectorZ);
 	Tile *getTile(Position pos) { return getTile(pos.x, pos.y, pos.z); }
 	Tile *getOrCreateTile(Position pos) { return getOrCreateTile(pos.x, pos.y, pos.z); }
 	bool isEmpty(void) const { return sectors.empty(); }
@@ -134,6 +151,16 @@ struct Map {
 			maxSectorX * MAP_SECTOR_SIZE + (MAP_SECTOR_SIZE - 1),
 			maxSectorY * MAP_SECTOR_SIZE + (MAP_SECTOR_SIZE - 1),
 			maxSectorZ,
+		};
+	}
+
+	Position getCenterPosition(void) const {
+		Position minPos = getMinPosition();
+		Position maxPos = getMaxPosition();
+		return Position{
+			(minPos.x + maxPos.x) / 2,
+			(minPos.y + maxPos.y) / 2,
+			rme::MapGroundLayer,
 		};
 	}
 

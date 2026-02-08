@@ -42,7 +42,7 @@ struct Script {
 	std::vector<ScriptSource>	stack;
 	ScriptToken					token;
 
-	Script(const char *filename) { push(filename); }
+	Script(const char *filename);
 	void error(const char *text);
 	ScriptSource *push(const char *filename);
 	ScriptSource *pop(void);
