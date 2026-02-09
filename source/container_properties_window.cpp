@@ -164,7 +164,7 @@ void ContainerItemButton::setItem(Item* item)
 {
 	edit_item = item;
 	if(edit_item) {
-		SetSprite(edit_item->getID());
+		SetSprite(edit_item->getLookID());
 	} else {
 		SetSprite(0);
 	}

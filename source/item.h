@@ -47,6 +47,7 @@ struct Item {
 	int getAttribute(ObjectInstanceAttribute attr) const;
 	const char *getTextAttribute(ObjectInstanceAttribute attr) const;
 	int getStackPriority(void) const;
+	int getLookID(void) const;
 	void setAttribute(ObjectInstanceAttribute attr, int value);
 	void setTextAttribute(ObjectInstanceAttribute attr, const char *text);
 	int countItems(void) const;

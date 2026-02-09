@@ -88,7 +88,7 @@ public:
 
 	virtual void unloadDC();
 
-	void clean(int time);
+	void clean(time_t time);
 
 	uint16_t getDrawHeight() const noexcept { return draw_height; }
 	const wxPoint& getDrawOffset() const noexcept { return draw_offset; }
@@ -114,10 +114,10 @@ protected:
 		virtual ~Image();
 
 		bool isGLLoaded;
-		int lastaccess;
+		time_t lastaccess;
 
 		void visit();
-		virtual void clean(int time);
+		virtual void clean(time_t time);
 
 		virtual GLuint getHardwareID() = 0;
 		virtual uint8_t* getRGBData() = 0;
@@ -140,7 +140,7 @@ protected:
 		uint16_t size;
 		uint8_t* dump;
 
-		virtual void clean(int time);
+		virtual void clean(time_t time);
 
 		virtual GLuint getHardwareID();
 		virtual uint8_t* getRGBData();
@@ -297,9 +297,7 @@ public:
 
 	// This is part of the binary
 	bool loadEditorSprites();
-	// Metadata should be loaded first
 	// This fills the item / creature adress space
-	bool loadOTFI(const FileName& filename, wxString& error, wxArrayString& warnings);
 	bool loadSpriteMetadata(const wxString &projectDir, wxString& error, wxArrayString& warnings);
 	bool loadSpriteMetadataFlags(FileReadHandle& file, GameSprite* sType, wxString& error, wxArrayString& warnings);
 	bool loadSpriteData(const wxString &projectDir, wxString& error, wxArrayString& warnings);
@@ -317,10 +315,11 @@ private:
 	std::string spritefile;
 	bool loadSpriteDump(uint8_t*& target, uint16_t& size, int sprite_id);
 
-	typedef std::map<int, Sprite*> SpriteMap;
-	SpriteMap sprite_space;
-	typedef std::map<int, GameSprite::Image*> ImageMap;
-	ImageMap image_space;
+	// TODO(fusion): Both Sprite and Image pointers are "polymorphic" so it's
+	// unlikely that we'd be able to turn these into a non-pointer vector without
+	// another large change, which probably won't happen soon (or at all).
+	std::unordered_map<int, Sprite*> sprite_space;
+	std::unordered_map<int, GameSprite::Image*> image_space;
 	std::deque<GameSprite*> cleanup_list;
 
 	int itemBaseId;

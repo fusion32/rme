@@ -60,7 +60,7 @@ void BrowseTileListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const
 		return;
 	}
 
-	Sprite* sprite = g_editor.gfx.getSprite(item->getID());
+	Sprite* sprite = g_editor.gfx.getSprite(item->getLookID());
 	if(sprite)
 		sprite->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetWidth(), rect.GetHeight());
 
@@ -127,8 +127,10 @@ wxDialog(parent, wxID_ANY, "Browse Field", position, wxSize(600, 400), wxCAPTION
 	item_list = newd BrowseTileListBox(this, wxID_ANY, tile);
 	sizer->Add(item_list, wxSizerFlags(1).Expand());
 
-	wxString pos;
-	pos << "x=" << tile->pos.x << ",  y=" << tile->pos.y << ",  z=" << tile->pos.z;
+	wxString pos = wxString() << "(" << tile->pos.x << ", " << tile->pos.y << ", " << tile->pos.z << ")";
+	wxString sec = wxString() << (tile->pos.x / MAP_SECTOR_SIZE)
+			<< "-" << (tile->pos.y / MAP_SECTOR_SIZE)
+			<< "-" << tile->pos.z;
 
 	wxSizer* infoSizer = newd wxBoxSizer(wxVERTICAL);
     wxBoxSizer* buttons = newd wxBoxSizer(wxHORIZONTAL);
@@ -141,6 +143,7 @@ wxDialog(parent, wxID_ANY, "Browse Field", position, wxSize(600, 400), wxCAPTION
 	buttons->Add(select_raw_button);
 	infoSizer->Add(buttons);
 	infoSizer->AddSpacer(5);
+	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "Sector:  " + sec), wxSizerFlags(0).Left());
 	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "Position:  " + pos), wxSizerFlags(0).Left());
 	infoSizer->Add(item_count_txt = newd wxStaticText(this, wxID_ANY, "Item count:  " + i2ws(item_list->GetItemCount())), wxSizerFlags(0).Left());
 	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "Refresh:  " + b2yn(tile->getTileFlag(TILE_FLAG_REFRESH))), wxSizerFlags(0).Left());

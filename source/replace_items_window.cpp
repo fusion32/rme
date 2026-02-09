@@ -40,17 +40,10 @@ void ReplaceItemsButton::SetItemId(uint16_t id)
 	if(m_id == id)
 		return;
 
-	m_id = id;
-
-	if(m_id != 0) {
-		const ItemType &it = GetItemType(m_id);
-		if(it.typeId != 0) {
-			SetSprite(it.typeId);
-			return;
-		}
+	if(m_id != id){
+		SetSprite(GetItemType(id).getLookId());
+		m_id = id;
 	}
-
-	SetSprite(0);
 }
 
 // ============================================================================

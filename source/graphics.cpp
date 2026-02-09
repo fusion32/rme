@@ -15,6 +15,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
+#include "items.h"
 #include "main.h"
 
 #include "sprites.h"
@@ -110,12 +111,12 @@ GraphicManager::GraphicManager() :
 
 GraphicManager::~GraphicManager()
 {
-	for(SpriteMap::iterator iter = sprite_space.begin(); iter != sprite_space.end(); ++iter) {
-		delete iter->second;
+	for(auto [id, spr]: sprite_space){
+		delete spr;
 	}
 
-	for(ImageMap::iterator iter = image_space.begin(); iter != image_space.end(); ++iter) {
-		delete iter->second;
+	for(auto [id, img]: image_space){
+		delete img;
 	}
 
 	sprite_space.clear();
@@ -137,17 +138,17 @@ GLuint GraphicManager::getFreeTextureID()
 
 void GraphicManager::clear()
 {
-	SpriteMap new_sprite_space;
-	for(SpriteMap::iterator iter = sprite_space.begin(); iter != sprite_space.end(); ++iter) {
-		if(iter->first >= 0) { // Don't clean internal sprites
-			delete iter->second;
-		} else {
-			new_sprite_space.insert(std::make_pair(iter->first, iter->second));
+	std::unordered_map<int, Sprite*> new_sprite_space;
+	for(auto [id, spr]: sprite_space){
+		if(id < 0){ // keep internal sprites
+			new_sprite_space.insert(std::make_pair(id, spr));
+		}else{
+			delete spr;
 		}
 	}
 
-	for(ImageMap::iterator iter = image_space.begin(); iter != image_space.end(); ++iter) {
-		delete iter->second;
+	for(auto [id, img]: image_space){
+		delete img;
 	}
 
 	sprite_space.swap(new_sprite_space);
@@ -167,16 +168,16 @@ void GraphicManager::clear()
 
 void GraphicManager::cleanSoftwareSprites()
 {
-	for(SpriteMap::iterator iter = sprite_space.begin(); iter != sprite_space.end(); ++iter) {
-		if(iter->first >= 0) { // Don't clean internal sprites
-			iter->second->unloadDC();
+	for(auto [id, spr]: sprite_space){
+		if(id >= 0){ // don't clean internal sprites
+			spr->unloadDC();
 		}
 	}
 }
 
 Sprite* GraphicManager::getSprite(int id)
 {
-	SpriteMap::iterator it = sprite_space.find(id);
+	auto it = sprite_space.find(id);
 	if(it != sprite_space.end()) {
 		return it->second;
 	}
@@ -189,7 +190,7 @@ GameSprite* GraphicManager::getCreatureSprite(int id)
 		return nullptr;
 	}
 
-	SpriteMap::iterator it = sprite_space.find(creatureBaseId + id);
+	auto it = sprite_space.find(creatureBaseId + id);
 	if(it != sprite_space.end()) {
 		return static_cast<GameSprite*>(it->second);
 	}
@@ -202,7 +203,7 @@ GameSprite* GraphicManager::getEditorSprite(int id)
 		return nullptr;
 	}
 
-	SpriteMap::iterator it = sprite_space.find(id);
+	auto it = sprite_space.find(id);
 	if(it != sprite_space.end()) {
 		return dynamic_cast<GameSprite*>(it->second);
 	}
@@ -393,7 +394,6 @@ bool GraphicManager::loadSpriteMetadata(const wxString &projectDir, wxString &ou
 		}
 	}
 
-	// items.otb has most of the info we need. This only loads the GameSprite metadata
 	FileReadHandle file(filename.ToStdString());
 	if(!file.isOk()) {
 		outError << "Failed to open " << filename
@@ -470,10 +470,21 @@ bool GraphicManager::loadSpriteMetadata(const wxString &projectDir, wxString &ou
 			}
 			sType->spriteList.push_back(static_cast<GameSprite::NormalImage*>(image_space[sprite_id]));
 		}
+	}
 
-		if(ItemType *type = GetMutableItemType(typeId)){
-			type->sprite = sType;
+	// IMPORTANT(fusion): This needs to happen after all sprite metadata is
+	// loaded because disguise targets doesn't have any ordering guarantees
+	// and may be loaded only after the type referencing it.
+	for(int typeId = GetMinItemTypeId();
+			typeId <= GetMaxItemTypeId();
+			typeId += 1){
+		ItemType *type = GetMutableItemType(typeId);
+		if(!type){
+			continue;
 		}
+
+		int lookId = type->getLookId();
+		type->sprite = dynamic_cast<GameSprite*>(getSprite(lookId));
 	}
 
 	return true;
@@ -621,29 +632,30 @@ bool GraphicManager::loadSpriteData(const wxString &projectDir, wxString &outErr
 	// it may not make that big of a difference in the end, idk.
 	int spriteId = 1;
 	for(uint32_t offset: spriteOffsets){
-		uint16_t size;
-		fh.seek(offset);
-		fh.skip(3); // color key ?
-		safe_get(U16, size);
-		auto it = image_space.find(spriteId);
-		if(it != image_space.end()) {
-			GameSprite::NormalImage* spr = dynamic_cast<GameSprite::NormalImage*>(it->second);
-			if(spr && size > 0) {
-				if(spr->size > 0) {
-					outWarnings.push_back(wxString("Duplicate GameSprite id ") << spriteId);
-					fh.skip(size);
-				} else {
-					spr->id = spriteId;
-					spr->size = size;
-					spr->dump = newd uint8_t[size];
-					if(!fh.getRAW(spr->dump, size)) {
-						outError = wxstr(fh.getErrorMessage());
-						return false;
+		// NOTE(fusion): An offset of zero means there is no sprite.
+		if(offset > 0){
+			uint16_t size;
+			fh.seek(offset);
+			fh.skip(3); // color key ?
+			safe_get(U16, size);
+			auto it = image_space.find(spriteId);
+			if(it != image_space.end()) {
+				GameSprite::NormalImage* spr = dynamic_cast<GameSprite::NormalImage*>(it->second);
+				if(spr && size > 0) {
+					if(spr->size > 0) {
+						outWarnings.push_back(wxString("Duplicate GameSprite id ") << spriteId);
+						fh.skip(size);
+					} else {
+						spr->id = spriteId;
+						spr->size = size;
+						spr->dump = newd uint8_t[size];
+						if(!fh.getRAW(spr->dump, size)) {
+							outError = wxstr(fh.getErrorMessage());
+							return false;
+						}
 					}
 				}
 			}
-		} else {
-			fh.skip(size);
 		}
 		spriteId += 1;
 	}
@@ -704,20 +716,19 @@ void GraphicManager::addSpriteToCleanup(GameSprite* spr)
 void GraphicManager::garbageCollection()
 {
 	if(g_settings.getInteger(Config::TEXTURE_MANAGEMENT)) {
-		int t = time(nullptr);
-		if(loaded_textures > g_settings.getInteger(Config::TEXTURE_CLEAN_THRESHOLD) &&
-			t - lastclean > g_settings.getInteger(Config::TEXTURE_CLEAN_PULSE)) {
-			ImageMap::iterator iit = image_space.begin();
-			while(iit != image_space.end()) {
-				iit->second->clean(t);
-				++iit;
+		time_t t = time(nullptr);
+		if(loaded_textures > g_settings.getInteger(Config::TEXTURE_CLEAN_THRESHOLD)
+		&& (t - lastclean) > g_settings.getInteger(Config::TEXTURE_CLEAN_PULSE)) {
+			for(auto [id, img]: image_space){
+				img->clean(t);
 			}
-			SpriteMap::iterator sit = sprite_space.begin();
-			while(sit != sprite_space.end()) {
-				GameSprite* gs = dynamic_cast<GameSprite*>(sit->second);
-				if(gs) gs->clean(t);
-				++sit;
+
+			for(auto [id, spr]: sprite_space){
+				if(GameSprite *gspr = dynamic_cast<GameSprite*>(spr)){
+					gspr->clean(t);
+				}
 			}
+
 			lastclean = t;
 		}
 	}
@@ -777,7 +788,7 @@ GameSprite::~GameSprite()
 	delete animator;
 }
 
-void GameSprite::clean(int time) {
+void GameSprite::clean(time_t time) {
 	for(std::list<TemplateImage*>::iterator iter = instanced_templates.begin();
 			iter != instanced_templates.end();
 			++iter)
@@ -1024,9 +1035,9 @@ void GameSprite::Image::visit()
 	lastaccess = time(nullptr);
 }
 
-void GameSprite::Image::clean(int time)
+void GameSprite::Image::clean(time_t time)
 {
-	if(isGLLoaded && time - lastaccess > g_settings.getInteger(Config::TEXTURE_LONGEVITY)) {
+	if(isGLLoaded && (time - lastaccess) > g_settings.getInteger(Config::TEXTURE_LONGEVITY)) {
 		unloadGLTexture(0);
 	}
 }
@@ -1044,10 +1055,10 @@ GameSprite::NormalImage::~NormalImage()
 	delete[] dump;
 }
 
-void GameSprite::NormalImage::clean(int time)
+void GameSprite::NormalImage::clean(time_t time)
 {
 	Image::clean(time);
-	if(time - lastaccess > 5 && !g_settings.getInteger(Config::USE_MEMCACHED_SPRITES)) { // We keep dumps around for 5 seconds.
+	if((time - lastaccess) > 5 && !g_settings.getInteger(Config::USE_MEMCACHED_SPRITES)) { // We keep dumps around for 5 seconds.
 		delete[] dump;
 		dump = nullptr;
 	}

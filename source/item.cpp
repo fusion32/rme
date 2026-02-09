@@ -285,6 +285,10 @@ int Item::getStackPriority(void) const {
 	return getItemType().getStackPriority();
 }
 
+int Item::getLookID(void) const {
+	return getItemType().getLookId();
+}
+
 void Item::setAttribute(ObjectInstanceAttribute attr, int value){
 	int attrOffset = getItemType().getAttributeOffset(attr);
 	if(attrOffset == -1){

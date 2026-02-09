@@ -307,6 +307,14 @@ int ItemType::getStackPriority(void) const {
 	return STACK_PRIORITY_LOW;
 }
 
+int ItemType::getLookId(void) const {
+	int lookId = typeId;
+	if(getFlag(DISGUISE)){
+		lookId = getAttribute(DISGUISETARGET);
+	}
+	return lookId;
+}
+
 int GetFlagByName(const char *name){
 	int result = -1;
 	for(int i = 0; i < NUM_FLAGS; i += 1){

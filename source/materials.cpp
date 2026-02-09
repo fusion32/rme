@@ -104,8 +104,6 @@ bool Materials::unserializeMaterials(const wxString &filename, pugi::xml_node no
 				outWarnings.push_back(wxString("Error while loading file \"")
 						<< includeName.GetFullName() << "\": " + innerError);
 			}
-		} else if(childName == "metaitem") {
-			//g_items.loadMetaItem(childNode);
 		} else if(childName == "border") {
 			g_brushes.unserializeBorder(childNode, outWarnings);
 		} else if(childName == "brush") {
@@ -146,24 +144,22 @@ void Materials::createOtherTileset()
 			continue;
 		}
 
-		//if(!type->isMetaItem()) {
-			Brush* brush;
-			if(type->in_other_tileset) {
-				others->getCategory(TILESET_RAW)->brushlist.push_back(type->raw_brush);
-				continue;
-			} else if(!type->raw_brush) {
-				brush = type->raw_brush = newd RAWBrush(type->typeId);
-				type->has_raw = true;
-				g_brushes.addBrush(type->raw_brush);
-			} else if(!type->has_raw) {
-				brush = type->raw_brush;
-			} else
-				continue;
-
-			brush->flagAsVisible();
+		Brush* brush;
+		if(type->in_other_tileset) {
 			others->getCategory(TILESET_RAW)->brushlist.push_back(type->raw_brush);
-			type->in_other_tileset = true;
-		//}
+			continue;
+		} else if(!type->raw_brush) {
+			brush = type->raw_brush = newd RAWBrush(type->typeId);
+			type->has_raw = true;
+			g_brushes.addBrush(type->raw_brush);
+		} else if(!type->has_raw) {
+			brush = type->raw_brush;
+		} else
+			continue;
+
+		brush->flagAsVisible();
+		others->getCategory(TILESET_RAW)->brushlist.push_back(type->raw_brush);
+		type->in_other_tileset = true;
 	}
 
 	for(int raceId = GetMinRaceId();

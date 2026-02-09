@@ -243,7 +243,6 @@ struct ItemType {
 	Brush		*brush = nullptr;
 	Brush		*doodad_brush = nullptr;
 	RAWBrush	*raw_brush = nullptr;
-	bool		is_metaitem = false;
 	// This is needed as a consequence of the item palette & the raw palette
 	// using the same brushes ("others" category consists of items with this
 	// flag set to false)
@@ -274,6 +273,7 @@ struct ItemType {
 	int getAttribute(ObjectTypeAttribute attr) const;
 	int getAttributeOffset(ObjectInstanceAttribute attr) const;
 	int getStackPriority(void) const;
+	int getLookId(void) const;
 };
 
 int GetFlagByName(const char *name);
