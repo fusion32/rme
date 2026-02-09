@@ -419,35 +419,29 @@ void MapDrawer::DrawSecondaryMap(int map_z)
 			getDrawPosition(final_pos, draw_x, draw_y);
 
 			// Draw ground
-			uint8_t r = 160, g = 160, b = 160;
+			float r = 0.6f, g = 0.6f, b = 0.6f;
 			if(const Item *ground = tile->getFirstItem(BANK)) {
 				if(options.show_blocking && tile->getFlag(UNPASS)){
-					g = g/3*2;
-					b = b/3*2;
+					r *= 1.0f; g *= 0.67f; b *= 0.67f;
 				}
 
 				if(options.show_special_tiles && tile->getTileFlag(TILE_FLAG_REFRESH)){
-					r = r/3*2;
-					b = r/3*2;
+					r *= 0.67f; g *= 1.0f; b *= 0.67f;
 				}
 
 				if(options.show_special_tiles && tile->getTileFlag(TILE_FLAG_NOLOGOUT)){
-					b /= 2;
+					r *= 1.0f; g *= 1.0f; b *= 0.5f;
 				}
 
 				if(options.show_houses && tile->houseId != 0){
-					if(tile->houseId == current_house_id){
-						r /= 2;
-					}else{
-						r /= 2;
-						g /= 2;
-					}
+					r *= 0.5f;
+					g *= (tile->houseId == current_house_id ? 1.0f : 0.5f);
+					b *= 1.0f;
 				}else if(options.show_special_tiles && tile->getTileFlag(TILE_FLAG_PROTECTIONZONE)){
-					r /= 2;
-					b /= 2;
+					r *= 0.5f; g *= 1.0f; b *= 0.5f;
 				}
 
-				BlitItem(draw_x, draw_y, tile, ground, true, r, g, b, 160);
+				BlitItem(draw_x, draw_y, tile, ground, true, r, g, b, 0.6f);
 			}
 
 			bool hidden = options.hide_items_when_zoomed && zoom > 10.f;
@@ -461,9 +455,9 @@ void MapDrawer::DrawSecondaryMap(int map_z)
 					}
 
 					if(item->getFlag(CLIP)) {
-						BlitItem(draw_x, draw_y, tile, item, true, 160, r, g, b);
+						BlitItem(draw_x, draw_y, tile, item, true, r, g, b, 0.6f);
 					} else {
-						BlitItem(draw_x, draw_y, tile, item, true, 160, 160, 160, 160);
+						BlitItem(draw_x, draw_y, tile, item, true, 0.6f, 0.6f, 0.6f, 0.6f);
 					}
 				}
 			}
@@ -601,18 +595,13 @@ void MapDrawer::DrawDraggingShadow()
 				}
 
 				if(dest_tile)
-					BlitItem(draw_x, draw_y, dest_tile, item, true, 160,160,160,160);
+					BlitItem(draw_x, draw_y, dest_tile, item, true, 0.6f, 0.6f, 0.6f, 0.6f);
 				else
-					BlitItem(draw_x, draw_y, pos, item, true, 160,160,160,160);
+					BlitItem(draw_x, draw_y, pos, item, true, 0.6f, 0.6f, 0.6f, 0.6f);
 			}
 
 			if(options.show_creatures && tile->creature && tile->creature->isSelected())
 				BlitCreature(draw_x, draw_y, tile->creature);
-
-#if TODO
-			if(tile->spawn && tile->spawn->isSelected())
-				DrawIndicator(draw_x, draw_y, EDITOR_SPRITE_SPAWNS, 160, 160, 160, 160);
-#endif
 		}
 	}
 
@@ -637,9 +626,9 @@ void MapDrawer::DrawHigherFloors()
 
 			if(const Item *ground = tile->getFirstItem(BANK)) {
 				if(tile->getTileFlag(TILE_FLAG_PROTECTIONZONE)) {
-					BlitItem(draw_x, draw_y, tile, ground, false, 128,255,128, 96);
+					BlitItem(draw_x, draw_y, tile, ground, false, 0.5f, 1.0f, 0.5f, 0.4f);
 				} else {
-					BlitItem(draw_x, draw_y, tile, ground, false, 255,255,255, 96);
+					BlitItem(draw_x, draw_y, tile, ground, false, 1.0f, 1.0f, 1.0f, 0.4f);
 				}
 			}
 
@@ -651,7 +640,7 @@ void MapDrawer::DrawHigherFloors()
 						continue;
 					}
 
-					BlitItem(draw_x, draw_y, tile, item, false, 255,255,255, 96);
+					BlitItem(draw_x, draw_y, tile, item, false, 1.0f, 1.0f, 1.0f, 0.4f);
 				}
 			}
 		}
@@ -812,7 +801,7 @@ void MapDrawer::DrawBrush()
 							if(brush->isOptionalBorder())
 								glColorCheck(brush, Position(x, y, floor));
 							else
-								BlitSpriteType(cx, cy, raw_brush->getItemType()->sprite, 160, 160, 160, 160);
+								BlitSpriteType(cx, cy, raw_brush->getItemType()->sprite, 0.6f, 0.6f, 0.6f, 0.6f);
 						}
 					}
 				} else {
@@ -878,7 +867,7 @@ void MapDrawer::DrawBrush()
 						float distance = sqrt(dx*dx + dy*dy);
 						if(distance < radii) {
 							if(brush->isRaw()) {
-								BlitSpriteType(cx, cy, raw_brush->getItemType()->sprite, 160, 160, 160, 160);
+								BlitSpriteType(cx, cy, raw_brush->getItemType()->sprite, 0.6f, 0.6f, 0.6f, 0.6f);
 							} else {
 								glColor(brushColor);
 								glBegin(GL_QUADS);
@@ -957,10 +946,11 @@ void MapDrawer::DrawBrush()
 			int cy = (mouse_map_y) * rme::TileSize - view_scroll_y - adjustment;
 			int cx = (mouse_map_x) * rme::TileSize - view_scroll_x - adjustment;
 			CreatureBrush* creature_brush = brush->asCreature();
-			if(creature_brush->canDraw(&g_editor.map, Position(mouse_map_x, mouse_map_y, floor)))
-				BlitCreature(cx, cy, creature_brush->getOutfit(), SOUTH, 255, 255, 255, 160);
-			else
-				BlitCreature(cx, cy, creature_brush->getOutfit(), SOUTH, 255, 64, 64, 160);
+			if(creature_brush->canDraw(&g_editor.map, Position(mouse_map_x, mouse_map_y, floor))){
+				BlitCreature(cx, cy, creature_brush->getOutfit(), SOUTH, 1.0f, 1.0f, 1.0f, 0.6f);
+			}else{
+				BlitCreature(cx, cy, creature_brush->getOutfit(), SOUTH, 1.0f, 0.25f, 0.25f, 0.6f);
+			}
 			glDisable(GL_TEXTURE_2D);
 		} else if(!brush->isDoodad()) {
 			RAWBrush* raw_brush = nullptr;
@@ -978,7 +968,7 @@ void MapDrawer::DrawBrush()
 					if(g_editor.GetBrushShape() == BRUSHSHAPE_SQUARE) {
 						if(x >= -g_editor.GetBrushSize() && x <= g_editor.GetBrushSize() && y >= -g_editor.GetBrushSize() && y <= g_editor.GetBrushSize()) {
 							if(brush->isRaw()) {
-								BlitSpriteType(cx, cy, raw_brush->getItemType()->sprite, 160, 160, 160, 160);
+								BlitSpriteType(cx, cy, raw_brush->getItemType()->sprite, 0.6f, 0.6f, 0.6f, 0.6f);
 							} else {
 								if(brush->isWaypoint()) {
 									float r, g, b;
@@ -1003,7 +993,7 @@ void MapDrawer::DrawBrush()
 						double distance = sqrt(double(x*x) + double(y*y));
 						if(distance < g_editor.GetBrushSize()+0.005) {
 							if(brush->isRaw()) {
-								BlitSpriteType(cx, cy, raw_brush->getItemType()->sprite, 160, 160, 160, 160);
+								BlitSpriteType(cx, cy, raw_brush->getItemType()->sprite, 0.6f, 0.6f, 0.6f, 0.6f);
 							} else {
 								if(brush->isWaypoint()) {
 									float r, g, b;
@@ -1442,7 +1432,7 @@ void MapDrawer::DrawTile(Tile *tile)
 				wxColor color = colorFromEightBit(tile->getMiniMapColor());
 				glBlitSquare(draw_x, draw_y, color);
 			}else if(r < 1.0f || g < 1.0f || b < 1.0f){
-				glBlitSquare(draw_x, draw_y, r, g, b, 128);
+				glBlitSquare(draw_x, draw_y, r, g, b, 0.5f);
 			}
 			glEnable(GL_TEXTURE_2D);
 		}else if(const Item *ground = tile->getFirstItem(BANK)){
@@ -1565,10 +1555,10 @@ void MapDrawer::DrawTileIndicators(Tile *tile)
 	int x, y;
 	getDrawPosition(tile->pos, x, y);
 	if(zoom < 10.0 && (options.show_pickupables || options.show_moveables)) {
-		uint8_t red = 0xFF, green = 0xFF, blue = 0xFF;
+		float red = 1.0f, green = 1.0f, blue = 1.0f;
 		if(tile->houseId != 0) {
-			green = 0x00;
-			blue = 0x00;
+			green = 0.0f;
+			blue = 0.0f;
 		}
 
 		for(const Item *item = tile->items; item != NULL; item = item->next){
@@ -1595,7 +1585,7 @@ void MapDrawer::DrawTileIndicators(Tile *tile)
 		if(tile->hasHouseExit(current_house_id)) {
 			DrawIndicator(x, y, EDITOR_SPRITE_HOUSE_EXIT);
 		} else {
-			DrawIndicator(x, y, EDITOR_SPRITE_HOUSE_EXIT, 64, 64, 255, 128);
+			DrawIndicator(x, y, EDITOR_SPRITE_HOUSE_EXIT, 0.25f, 0.25f, 1.0f, 0.5f);
 		}
 	}
 #endif
