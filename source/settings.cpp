@@ -18,7 +18,7 @@
 #include "main.h"
 
 #include "settings.h"
-#include "gui_ids.h"
+#include "wxids.h"
 
 #include <wx/confbase.h>
 #include <wx/config.h>
@@ -240,9 +240,9 @@ void Settings::IO(IOMode mode)
 	Int(ERASER_LEAVE_UNIQUE, 1);
 	Int(DOODAD_BRUSH_ERASE_LIKE, 0);
 	Int(WARN_FOR_DUPLICATE_ID, 1);
-	Int(DEFAULT_SPAWNTIME, 60);
-	Int(MAX_SPAWN_RADIUS, 30);
-	Int(CURRENT_SPAWN_RADIUS, 5);
+	Int(SPAWN_RADIUS, 10);
+	Int(SPAWN_AMOUNT, 3);
+	Int(SPAWN_INTERVAL, 600);
 	Int(RAW_LIKE_SIMONE, 1);
 	Int(ONLY_ONE_INSTANCE, 1);
 	Int(REPLACE_SIZE, 500);

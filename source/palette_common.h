@@ -22,7 +22,7 @@
 
 #include "dcbutton.h"
 #include "tileset.h"
-#include "gui_ids.h"
+#include "wxids.h"
 #include "common_windows.h"
 
 class BrushButton;

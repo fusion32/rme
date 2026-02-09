@@ -26,7 +26,6 @@ ${CMAKE_CURRENT_LIST_DIR}/filehandle.h
 ${CMAKE_CURRENT_LIST_DIR}/forward.h
 ${CMAKE_CURRENT_LIST_DIR}/graphics.h
 ${CMAKE_CURRENT_LIST_DIR}/ground_brush.h
-${CMAKE_CURRENT_LIST_DIR}/gui_ids.h
 ${CMAKE_CURRENT_LIST_DIR}/house.h
 ${CMAKE_CURRENT_LIST_DIR}/house_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/house_exit_brush.h
@@ -77,6 +76,7 @@ ${CMAKE_CURRENT_LIST_DIR}/wall_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/waypoint_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/waypoints.h
 ${CMAKE_CURRENT_LIST_DIR}/welcome_dialog.h
+${CMAKE_CURRENT_LIST_DIR}/wxids.h
 )
 
 set(rme_SRC

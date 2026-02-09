@@ -15,8 +15,8 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
-#ifndef RME_COMMONS_H_
-#define RME_COMMONS_H_
+#ifndef RME_COMMON_H_
+#define RME_COMMON_H_
 
 #include "main.h"
 #include <stdio.h>

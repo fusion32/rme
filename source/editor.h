@@ -24,7 +24,7 @@
 #include "copybuffer.h"
 #include "dcbutton.h"
 #include "graphics.h"
-#include "gui_ids.h"
+#include "wxids.h"
 #include "main_menubar.h"
 #include "main_toolbar.h"
 #include "map.h"
@@ -223,10 +223,8 @@ public:
 	BrushShape GetBrushShape() const;
 	int GetBrushSize() const;
 	int GetBrushVariation() const;
-	int GetSpawnTime() const;
 
 	// Additional brush parameters
-	void SetSpawnTime(int time) { creature_spawntime = time; }
 	void SetBrushSize(int nz);
 	void SetBrushSizeInternal(int nz);
 	void SetBrushShape(BrushShape bs);
@@ -237,9 +235,12 @@ public:
 	void DecreaseBrushSize(bool wrap = false);
 	void IncreaseBrushSize(bool wrap = false);
 
-	// Load/unload a client version (takes care of dialogs aswell)
-	void UnloadVersion();
-	bool LoadVersion(wxString& error, wxArrayString& warnings, bool force = false);
+	int GetSpawnRadius() const { return spawn_radius; }
+	int GetSpawnAmount() const { return spawn_amount; }
+	int GetSpawnInterval() const { return spawn_interval; }
+	void SetSpawnRadius(int radius) { spawn_radius = radius; }
+	void SetSpawnAmount(int amount) { spawn_amount = amount; }
+	void SetSpawnInterval(int interval) { spawn_interval = interval; }
 
 	// Centers current view on position
 	void SetScreenCenterPosition(const Position& position, bool showIndicator = true);
@@ -257,13 +258,6 @@ public:
 	void DoUndo(int numActions = 1);
 	void DoRedo(int numActions = 1);
 
-	// TODO(fusion): Even before, there could only be a single "client version"
-	// loaded at any given time and it didn't make a lot of sense to have multiple
-	// maps loaded at the same time, unless you were trying to copy and paste stuff
-	// over. Overall it should be simpler to have a single project per editor and
-	// have support for copy and paste across editor instances. I still want to
-	// keep tabs tho, as they could be used to edit other aspects of a project but
-	// that's for a later stage.
 	bool NewProject(void);
 	bool OpenProject(void);
 	bool OpenProject(const wxString &dir);
@@ -449,7 +443,9 @@ protected:
 	BrushShape brush_shape = BRUSHSHAPE_SQUARE;
 	int brush_size = 0;
 	int brush_variation = 0;
-	int creature_spawntime = 0;
+	int spawn_radius = 0;
+	int spawn_amount = 0;
+	int spawn_interval = 0;
 	bool use_custom_thickness = false;
 	float custom_thickness_mod = 0.0f;
 

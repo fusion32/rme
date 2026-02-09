@@ -19,7 +19,7 @@
 
 #include "properties_window.h"
 
-#include "gui_ids.h"
+#include "wxids.h"
 #include "container_properties_window.h"
 #include "item.h"
 #include "settings.h"

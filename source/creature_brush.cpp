@@ -71,9 +71,9 @@ void CreatureBrush::draw_creature(Map *map, Tile *tile)
 
 		Creature *creature = newd Creature();
 		creature->raceId = raceId;
-		creature->spawnRadius = 50;
-		creature->spawnAmount = 1;
-		creature->spawnInterval = 600;
+		creature->spawnRadius = g_editor.GetSpawnRadius();
+		creature->spawnAmount = g_editor.GetSpawnAmount();
+		creature->spawnInterval = g_editor.GetSpawnInterval();
 		creature->selected = false;
 		tile->creature = creature;
 	}

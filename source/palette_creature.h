@@ -48,23 +48,21 @@ protected:
 	void SelectTileset(size_t index);
 	void SelectCreature(size_t index);
 	void SelectCreature(std::string name);
+
 public:
 	// Event handling
-	void OnChangeSpawnTime(wxSpinEvent& event);
-	void OnChangeSpawnSize(wxSpinEvent& event);
-
 	void OnTilesetChange(wxCommandEvent& event);
 	void OnListBoxChange(wxCommandEvent& event);
-	void OnClickCreatureBrushButton(wxCommandEvent& event);
-protected:
-	void SelectCreatureBrush();
+	void OnChangeSpawnRadius(wxSpinEvent& event);
+	void OnChangeSpawnAmount(wxSpinEvent& event);
+	void OnChangeSpawnInterval(wxSpinEvent& event);
 
+protected:
 	wxChoice* tileset_choice;
 	SortableListBox* creature_list;
-	wxToggleButton* creature_brush_button;
-	wxToggleButton* spawn_brush_button;
-	wxSpinCtrl* creature_spawntime_spin;
-	wxSpinCtrl* spawn_size_spin;
+	wxSpinCtrl* spawn_radius_spin;
+	wxSpinCtrl* spawn_amount_spin;
+	wxSpinCtrl* spawn_interval_spin;
 
 	bool handling_event;
 

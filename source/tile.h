@@ -137,7 +137,8 @@ struct Tile {
 	}
 
 	bool isSelected(void){
-		return getFirstSelectedItem() != NULL;
+		return (creature && creature->isSelected())
+			|| (getFirstSelectedItem() != NULL);
 	}
 
 	// TODO(fusion): Not exactly sure when we want to NOT delete removed items here.

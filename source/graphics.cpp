@@ -186,28 +186,26 @@ Sprite* GraphicManager::getSprite(int id)
 
 GameSprite* GraphicManager::getCreatureSprite(int id)
 {
-	if(id < 0) {
-		return nullptr;
+	GameSprite *sprite = NULL;
+	if(id > 0){
+		auto it = sprite_space.find(creatureBaseId + id - 1);
+		if(it != sprite_space.end()) {
+			sprite = dynamic_cast<GameSprite*>(it->second);
+		}
 	}
-
-	auto it = sprite_space.find(creatureBaseId + id);
-	if(it != sprite_space.end()) {
-		return static_cast<GameSprite*>(it->second);
-	}
-	return nullptr;
+	return sprite;
 }
 
 GameSprite* GraphicManager::getEditorSprite(int id)
 {
-	if(id >= 0) {
-		return nullptr;
+	GameSprite *sprite = NULL;
+	if(id < 0){
+		auto it = sprite_space.find(id);
+		if(it != sprite_space.end()) {
+			sprite = dynamic_cast<GameSprite*>(it->second);
+		}
 	}
-
-	auto it = sprite_space.find(id);
-	if(it != sprite_space.end()) {
-		return dynamic_cast<GameSprite*>(it->second);
-	}
-	return nullptr;
+	return sprite;
 }
 
 #define loadPNGFile(name) _wxGetBitmapFromMemory(name, sizeof(name))
@@ -415,7 +413,7 @@ bool GraphicManager::loadSpriteMetadata(const wxString &projectDir, wxString &ou
 	itemBaseId     = 100;
 	itemCount      = (maxItemId - 100 + 1);
 	creatureBaseId = itemBaseId + itemCount;
-	creatureCount  = (maxCreatureId - 0 + 1);
+	creatureCount  = (maxCreatureId - 1 + 1);
 
 	int minTypeId  = itemBaseId;
 	int maxTypeId  = minTypeId + itemCount + creatureCount - 1;
@@ -474,7 +472,8 @@ bool GraphicManager::loadSpriteMetadata(const wxString &projectDir, wxString &ou
 
 	// IMPORTANT(fusion): This needs to happen after all sprite metadata is
 	// loaded because disguise targets doesn't have any ordering guarantees
-	// and may be loaded only after the type referencing it.
+	// and may be loaded after the type referencing it, meaning that getSprite()
+	// would return NULL.
 	for(int typeId = GetMinItemTypeId();
 			typeId <= GetMaxItemTypeId();
 			typeId += 1){

@@ -29,7 +29,7 @@
 #include "doodad_brush.h"
 #include "duplicated_items_window.h"
 #include "ground_brush.h"
-#include "gui_ids.h"
+#include "wxids.h"
 #include "house_exit_brush.h"
 #include "main_menubar.h"
 #include "map.h"
@@ -1396,11 +1396,6 @@ int Editor::GetBrushSize() const
 int Editor::GetBrushVariation() const
 {
 	return brush_variation;
-}
-
-int Editor::GetSpawnTime() const
-{
-	return creature_spawntime;
 }
 
 void Editor::SelectBrush()

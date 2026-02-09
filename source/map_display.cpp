@@ -202,7 +202,6 @@ void MapCanvas::OnPaint(wxPaintEvent& event)
 			options.ingame = !g_settings.getBoolean(Config::SHOW_EXTRA);
 			options.show_all_floors = g_settings.getBoolean(Config::SHOW_ALL_FLOORS);
 			options.show_creatures = g_settings.getBoolean(Config::SHOW_CREATURES);
-			options.show_spawns = g_settings.getBoolean(Config::SHOW_SPAWNS);
 			options.show_houses = g_settings.getBoolean(Config::SHOW_HOUSES);
 			options.show_shade = g_settings.getBoolean(Config::SHOW_SHADE);
 			options.show_special_tiles = g_settings.getBoolean(Config::SHOW_SPECIAL_TILES);
@@ -675,17 +674,17 @@ void MapCanvas::OnMouseActionClick(wxMouseEvent& event)
 			} else if(event.ControlDown()) {
 				if(Tile* tile = g_editor.map.getTile(mouse_map_x, mouse_map_y, floor)){
 					if(tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
-						if(!tile->creature->isSelected()){
-							selection.add(NULL, tile, tile->creature);
-						}else{
+						if(tile->creature->isSelected()){
 							selection.remove(NULL, tile, tile->creature);
+						}else{
+							selection.add(NULL, tile, tile->creature);
 						}
 						selection.updateSelectionCount();
 					} else if(Item* item = tile->getTopItem()){
 						if(item->isSelected()) {
-							selection.add(NULL, tile, item);
-						} else {
 							selection.remove(NULL, tile, item);
+						} else {
+							selection.add(NULL, tile, item);
 						}
 						selection.updateSelectionCount();
 					}
@@ -702,21 +701,18 @@ void MapCanvas::OnMouseActionClick(wxMouseEvent& event)
 					drag_start_z = floor;
 				} else {
 					selection.clear(NULL);
-					if(tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
+					if(tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)){
 						selection.add(NULL, tile, tile->creature);
 						dragging = true;
 						drag_start_x = mouse_map_x;
 						drag_start_y = mouse_map_y;
 						drag_start_z = floor;
-					} else {
-						Item* item = tile->getTopItem();
-						if(item) {
-							selection.add(NULL, tile, item);
-							dragging = true;
-							drag_start_x = mouse_map_x;
-							drag_start_y = mouse_map_y;
-							drag_start_z = floor;
-						}
+					}else if(Item *item = tile->getTopItem()){
+						selection.add(NULL, tile, item);
+						dragging = true;
+						drag_start_x = mouse_map_x;
+						drag_start_y = mouse_map_y;
+						drag_start_z = floor;
 					}
 					selection.updateSelectionCount();
 				}

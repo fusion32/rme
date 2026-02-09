@@ -61,7 +61,6 @@ void DrawingOptions::SetDefault()
 	show_grid = 0;
 	show_all_floors = true;
 	show_creatures = true;
-	show_spawns = true;
 	show_houses = true;
 	show_shade = true;
 	show_special_tiles = true;
@@ -92,7 +91,6 @@ void DrawingOptions::SetIngame()
 	show_grid = 0;
 	show_all_floors = true;
 	show_creatures = true;
-	show_spawns = false;
 	show_houses = false;
 	show_shade = false;
 	show_special_tiles = false;
@@ -120,7 +118,7 @@ bool DrawingOptions::isTileIndicators() const noexcept
 {
 	if(isOnlyColors())
 		return false;
-	return show_pickupables || show_moveables || show_houses || show_spawns;
+	return show_pickupables || show_moveables || show_houses;
 }
 
 bool DrawingOptions::isTooltips() const noexcept

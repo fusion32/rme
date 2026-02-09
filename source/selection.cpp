@@ -130,7 +130,7 @@ void Selection::remove(Action *action, Tile *tile, Item *item)
 	}
 }
 
-void Selection::remove(Action *action, Tile* tile, Creature* creature)
+void Selection::remove(Action *action, Tile *tile, Creature *creature)
 {
 	ASSERT(tile->creature == creature);
 	if(creature->isSelected()){
@@ -148,7 +148,7 @@ void Selection::remove(Action *action, Tile* tile, Creature* creature)
 	}
 }
 
-void Selection::remove(Action *action, Tile* tile)
+void Selection::remove(Action *action, Tile *tile)
 {
 	Tile newTile; newTile.deepCopy(*tile);
 	newTile.deselect();
