@@ -22,7 +22,7 @@
 
 uint32_t GroundBrush::border_types[256];
 
-int AutoBorder::edgeNameToID(const std::string& edgename)
+int AutoBorder::edgeNameToID(std::string_view edgename)
 {
 	if(edgename == "n") {
 		return NORTH_HORIZONTAL;
@@ -56,34 +56,28 @@ bool AutoBorder::load(pugi::xml_node node, wxArrayString& warnings, GroundBrush*
 {
 	ASSERT(ground ? ground_equivalent != 0 : true);
 
-	pugi::xml_attribute attribute;
-
 	bool optionalBorder = false;
-	if((attribute = node.attribute("type"))) {
-		if(std::string(attribute.as_string()) == "optional") {
+	if(pugi::xml_attribute attr = node.attribute("type")){
+		if(std::string_view(attr.as_string()) == "optional"){
 			optionalBorder = true;
 		}
 	}
 
-	if((attribute = node.attribute("group"))) {
-		group = attribute.as_ushort();
+	if(pugi::xml_attribute attr = node.attribute("group")) {
+		group = attr.as_ushort();
 	}
 
-	for(pugi::xml_node childNode = node.first_child(); childNode; childNode = childNode.next_sibling()) {
-		if(!(attribute = childNode.attribute("item"))) {
+	for(pugi::xml_node childNode: node.children()){
+		pugi::xml_attribute itemAttr = childNode.attribute("item");
+		pugi::xml_attribute edgeAttr = childNode.attribute("edge");
+		if(!itemAttr || !edgeAttr){
 			continue;
 		}
 
-		uint16_t itemid = attribute.as_ushort();
-		if(!(attribute = childNode.attribute("edge"))) {
-			continue;
-		}
-
-		const std::string& orientation = attribute.as_string();
-
-		ItemType *type = GetMutableItemType(itemid);
-		if(!type) {
-			warnings.push_back("Invalid item ID " + std::to_string(itemid) + " for border " + std::to_string(id));
+		int typeId = itemAttr.as_int();
+		ItemType *type = GetMutableItemType(itemAttr.as_int());
+		if(!type){
+			warnings.push_back(wxString() << "Invalid item ID " << typeId << " for border " << id);
 			continue;
 		}
 
@@ -101,14 +95,15 @@ bool AutoBorder::load(pugi::xml_node node, wxArrayString& warnings, GroundBrush*
 			type->border_group = group;
 		}
 
-		int32_t edge_id = edgeNameToID(orientation);
+		int32_t edge_id = edgeNameToID(edgeAttr.as_string());
 		if(edge_id != BORDER_NONE) {
-			tiles[edge_id] = itemid;
+			tiles[edge_id] = typeId;
 			if(type->border_alignment == BORDER_NONE) {
 				type->border_alignment = ::BorderType(edge_id);
 			}
 		}
 	}
+
 	return true;
 }
 
@@ -162,8 +157,8 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		randomize = attribute.as_bool();
 	}
 
-	for(pugi::xml_node childNode = node.first_child(); childNode; childNode = childNode.next_sibling()) {
-		const std::string& childName = as_lower_str(childNode.name());
+	for(pugi::xml_node childNode: node.children()){
+		std::string_view childName = childNode.name();
 		if(childName == "item") {
 			uint16_t itemId = childNode.attribute("id").as_ushort();
 			int32_t chance = childNode.attribute("chance").as_int();

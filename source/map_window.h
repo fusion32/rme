@@ -48,8 +48,8 @@ public:
 
 	// GetViewSize returns the size of the containing canvas, in pixels
 	void GetViewSize(int* x, int* y);
+
 	// Returns the start of the camera on the map, in pixels
-	// Actually is scroll thumb positions
 	void GetViewStart(int* x, int* y);
 
 	// Set size of this window (in pixels)

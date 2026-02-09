@@ -132,11 +132,11 @@ void MapWindow::SetScreenCenterPosition(const Position& position, bool showIndic
 	if(!position.isValid())
 		return;
 
-	Position minPos = g_editor.map.getMinPosition();
-	int x = (position.x - minPos.x) * rme::TileSize;
-	int y = (position.y - minPos.y) * rme::TileSize;
+	int x = position.x * rme::TileSize;
+	int y = position.y * rme::TileSize;
 	int z = position.z;
-	if(position.z < 8) {
+
+	if(z < 8) {
 		// Compensate for floor offset above ground
 		x -= (rme::MapGroundLayer - z) * rme::TileSize;
 		y -= (rme::MapGroundLayer - z) * rme::TileSize;
@@ -165,9 +165,12 @@ void MapWindow::GoToPreviousCenterPosition()
 
 void MapWindow::Scroll(int x, int y, bool center)
 {
+	Position minPos = g_editor.map.getMinPosition();
+	x -= minPos.x * rme::TileSize;
+	y -= minPos.y * rme::TileSize;
+
 	if(center) {
 		int windowSizeX, windowSizeY;
-
 		canvas->GetSize(&windowSizeX, &windowSizeY);
 		x -= int((windowSizeX * g_editor.GetCurrentZoom()) / 2.0);
 		y -= int((windowSizeY * g_editor.GetCurrentZoom()) / 2.0);

@@ -272,7 +272,7 @@ public:
 	}
 	~AutoBorder() {}
 
-	static int edgeNameToID(const std::string& edgename);
+	static int edgeNameToID(std::string_view edgename);
 	bool load(pugi::xml_node node, wxArrayString& warnings, GroundBrush* owner = nullptr, uint16_t ground_equivalent = 0);
 
 	uint32_t tiles[13];

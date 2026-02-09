@@ -1,0 +1,1305 @@
+<?xml version='1.0' encoding='utf-8'?>
+<materials>
+	
+
+	<tileset name="Architecture">
+		<raw>
+		<item id="477" />
+		<item fromid="2152" toid="2161" />
+		<item fromid="2181" toid="2187" />
+		<item fromid="2242" toid="2252" />
+		</raw>
+	</tileset>
+	<tileset name="Pyramid">
+		<raw>
+		<item id="477" />
+		<item fromid="924" toid="935" />
+		<item fromid="1316" toid="1328" />
+		<item fromid="1960" toid="1967" />
+		<item fromid="2188" toid="2221" />
+		</raw>
+	</tileset>
+	<tileset name="Blank">
+		<raw>
+		<item fromid="371" toid="4393" />
+		</raw>
+	</tileset>
+	<tileset name="Borders solid">
+		<raw>
+		<item fromid="110" toid="350" />
+		<item fromid="396" toid="407" />
+		<item fromid="623" toid="726" />
+		<item fromid="735" toid="746" />
+		<item fromid="759" toid="836" />
+		<item fromid="841" toid="922" />
+		<item fromid="938" toid="1018" />
+		<item fromid="1087" toid="1098" />
+		<item fromid="853" toid="864" />
+		<item fromid="1022" toid="1053" />
+		<item fromid="1700" toid="1715" />
+		<item fromid="1722" toid="1733" />
+		</raw>
+	</tileset>
+	<tileset name="Bridges">
+		<raw>
+		<item id="1771" />
+		<item fromid="2253" toid="2262" />
+		<item fromid="2265" toid="2288" />
+		</raw>
+	</tileset>
+	<tileset name="Special Fields">
+		<raw>
+		<item fromid="2118" toid="2140" />
+		<item fromid="2145" toid="2148" />
+		</raw>
+	</tileset>
+	<tileset name="Hidden-path">
+		<raw>
+		<item id="470" />
+		<item fromid="865" toid="869" />
+		<item id="2144" />
+		<item fromid="4809" toid="4814" />
+		<item fromid="4817" toid="4820" />
+		</raw>
+	</tileset>
+	<tileset name="Mountains">
+		<raw>
+		<item fromid="1081" toid="1086" />
+		<item fromid="1100" toid="1128" />
+		<item fromid="4394" toid="4514" />
+		</raw>
+	</tileset>
+	<tileset name="Walls and Railings">
+		<raw>
+			<item fromid="1270" toid="1315" />
+			<item fromid="1329" toid="1747" />
+			<item fromid="2162" toid="2180" />
+			<item fromid="2201" toid="2216" />
+			<item fromid="2222" toid="2241" />
+			<item fromid="1450" toid="1699" />
+		</raw>
+	</tileset>
+	<tileset name="Roofs">
+		<raw>
+		<item fromid="1153" toid="1196" />
+		<item fromid="486" toid="498" />
+		<item fromid="1197" toid="1209" />
+		<item id="5045" />
+		<item fromid="5047" toid="5054" />
+		<item id="5081" />
+		</raw>
+	</tileset>
+	<tileset name="Borders normal">
+		<raw>
+		<item fromid="439" toid="450" />
+		<item id="602" />
+		<item id="603" />
+		<item id="612" />
+		<item id="613" />
+		<item fromid="571" toid="592" />
+		<item fromid="1054" toid="1065" />
+		<item fromid="4531" toid="4554" />
+		<item fromid="4585" toid="4596" />
+		<item fromid="4621" toid="4652" />
+		<item fromid="4656" toid="4679" />
+		<item fromid="4702" toid="4737" />
+		<item fromid="4749" toid="4808" />
+		</raw>
+	</tileset>
+	<tileset name="Special Tiles">
+		<raw>
+		<item id="419" />
+		<item id="420" />
+		<item id="424" />
+		<item id="425" />
+		<item id="430" />
+		<item id="431" />
+		<item id="452" />
+		<item id="453" />
+		<item fromid="457" toid="462" />
+		<item id="479" />
+		<item id="481" />
+		<item id="596" />
+		<item id="597" />
+		<item id="598" />
+		<item id="599" />
+		<item fromid="1212" toid="1269" />
+		<item id="563" />
+		<item id="564" />
+		</raw>
+	</tileset>
+	<tileset name="Grounds">
+		<raw>
+			<item id="100" />
+			<item id="101" />
+			<item id="102" />
+			<item id="103" />
+			<item id="104" />
+			<item id="105" />
+			<item id="106" />
+			<item id="107" />
+			<item id="108" />
+			<item id="109" />
+			<item id="231" />
+			<item id="280" />
+			<item id="351" />
+			<item id="352" />
+			<item id="353" />
+			<item id="354" />
+			<item id="355" />
+			<item id="368" />
+			<item id="408" />
+			<item id="409" />
+			<item id="410" />
+			<item id="415" />
+			<item id="416" />
+			<item id="417" />
+			<item id="418" />
+			<item id="422" />
+			<item id="423" />
+			<item id="429" />
+			<item id="436" />
+			<item id="454" />
+			<item id="455" />
+			<item id="456" />
+			<item id="463" />
+			<item id="464" />
+			<item id="470" />
+			<item id="469" />
+			<item id="618" />
+			<item id="619" />
+			<item id="620" />
+			<item id="622" />
+			<item id="727" />
+			<item id="728" />
+			<item id="729" />
+			<item id="730" />
+			<item id="731" />
+			<item id="732" />
+			<item id="733" />
+			<item id="734" />
+			<item fromid="747" toid="758" />
+			<item id="799" />
+			<item id="800" />
+			<item id="837" />
+			<item id="838" />
+			<item id="839" />
+			<item id="840" />
+			<item id="870" />
+			<item id="923" />
+			<item id="936" />
+			<item id="937" />
+			<item id="950" />
+			<item id="952" />
+			<item id="4821" />
+			<item id="4822" />
+			<item id="982" />
+			<item id="1127" />
+			<item id="1152" />
+			<item id="1158" />
+			<item id="1159" />
+			<item id="1161" />
+			<item id="1168" />
+			<item id="1169" />
+			<item id="1171" />
+			<item id="1178" />
+			<item id="1179" />
+			<item id="1180" />
+			<item id="1188" />
+			<item id="1189" />
+			<item id="1190" />
+			<item id="1210" />
+			<item id="1211" />
+			<item id="1771" />
+			<item id="2144" />
+			<item id="194" />
+			<item id="478" />
+			<item id="480" />
+			<item fromid="499" toid="562" />
+			<item fromid="1019" toid="1021" />
+			<item fromid="4515" toid="4530" />
+			<item fromid="4556" toid="4568" />
+			<item id="4584" />
+			<item id="4597" />
+			<item fromid="4598" toid="4614" />
+			<item fromid="4653" toid="4655" />
+			<item fromid="4680" toid="4701" />
+			<item fromid="4738" toid="4748" />
+			<item fromid="4809" toid="4814" />
+		</raw>
+	</tileset>
+
+	<tileset name="Nature">
+		<terrain>
+			<brush name="sea" />
+			<brush name="mountain" />
+			<brush name="mountain ground" />
+			<brush name="ramp" />
+			<brush name="bamboo ramp" />
+			<brush name="jungle grass" />
+			<brush name="grass" />
+			<brush name="grass open stone pile" />
+			<brush name="grass closed stone pile" />
+			<brush name="grass pitfall" />
+			<brush name="dark swamp" />
+			<brush name="swamp" />
+			<brush name="jungle dirt" />
+			<brush name="light dirt" />
+			<brush name="dirt" />
+
+			<brush name="sand" />
+			<brush name="sand open stone pile" />
+			<brush name="sand closed stone pile" />
+			<brush name="sand scarab hole" />
+
+			<brush name="tar pit" />
+			<brush name="ice" />
+			<brush name="ice open stone pile" />
+			<brush name="ice closed stone pile" />
+			<brush name="hole in the ice" />
+
+
+
+
+
+
+			<brush name="snow" />
+			<brush name="white gravel" />
+
+			<brush name="mountain top ground" />
+			<brush name="rocky ground" />
+
+			<brush name="dry earth" />
+		</terrain>
+		<doodad>
+			<brush name="mossy wall" />
+			<brush name="green fungi" />
+			<brush name="green trees" />
+			<brush name="dead trees" />
+			<brush name="trees" />
+			<brush name="bushes" />
+			<brush name="blueberry bushes" />
+
+			<brush name="dead bushes" />
+			<brush name="swamp plants" />
+			<brush name="flowers" />
+			<brush name="yellow flowers" />
+			<brush name="royal flowers" />
+			<brush name="sunflowers" />
+			<brush name="lilypads" />
+			<brush name="roses" />
+			<brush name="tall jungle grass" />
+			<brush name="tall swamp grass" />
+			<item id="1079" />
+			<item id="3699" />
+			<brush name="log" />
+			<brush name="log vines" />
+			<brush name="log covered in moss" />
+			<brush name="tree crown" />
+			<brush name="branches" />
+			<brush name="bamboo plant" />
+			<brush name="giant mushrooms" />
+			<brush name="moldy giant mushrooms" />
+			<brush name="moldy mushrooms" />
+			<brush name="small mushrooms" />
+			<brush name="jungle maw" />
+			<brush name="ant trails" />
+			<brush name="waterfall" />
+			<brush name="gray rocks" />
+			<brush name="brown rocks" />
+			<brush name="small rocks" />
+			<brush name="staglamites" />
+			<brush name="weird shaped stones" />
+			<brush name="debris" />
+			<brush name="lava hole" />
+			<brush name="gray rubble" />
+			<brush name="brown rubble" />
+			<brush name="rough gray rubble" />
+			<brush name="rough brown rubble" />
+			<brush name="mossy rocks" />
+		</doodad>
+		<raw>
+			<item fromid="388" toid="393" />
+			<item fromid="2130" />
+			<item fromid="1772" toid="1846" />
+			<item fromid="3608" toid="3700" />
+			<item fromid="1067" toid="1151" />
+			<item fromid="3472" toid="3477" />
+			<item fromid="3734" toid="3741" />
+			<item fromid="1847" toid="1921" />
+			<item fromid="3701" toid="3986" />
+			<item fromid="1716" toid="1721" />
+		</raw>
+	</tileset>
+
+	<tileset name="Cave">
+		<terrain>
+			<brush name="earth" />
+
+			<brush name="cave hole" />
+
+			<brush name="cave small hole" />
+			<brush name="cave pickhole" />
+			<brush name="cave ropespot" />
+			<brush name="cave" />
+			<brush name="dirt" />
+			<brush name="clear water" />
+			<brush name="lava" />
+			<brush name="void" />
+		</terrain>
+		<raw>
+			<item fromid="101" />
+			<item fromid="351" toid="384" />
+
+			<item fromid="386" />
+			<item fromid="385" />
+			<item fromid="387" />
+			<item fromid="394" />
+		</raw>
+	</tileset>
+
+	<tileset name="Snow">
+		<terrain>
+			<brush name="sea" />
+			<brush name="mountain" />
+			<brush name="snow" />
+			<brush name="ice" />
+			<brush name="white gravel" />
+			<brush name="mountain ground" />
+			<brush name="mountain top ground" />
+			<brush name="rocky ground" />
+		</terrain>
+		<doodad>
+
+			<brush name="snowy alive trees" />
+			<brush name="dead trees" />
+
+		</doodad>
+	</tileset>
+
+	<tileset name="Town">
+		<terrain>
+			<brush name="stone floor" />
+			<brush name="cobblestone" />
+			<brush name="grassy cobblestone" />
+			<brush name="lawn" />
+			<brush name="wooden floor" />
+			<brush name="drawbridge" />
+			<brush name="dark wooden floor" />
+			<brush name="drab tiled stone floor" />
+			<brush name="dark tiled sandstone" />
+			<brush name="tiled sandstone floor" />
+			<brush name="tiled sandstone floor pressed" />
+			<brush name="tiled sandstone floor depressed" />
+			<brush name="light tiled stone floor" />
+			<brush name="dark tiled stone floor" />
+			<brush name="orange tiled floor" />
+			<brush name="dark sandstone" />
+			<brush name="sandstone" />
+			<brush name="white marble floor" />
+			<brush name="black marble floor" />
+			<brush name="gray stone tiles" />
+			<brush name="gray stone tiles pressed" />
+			<brush name="gray stone tiles depressed" />
+
+			<brush name="store counter" />
+			<brush name="plaster wall" />
+			<brush name="plaster wall arch" />
+			<brush name="brick wall" />
+			<brush name="brick wall arch" />
+			<brush name="stone wall" />
+			<brush name="rock wall" />
+			<brush name="egypt wall" />
+			<brush name="egypt stone wall" />
+			<brush name="pyramid ramp" />
+			<brush name="marble wall" />
+
+			<brush name="marble railing" />
+			<brush name="stone railing" />
+			<brush name="ornamented marble railing" />
+			<brush name="pillared marble railing" />
+			<brush name="ruin wall" />
+			<brush name="paravent wall" />
+			<brush name="fiery wall" />
+			<brush name="jungle stone wall" />
+			<brush name="jungle stone wall ornamented" />
+			<brush name="metal wall" />
+			<brush name="bamboo wall" />
+			<brush name="Wooden Palisade" />
+			<brush name="Wooden Palisade (no strings)" />
+			<brush name="Wooden Palisade (steel gate)" />
+			<brush name="Wooden Palisade Railing" />
+			<item id="1602" />
+			<item fromid="1610" toid="1618" />
+			<brush name="ornamented sandstone railing" />
+			<brush name="sandstone railing" />
+			<brush name="jungle stone railing" />
+			<brush name="grass wall" />
+			<brush name="thin bamboo wall" />
+			<brush name="fence" />
+			<brush name="dark fence" />
+			
+			<brush name="flat roof" />
+			<brush name="brown bamboo roof" />
+			<brush name="brick roof, left" />
+			<brush name="brick roof, vertical" />
+			<brush name="brick roof, right" />
+			<brush name="brick roof, up" />
+			<brush name="brick roof, horizontal" />
+			<brush name="brick roof, down" />
+			<brush name="wooden roof, up" />
+			<brush name="wooden roof, horizontal" />
+			<brush name="wooden roof, down" />
+			<brush name="wooden roof, left" />
+			<brush name="wooden roof, vertical" />
+			<brush name="wooden roof, right" />
+		</terrain>
+	</tileset>
+
+	<tileset name="Stairs">
+		<terrain>
+			
+			<item fromid="1947" />
+			<item fromid="1958" />
+			<item fromid="1977" />
+			<item fromid="1978" />
+			<brush name="ramp" />
+			
+			<item fromid="1948" />
+			<item fromid="1968" />
+			<brush name="wooden ladder hole" />
+			<brush name="wooden trapdoor" />
+			<brush name="stairs down" />
+			<brush name="trapdoor down" />
+			<brush name="trapdoor ladder down" />
+			<brush name="trapdoor ladder down" />
+			<brush name="stone stairway" />
+			<brush name="black stone stairs" />
+			<brush name="black stone trapdoor" />
+			<brush name="gray stone stairs" />
+			<brush name="gray stone trapdoor" />
+		</terrain>
+	</tileset>
+
+	<tileset name="Boats">
+		<raw>
+			<item fromid="4881" toid="4946" />
+			<item fromid="1770" />
+			<item fromid="1769" toid="4945" />
+			<item fromid="4947" toid="4990" />
+			<item fromid="4997" toid="4916" />
+			<item fromid="5082" toid="5085" />
+			<item fromid="1748" toid="1771" />
+			<item fromid="1755" toid="1768" />
+		</raw>
+	</tileset>
+
+	<tileset name="Fields">
+		<doodad>
+		</doodad>
+	</tileset>
+
+	<tileset name="Sea">
+		<raw>
+			<item fromid="3111" />
+			<item fromid="3125" />
+			<item fromid="1851" toid="1860" />
+		</raw>
+	</tileset>
+
+	<tileset name="Hangables">
+		<doodad>
+			<brush name="cobra wall statue" />
+			<brush name="wall lamp" />
+			<brush name="wall lamp - lit" />
+			<brush name="wall torch" />
+			<brush name="wall torch - lit" />
+			<brush name="wall candle" />
+			<brush name="wall candle - lit" />
+			<brush name="bambu wall torch" />
+			<brush name="bambu wall torch - lit" />
+			<brush name="cage wall lamp" />
+			<brush name="cage wall lamp - lit" />
+			<brush name="blackboard" />
+			<item id="2664" />
+			<item id="2668" />
+			<item id="2632" />
+			<item id="2635" />
+			<item id="2638" />
+			<item id="2639" />
+			<item id="2640" />
+			<item id="2641" />
+			<item id="2644" />
+			<item id="2647" />
+			<item id="2650" />
+			<item id="2653" />
+			<item id="2656" />
+			<item id="2659" />
+			<item id="2667" />
+		</doodad>
+		<raw>
+		<item fromid="2596" toid="2737" />
+		<item fromid="2907" toid="2910" />
+		<item fromid="2928" toid="2931" />
+		<item fromid="2936" toid="2939" />
+		</raw>
+	</tileset>
+
+	<tileset name="Interior">
+		<doodad>
+			<brush name="small drawer" />
+			<brush name="flashy drawer" />
+			<brush name="pendulum clock" />
+			<brush name="normal wardrobe" />
+			<brush name="tall locker" />
+			<brush name="mirror stand" />
+			<brush name="wooden counter" />
+			<brush name="store counter" />
+			<brush name="big brown table, horizontal" />
+			<brush name="big brown table, vertical" />
+			<brush name="bambu drawer" />
+			<brush name="bambu bookcase" />
+			<brush name="bambu bookcase with books" />
+			<brush name="bambu wardrobe" />
+			<brush name="bookcase" />
+			<item id="2469" />
+			<item id="2471" />
+			<brush name="wooden chest" />
+			<item id="2473" />
+			<item id="2478" />
+			<brush name="large trunk" />
+			<brush name="wooden coffin" />
+			<brush name="large cask" />
+			<item id="2519" />
+			<item id="2520" />
+			<item id="2521" />
+			<item id="2522" />
+			<item id="2523" />
+			<item id="2524" />
+			<item id="2526" />
+			<item id="2904" />
+			<brush name="oven - on" />
+			<brush name="oven - off" />
+
+			-- MUSIC!1111111 --
+			<brush name="piano" />
+			<brush name="harp" />
+			-- beds --
+			<brush name="normal bed" />
+			<brush name="normal bed with sleeper" />
+			<brush name="cot" />
+			<brush name="cot with sleeper" />
+			<brush name="hammock" />
+			<brush name="hammock with sleeper" />
+			-- tables --
+			<item id="2314" />
+			<item id="2315" />
+			<item id="2316" />
+			<item id="2319" />
+			-- chairs --
+			<brush name="wooden chair" />
+			<brush name="rocking chair" />
+			<brush name="red cushioned chair" />
+			<brush name="green cushioned chair" />
+			<brush name="sofa chair" />
+			<brush name="green sofa" />
+			<brush name="redwhite sofa" />
+			<brush name="bench" />
+			<brush name="gilded throne" />
+			<brush name="dull throne" />
+
+			-- carpets --
+			<brush name="brown bear skin rug" />
+			<brush name="white bear skin rug" />
+			<brush name="bear skin rug" />
+			<brush name="red carpet" />
+		</doodad>
+		<raw>
+			<item fromid="2302" toid="2586" />
+			<item fromid="2904" />
+			<item fromid="2934" toid="2935" />
+			<item fromid="2948" toid="2958" />
+			<item fromid="2989" toid="3000" />
+			<item fromid="2959" toid="2964" />
+			<item fromid="2974" toid="2980" />
+			<item fromid="2813" toid="2852" />
+			<item fromid="2981" toid="2988" />
+			<item fromid="3064" />
+			<item fromid="3076" />
+			<item fromid="3459" toid="3480" />
+			<item fromid="3484" toid="3491" />
+			<item fromid="3497" toid="3500" />
+			<item fromid="3502" />
+			<item fromid="3515" toid="3518" />
+			<item fromid="3523" toid="3524" />
+			<item fromid="2346" toid="2510" />
+			<item fromid="4854" toid="4862" />
+		</raw>
+	</tileset>
+
+	<tileset name="Statues">
+		<doodad>
+			<item fromid="2027" toid="2028" />
+			<item fromid="2031" toid="2032" />
+			<brush name="knight statue" />
+			<brush name="minotaur statue" />
+			<brush name="goblin statue" />
+			<brush name="gargoyle statue" />
+			<brush name="gargoyle statue pedestal" />
+			<brush name="cobra statue" />
+			<brush name="cobra statue pedestal" />
+			<brush name="female statue" />
+			<brush name="female statue with flame" />
+			<brush name="hunter statue" />
+
+			<brush name="lizard statue" />
+			<brush name="broken lizard statue" />
+			<brush name="giant snake head statue" />
+			<brush name="giant snake head statue (open)" />
+			<brush name="giant hand statue" />
+			<item fromid="2033" toid="2034" />
+		</doodad>
+	</tileset>
+
+	<tileset name="Exterior">
+		<doodad>
+			<brush name="stone altar" />
+			<brush name="decorative altar" />
+			<brush name="sacrifical stone" />
+			<brush name="sacrifical stone with blood" />
+
+			-- coffins --
+			<brush name="stone coffin (no rose)" />
+			<brush name="stone coffin (yellow rose)" />
+			<brush name="stone coffin (blue rose)" />
+			<brush name="stone coffin (red rose)" />
+			<brush name="buried stone coffin" />
+			<item fromid="1979" toid="1982" />
+			<brush name="sarcophagus" />
+
+			-- Campfires --
+			<item fromid="1996" toid="2003" />
+			<item fromid="2110" toid="2115" />
+			<item fromid="3510" toid="3514" />
+
+			-- fountains --
+			<brush name="ancient fountain - off" />
+			<brush name="ancient fountain - on" />
+			<brush name="water well" />
+			<brush name="lava fountain" />
+
+			<brush name="marble fountain - on" />
+			<brush name="marble fountain - off" />
+			<item id="1940" />
+			<brush name="normal fountain - on" />
+			<brush name="normal fountain - off" />
+			<brush name="normal fountain - off" />
+			<brush name="horizontal mill" />
+			<brush name="vertical mill" />
+			<brush name="draw well" />
+			<brush name="fishing net" />
+		</doodad>
+		<raw>
+			<item fromid="611" />
+			<item fromid="1751" toid="1754" />
+			<item fromid="1922" toid="1947" />
+			<item fromid="1979" toid="1995" />
+			<item fromid="1996" toid="2003" />
+			<item fromid="2012" toid="2115" />
+			<item fromid="3104" toid="3144" />
+			<item fromid="3221" />
+			<item fromid="3458" />
+			<item fromid="3501" />
+			<item fromid="3510" toid="3514" />
+			<item fromid="3519" toid="3522" />
+			<item fromid="3525" toid="3532" />
+			<item fromid="2062" toid="2075" />
+			<item fromid="2080" toid="2091" />
+			<item fromid="2083" toid="2107" />
+			<item fromid="2299" toid="2301" />
+		</raw>
+	</tileset>
+
+	<tileset name="Splash">
+		<doodad>
+			<item id="2886" />
+			<item id="2887" />
+			<item id="2888" />
+			<item id="2889" />
+			<item id="2890" />
+			<item id="2891" />
+			<item id="2696" />
+			<item id="2697" />
+			<item id="2698" />
+		</doodad>
+		<raw>
+			<item id="2886" />
+			<item id="2887" />
+			<item id="2888" />
+			<item id="2889" />
+			<item id="2890" />
+			<item id="2891" />
+			<item id="2696" />
+			<item id="2697" />
+			<item id="2698" />
+		</raw>
+	</tileset>
+
+	<tileset name="Furniture kits">
+		<items_and_raw>
+		<item fromid="2775" toid="2812" />
+		</items_and_raw>
+	</tileset>
+	<tileset name="Equipment">
+		<items_and_raw>
+			-- Helmets --
+			<item fromid="3011" />
+			<item fromid="3229" toid="3230" />
+			<item fromid="3351" toid="3356" />
+			<item fromid="3365" />
+			<item fromid="3367" toid="3369" />
+			<item fromid="3373" toid="3376" />
+			<item fromid="3384" toid="3385" />
+			<item fromid="3387" />
+			<item fromid="3390" toid="3393" />
+			<item fromid="3395" toid="3396" />
+			<item fromid="3400" />
+			<item fromid="3210" />
+			<item fromid="3573" toid="3574" />
+			<item fromid="3576" />
+			<item fromid="3403" />
+			<item fromid="3405" toid="3408" />
+			-- Armor --
+	        <item fromid="3357" toid="3361" />
+	        <item fromid="3366" />
+			<item fromid="3370" />
+			<item fromid="3377" toid="3381" />
+			<item fromid="3383" />
+			<item fromid="3386" />
+			<item fromid="3388" />
+			<item fromid="3394" />
+			<item fromid="3397" />
+			<item fromid="3399" />
+			<item fromid="3402" />
+			<item fromid="3561" toid="3571" />
+			<item fromid="3575" />
+			<item fromid="3404" />
+			-- Legs --
+			<item fromid="3362" toid="3364" />
+			<item fromid="3371" toid="3372" />
+			<item fromid="3382" />
+			<item fromid="3389" />
+			<item fromid="3398" />
+			<item fromid="3401" />
+			<item fromid="3557" toid="3559" />
+			-- Boots --
+			<item fromid="3079" />
+			<item fromid="3246" />
+			<item fromid="3549" toid="3555" />
+			<item fromid="3556" />
+		</items_and_raw>
+	</tileset>
+
+	<tileset name="Ornaments">
+		<items_and_raw>
+			-- Amulets --
+			<item fromid="3572" />
+			<item fromid="3045" />
+			<item fromid="3054" />
+			<item fromid="3055" />
+			<item fromid="3056" />
+			<item fromid="3057" />
+			<item fromid="3058" />
+			<item fromid="3080" toid="3085" />
+			<item fromid="3102" />
+			<item fromid="3008" />
+			<item fromid="3009" />
+			<item fromid="3012" />
+			<item fromid="3013" />
+			<item fromid="3014" />
+			<item fromid="3015" />
+			<item fromid="3016" />
+			<item fromid="3018" />
+			<item fromid="3019" />
+			<item fromid="3021" />
+			<item fromid="3025" />
+			-- Rings --
+			<item fromid="3091" toid="3093" />
+			<item fromid="3097" />
+			<item fromid="3098" />
+			<item fromid="3004" />
+			<item fromid="3005" />
+			<item fromid="3006" />
+			<item fromid="3007" />
+			<item fromid="3010" />
+		</items_and_raw>
+	</tileset>
+
+	<tileset name="Tools">
+		<items_and_raw>
+			<item fromid="3451" toid="3483" />
+			<item fromid="3003" />
+		</items_and_raw>
+	</tileset>
+
+	<tileset name="Valuables">
+		<items_and_raw>
+		<item fromid="3022" toid="3100" />
+		</items_and_raw>
+	</tileset>
+	<tileset name="Weapons">
+		<items_and_raw>
+			-- Swords --
+			<item fromid="3264" toid="3265" />
+			<item fromid="3267" />
+			<item fromid="3271" toid="3273" />
+			<item fromid="3278" />
+			<item fromid="3280" toid="3281" />
+			<item fromid="3283" toid="3285" />
+			<item fromid="3288" />
+			<item fromid="3290" toid="3297" />
+			<item fromid="3299" toid="3301" />
+			<item fromid="3306" toid="3308" />
+			<item fromid="3330" />
+			<item fromid="3326" />
+			<item fromid="3334" />
+			<item fromid="3338" toid="3339" />
+			-- Maces --
+			<item fromid="3270" />
+			<item fromid="3279" />
+			<item fromid="3282" />
+			<item fromid="3286" />
+			<item fromid="3289" />
+			<item fromid="3304" toid="3305" />
+			<item fromid="3208" />
+			<item fromid="3309" toid="3312" />
+			<item fromid="3322" />
+			<item fromid="3324" toid="3325" />
+			<item fromid="3327" />
+			<item fromid="3332" toid="3333" />
+			<item fromid="3336" toid="3337" />
+			<item fromid="3340" toid="3341" />
+			<item fromid="3343" />
+			<item fromid="3348" />
+			-- Axes --
+			<item fromid="3266" />
+			<item fromid="3268" toid="3269" />
+			<item fromid="3274" toid="3276" />
+			<item fromid="3302" toid="3303" />
+			<item fromid="3313" toid="3320" />
+			<item fromid="3323" />
+			<item fromid="3328" toid="3329" />
+			<item fromid="3331" />
+			<item fromid="3335" />
+			<item fromid="3342" />
+			<item fromid="3344" />
+			-- Distance --
+			<item fromid="3277" />
+			<item fromid="3347" />
+			<item fromid="3349" toid="3350" />
+			<item fromid="3239" />
+			<item fromid="3298" />
+			-- Ammo --
+			<item fromid="3446" toid="3450" />
+			<item fromid="3287" />
+			-- Magic --
+			<item fromid="3065" toid="3070" />
+			<item fromid="3071" toid="3075" />
+		</items_and_raw>
+	</tileset>
+
+	<tileset name="Shields">
+		<items_and_raw>
+			<item fromid="3409" toid="3442" />
+			<item fromid="3443" toid="3445" />
+		</items_and_raw>
+	</tileset>
+
+	<tileset name="Trinkets">
+		<items_and_raw>
+			-- Some random stuff --
+			<item id="2906" /> -- Watch (Also ID 6091, 6092, but those are useless?) --
+			-- Trinkets --
+			<item fromid="3060" toid="3062" />
+			<item id="3231" />
+			<item id="3232" />
+			<item id="3233" />
+			<item fromid="3240" toid="0" />
+			<item id="3509" />
+			<item id="3077" />
+			<item id="3078" />
+			<item id="3102" />
+			<item id="3243" />
+			<item id="3247" />
+			<item id="3020" />
+			<item id="3509" />
+			-- Instruments --
+			<item id="3252" />
+			<item id="3256" />
+			<item id="3257" />
+			<item id="3258" />
+			<item id="3259" />
+			<item id="3260" />
+			<item id="3261" />
+			<item id="3262" />
+			<item id="3263" />
+			<item id="2951" />
+			<item id="2965" />
+			<item id="2966" />
+			<item id="3103" />
+			-- Lights --
+			<item id="2911" toid="2919" />
+			<item id="2921" />
+			<item id="2920" />
+			<item id="2923" />
+			<item id="2922" />
+			<item id="2925" />
+			<item id="2924" />
+			<item id="2926" />
+			<item id="2932" />
+			<item id="2932" />
+			<item id="2933" />
+
+			<item fromid="3254" toid="3263" />
+			<item id="4872" />
+			<item fromid="3505" toid="3506" />
+			<item id="3507" />
+			<item id="3059" />
+			<item fromid="3077" toid="3078" />
+			<item fromid="3101" toid="3102" />
+			<item id="3243" />
+			<item id="3247" />
+			<item id="3020" />
+			<item fromid="2902" toid="2903" />
+			<item id="4840" />
+			-- Fluid containers --
+			<item fromid="2883" toid="2884" />
+			<item fromid="2873" toid="2885" />
+			<item id="2893" />
+			<item id="2901" />
+			<item id="2903" />
+			<item id="2905" />
+			<item id="2883" />
+			<item id="2884" />
+			-- Food related --
+			<item id="2903" />
+			-- Keys --
+			<item fromid="2967" toid="2973" />
+			-- Game pieces --
+			<item id="3534" />
+			<item fromid="3535" toid="3540" />
+			<item id="3533" />
+			<item fromid="3541" toid="3546" />
+			<item id="3547" />
+			<item id="3548" />
+		</items_and_raw>
+	</tileset>
+
+	<tileset name="Collectables">
+		<items_and_raw>
+		</items_and_raw>
+	</tileset>
+
+	<tileset name="Magic Fields">
+		<doodad>
+			<brush name="fire field (not decaying)" />
+			<brush name="poison field (not decaying)" />
+			<brush name="energy field (not decaying)" />
+			<brush name="fire field (decaying)" />
+			<brush name="poison field (decaying)" />
+			<brush name="energy field (decaying)" />
+			<brush name="magic wall (not decaying)" />
+			<brush name="magic wall (decaying)" />
+			<brush name="wild growth (decaying)" />
+			<brush name="yellow fire field (decaying)" />
+			<brush name="poison gas (decaying)" />
+			<brush name="yellow energy field (decaying)" />
+			<brush name="smoke field (not decaying)" />
+			<brush name="searing fire field (decaying)" />
+		</doodad>
+	</tileset>
+
+	<tileset name="Containers">
+		<items_and_raw>
+	        <item fromid="2853" toid="2855" />
+	        <item fromid="2856" toid="2871" />
+	        <item fromid="2864" toid="2872" />
+	        <item fromid="3253" />
+	        <item fromid="3217" toid="3218" />
+	        <item fromid="3503" toid="3504" />
+		</items_and_raw>
+		<raw>
+	        <item fromid="2853" toid="2855" />
+	        <item fromid="2856" toid="2871" />
+	        <item fromid="2864" toid="2872" />
+	        <item fromid="3253" />
+	        <item fromid="3217" toid="3218" />
+	        <item fromid="3503" toid="3504" />
+		</raw>
+	</tileset>
+
+	<tileset name="Writables">
+		<items_and_raw>
+			<item fromid="2813" toid="2852" />
+			<item id="3232" />
+			<item id="3234" />
+			<item id="3470" />
+			<item id="3471" />
+			<item id="3505" />
+			<item id="3506" />
+			<item id="3507" />
+			<item id="3059" />
+			<item id="3101" />
+			<item id="4842" />
+			<item id="4843" />
+			<item id="4844" />
+		</items_and_raw>
+	</tileset>
+
+	<tileset name="Food">
+		<items_and_raw>
+			<item id="3577" />
+			<item fromid="3578" toid="3607" />
+			<item fromid="3723" toid="3732" />
+			<item id="2905" />
+			<item id="2902" />
+			<item id="2902" />
+		</items_and_raw>
+	</tileset>
+
+	<tileset name="Trash">
+		<doodad>
+			<brush name="broken bottles" />
+			<brush name="rotten food" />
+			<brush name="rubbish" />
+			<brush name="bones" />
+			<item id="3121" />
+			<item id="3122" />
+			<item id="3123" />
+			<brush name="leaves" />
+			<item id="3131" />
+			<brush name="bamboo garbage" />
+			<brush name="wooden trash" />
+			<brush name="metal trash" />
+		</doodad>
+	</tileset>
+
+	<tileset name="Runes">
+		<items_and_raw>
+			<item fromid="3147" toid="3203" />
+		</items_and_raw>
+	</tileset>
+
+	<tileset name="Corpses">
+		<doodad>
+			<item id="3204" />
+			<item fromid="3987" toid="4317" />
+			<item fromid="4239" toid="4392" />
+		</doodad>
+	</tileset>
+
+	<tileset name="Stairs / Ramps / Ladders">
+		<raw>
+			
+			<item fromid="385" toid="387" />
+			<item fromid="394" />
+			<item fromid="421" />
+			<item fromid="593" toid="595" />
+			<item fromid="606" toid="610" />
+			<item fromid="615" />
+
+			
+			<item fromid="369" toid="370" />
+			<item fromid="411" />
+			<item fromid="412" />
+			<item fromid="413" toid="414" />
+			<item fromid="428" />
+			<item fromid="432" toid="434" />
+			<item fromid="437" toid="438" />
+			<item fromid="1950" toid="1957" />
+			<item fromid="482" toid="485" />
+			<item fromid="566" toid="567" />
+			<item fromid="4823" toid="4826" />
+
+			
+			<item fromid="435" />
+			<item fromid="475" toid="476" />
+			<item fromid="601" toid="600" />
+			<item fromid="604" toid="605" />
+			<item fromid="1156" />
+
+			<item fromid="1949" />
+			<item fromid="1959" />
+			
+			<item fromid="1948" />
+			<item fromid="1968" />
+
+			
+			<item fromid="1947" />
+			<item fromid="1958" />
+			<item fromid="1977" toid="1978" />
+		</raw>
+	</tileset>
+
+	<tileset name="Monsters">
+		<creatures>
+			<creature name="amazon" type="monster" looktype="137" lookhead="113" lookbody="120" looklegs="114" lookfeet="132" />
+			<creature name="ancient scarab" type="monster" looktype="79" />
+			<creature name="assassin" type="monster" looktype="129" lookhead="95" lookbody="95" looklegs="95" lookfeet="95" />
+			<creature name="badger" type="monster" looktype="105" />
+			<creature name="bandit" type="monster" looktype="129" lookhead="58" lookbody="59" looklegs="45" lookfeet="114" />
+			<creature name="banshee" type="monster" looktype="78" />
+			<creature name="bat" type="monster" looktype="122" />
+			<creature name="bear" type="monster" looktype="16" />
+			<creature name="behemoth" type="monster" looktype="55" />
+			<creature name="beholder" type="monster" looktype="17" />
+			<creature name="black knight" type="monster" looktype="131" lookhead="95" lookbody="95" looklegs="95" lookfeet="95" />
+			<creature name="blue djinn" type="monster" looktype="80" />
+			<creature name="bonebeast" type="monster" looktype="101" />
+			<creature name="bug" type="monster" looktype="45" />
+			<creature name="butterfly" type="monster" looktype="10" />
+			<creature name="carniphila" type="monster" looktype="120" />
+			<creature name="cave rat" type="monster" looktype="56" />
+			<creature name="centipede" type="monster" looktype="124" />
+			<creature name="chicken" type="monster" looktype="111" />
+			<creature name="cobra" type="monster" looktype="81" />
+			<creature name="crab" type="monster" looktype="112" />
+			<creature name="crocodile" type="monster" looktype="119" />
+			<creature name="crypt shambler" type="monster" looktype="100" />
+			<creature name="cyclops" type="monster" looktype="22" />
+			<creature name="dark monk" type="monster" looktype="225" />
+ 			<creature name="deer" type="monster" looktype="31" />
+			<creature name="demon" type="monster" looktype="35" />
+			<creature name="demon skeleton" type="monster" looktype="37" />
+			<creature name="dog" type="monster" looktype="32" />
+			<creature name="dragon" type="monster" looktype="34" />
+			<creature name="dragon lord" type="monster" looktype="39" />
+			<creature name="dwarf" type="monster" looktype="69" />
+			<creature name="dwarf geomancer" type="monster" looktype="66" />
+			<creature name="dwarf guard" type="monster" looktype="70" />
+			<creature name="dwarf soldier" type="monster" looktype="71" />
+			<creature name="dworc fleshhunter" type="monster" looktype="215" />
+			<creature name="dworc venomsniper" type="monster" looktype="216" />
+			<creature name="dworc voodoomaster" type="monster" looktype="214" />
+			<creature name="efreet" type="monster" looktype="103" />
+			<creature name="elder beholder" type="monster" looktype="108" />
+			<creature name="elephant" type="monster" looktype="211" />
+			<creature name="elf" type="monster" looktype="62" />
+			<creature name="elf arcanist" type="monster" looktype="63" />
+			<creature name="elf Scout" type="monster" looktype="64" />
+			<creature name="fire devil" type="monster" looktype="40" />
+			<creature name="fire elemental" type="monster" looktype="49" />
+			<creature name="flamingo" type="monster" looktype="212" />
+			<creature name="frost troll" type="monster" looktype="53" />
+			<creature name="gargoyle" type="monster" looktype="95" />
+			<creature name="gazer" type="monster" looktype="109" />
+			<creature name="ghost" type="monster" looktype="48" />
+			<creature name="ghoul" type="monster" looktype="18" />
+			<creature name="giant spider" type="monster" looktype="38" />
+			<creature name="goblin" type="monster" looktype="61" />
+			<creature name="green djinn" type="monster" looktype="51" />
+			<creature name="hero" type="monster" looktype="73" />
+			<creature name="hunter" type="monster" looktype="129" lookhead="95" lookbody="116" looklegs="121" lookfeet="115" />
+			<creature name="hyaena" type="monster" looktype="94" />
+			<creature name="hydra" type="monster" looktype="121" />
+			<creature name="kongra" type="monster" looktype="116" />
+			<creature name="larva" type="monster" looktype="82" />
+			<creature name="lich" type="monster" looktype="99" lookhead="95" lookbody="116" looklegs="119" lookfeet="115" />
+			<creature name="lion" type="monster" looktype="41" />
+			<creature name="lizard sentinel" type="monster" looktype="114" />
+			<creature name="lizard snakecharmer" type="monster" looktype="115" />
+			<creature name="lizard templar" type="monster" looktype="113" />
+			<creature name="marid" type="monster" looktype="104" />
+			<creature name="merlkin" type="monster" looktype="117" />
+			<creature name="minotaur" type="monster" looktype="25" />
+			<creature name="minotaur archer" type="monster" looktype="24" />
+			<creature name="minotaur guard" type="monster" looktype="29" />
+			<creature name="minotaur mage" type="monster" looktype="23" />
+			<creature name="monk" type="monster" looktype="57" />
+			<creature name="mummy" type="monster" looktype="65" />
+			<creature name="necromancer" type="monster" looktype="9" />
+			<creature name="orc" type="monster" looktype="5" />
+			<creature name="orc berserker" type="monster" looktype="8" />
+			<creature name="orc leader" type="monster" looktype="59" />
+			<creature name="orc rider" type="monster" looktype="4" />
+			<creature name="orc shaman" type="monster" looktype="6" />
+			<creature name="orc spearman" type="monster" looktype="50" />
+			<creature name="orc warlord" type="monster" looktype="2" />
+			<creature name="orc warrior" type="monster" looktype="7" />
+			<creature name="panda" type="monster" looktype="123" />
+			<creature name="parrot" type="monster" looktype="217" />
+			<creature name="pig" type="monster" looktype="60" />
+			<creature name="poison spider" type="monster" looktype="36" />
+			<creature name="polar bear" type="monster" looktype="42" />
+			<creature name="priestess" type="monster" looktype="58" />
+			<creature name="rabbit" type="monster" looktype="74" />
+			<creature name="rat" type="monster" looktype="21" />
+			<creature name="rotworm" type="monster" looktype="26" />
+			<creature name="scarab" type="monster" looktype="83" />
+			<creature name="scorpion" type="monster" looktype="43" />
+			<creature name="serpent spawn" type="monster" looktype="220" />
+			<creature name="sheep" type="monster" looktype="14" />
+			<creature name="sibang" type="monster" looktype="118" />
+			<creature name="skeleton" type="monster" looktype="33" />
+			<creature name="skunk" type="monster" looktype="106" />
+			<creature name="slime" type="monster" looktype="19" />
+			<creature name="smuggler" type="monster" looktype="134" lookhead="95" looklegs="113" lookfeet="115" />
+			<creature name="snake" type="monster" looktype="28" />
+			<creature name="spider" type="monster" looktype="30" />
+			<creature name="spit nettle" type="monster" looktype="221" />
+			<creature name="stalker" type="monster" looktype="128" lookhead="95" lookbody="116" looklegs="95" lookfeet="114" />
+			<creature name="stone golem" type="monster" looktype="67" />
+			<creature name="swamp troll" type="monster" looktype="76" />
+			<creature name="tarantula" type="monster" looktype="219" />
+			<creature name="terror bird" type="monster" looktype="218" />
+			<creature name="tiger" type="monster" looktype="125" />
+			<creature name="troll" type="monster" looktype="15" />
+			<creature name="valkyrie" type="monster" looktype="139" lookhead="113" lookbody="57" looklegs="95" lookfeet="113" />
+			<creature name="vampire" type="monster" looktype="68" />
+			<creature name="War Wolf" type="monster" looktype="3" />
+			<creature name="warlock" type="monster" looktype="130" lookhead="19" lookbody="71" looklegs="128" lookfeet="128" />
+			<creature name="wasp" type="monster" looktype="44" />
+			<creature name="wild warrior" type="monster" looktype="131" lookhead="57" lookbody="57" looklegs="57" lookfeet="57" />
+			<creature name="Winter Wolf" type="monster" looktype="52" />
+			<creature name="witch" type="monster" looktype="54" />
+			<creature name="wolf" type="monster" looktype="27" />
+			<creature name="yeti" type="monster" looktype="110" />
+			<creature name="black sheep" type="monster" looktype="13" />
+			<creature name="butterfly blue" type="monster" looktype="227" />
+			<creature name="butterfly purple" type="monster" looktype="213" />
+			<creature name="butterfly yellow" type="monster" looktype="10" />
+			<creature name="butterfly red" type="monster" looktype="228" />
+		</creatures>
+	</tileset>
+
+	<tileset name="Tibia Bosses">
+		<creatures>
+			<creature name="deathslicer" type="monster" looktype="102" />
+			<creature name="flamethrower" type="monster" />
+			<creature name="magicthrower" type="monster" lookitem="1560" />
+			<creature name="plaguethrower" type="monster" />
+			<creature name="shredderthrower" type="monster" />
+			<creature name="demongoblin" type="monster" looktype="35" />
+			<creature name="Tiquandas Revenge" type="monster" looktype="120" />
+			<creature name="Demodras" type="monster" looktype="204" />
+			<creature name="Dharalion" type="monster" looktype="203" />
+			<creature name="Fernfang" type="monster" looktype="206" />
+			<creature name="General Murius" type="monster" looktype="202" />
+			<creature name="Grorlam" type="monster" looktype="205" />
+			<creature name="Necropharus" type="monster" looktype="209" />
+			<creature name="The Evil Eye" type="monster" looktype="210" />
+			<creature name="The Horned Fox" type="monster" looktype="202" />
+			<creature name="The Old Widow" type="monster" looktype="208" />
+			<creature name="Ashmunrah" type="monster" looktype="87" />
+			<creature name="Dipthrah" type="monster" looktype="87" />
+			<creature name="Mahrdis" type="monster" looktype="90" />
+			<creature name="Morguthis" type="monster" looktype="90" />
+			<creature name="Omruc" type="monster" looktype="90" />
+			<creature name="Rahemos" type="monster" looktype="87" />
+			<creature name="Thalas" type="monster" looktype="90" />
+			<creature name="Vashresamun" type="monster" looktype="90" />
+			<creature name="Orshabaal" type="monster" looktype="201" />
+		</creatures>
+	</tileset>
+
+</materials>

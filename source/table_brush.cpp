@@ -42,12 +42,8 @@ bool TableBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		look_id = attribute.as_ushort();
 	}
 
-	for(pugi::xml_node childNode = node.first_child(); childNode; childNode = childNode.next_sibling()) {
-		if(as_lower_str(childNode.name()) != "table") {
-			continue;
-		}
-
-		const std::string& alignString = childNode.attribute("align").as_string();
+	for(pugi::xml_node tableNode: node.children("table")){
+		const std::string& alignString = tableNode.attribute("align").as_string();
 		if(alignString.empty()) {
 			warnings.push_back("Could not read type tag of table node\n");
 			continue;
@@ -73,12 +69,8 @@ bool TableBrush::load(pugi::xml_node node, wxArrayString& warnings)
 			continue;
 		}
 
-		for(pugi::xml_node subChildNode = childNode.first_child(); subChildNode; subChildNode = subChildNode.next_sibling()) {
-			if(as_lower_str(subChildNode.name()) != "item") {
-				continue;
-			}
-
-			uint16_t id = subChildNode.attribute("id").as_ushort();
+		for(pugi::xml_node itemNode: tableNode.children("item")){
+			uint16_t id = itemNode.attribute("id").as_ushort();
 			if(id == 0) {
 				warnings.push_back("Could not read id tag of item node\n");
 				break;
@@ -98,7 +90,7 @@ bool TableBrush::load(pugi::xml_node node, wxArrayString& warnings)
 
 			TableType tt;
 			tt.item_id = id;
-			tt.chance = subChildNode.attribute("chance").as_int();
+			tt.chance = itemNode.attribute("chance").as_int();
 
 			table_items[alignment].total_chance += tt.chance;
 			table_items[alignment].items.push_back(tt);

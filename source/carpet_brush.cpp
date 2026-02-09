@@ -44,14 +44,10 @@ bool CarpetBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		look_id = attribute.as_ushort();
 	}
 
-	for(pugi::xml_node childNode = node.first_child(); childNode; childNode = childNode.next_sibling()) {
-		if(as_lower_str(childNode.name()) != "carpet") {
-			continue;
-		}
-
+	for(pugi::xml_node carpetNode: node.children("carpet")){
 		uint32_t alignment;
-		if((attribute = childNode.attribute("align"))) {
-			const std::string& alignString = attribute.as_string();
+		if((attribute = carpetNode.attribute("align"))) {
+			std::string_view alignString = attribute.as_string();
 			alignment = AutoBorder::edgeNameToID(alignString);
 			if(alignment == BORDER_NONE) {
 				if(alignString == "center") {
@@ -67,19 +63,15 @@ bool CarpetBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		}
 
 		bool use_local_id = true;
-		for(pugi::xml_node subChildNode = childNode.first_child(); subChildNode; subChildNode = subChildNode.next_sibling()) {
-			if(as_lower_str(subChildNode.name()) != "item") {
-				continue;
-			}
-
+		for(pugi::xml_node itemNode: carpetNode.children("item")){
 			use_local_id = false;
-			if(!(attribute = subChildNode.attribute("id"))) {
+			if(!(attribute = itemNode.attribute("id"))) {
 				warnings.push_back("Could not read id tag of item node\n");
 				continue;
 			}
 
 			int32_t id = attribute.as_int();
-			if(!(attribute = subChildNode.attribute("chance"))) {
+			if(!(attribute = itemNode.attribute("chance"))) {
 				warnings.push_back("Could not read chance tag of item node\n");
 				continue;
 			}
@@ -109,7 +101,7 @@ bool CarpetBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		}
 
 		if(use_local_id) {
-			if(!(attribute = childNode.attribute("id"))) {
+			if(!(attribute = carpetNode.attribute("id"))) {
 				warnings.push_back("Could not read id tag of carpet node\n");
 				continue;
 			}

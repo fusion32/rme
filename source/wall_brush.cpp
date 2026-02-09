@@ -42,9 +42,9 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		look_id = attribute.as_ushort();
 	}
 
-	for(pugi::xml_node childNode = node.first_child(); childNode; childNode = childNode.next_sibling()) {
-		const std::string& childName = as_lower_str(childNode.name());
-		if(childName == "wall") {
+	for(pugi::xml_node childNode: node.children()){
+		std::string_view childTag = childNode.name();
+		if(childTag == "wall") {
 			const std::string& typeString = childNode.attribute("type").as_string();
 			if(typeString.empty()) {
 				warnings.push_back("Could not read type tag of wall node\n");
@@ -93,10 +93,10 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 				continue;
 			}
 
-			for(pugi::xml_node subChildNode = childNode.first_child(); subChildNode; subChildNode = subChildNode.next_sibling()) {
-				const std::string& subChildName = as_lower_str(subChildNode.name());
-				if(subChildName == "item") {
-					uint16_t id = subChildNode.attribute("id").as_ushort();
+			for(pugi::xml_node itemNode: childNode.children()){
+				std::string_view itemTag = itemNode.name();
+				if(itemTag == "item") {
+					uint16_t id = itemNode.attribute("id").as_ushort();
 					if(id == 0) {
 						warnings.push_back("Could not read id tag of item node\n");
 						break;
@@ -118,25 +118,25 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 					WallType wt;
 					wt.id = id;
 
-					wall_items[alignment].total_chance += subChildNode.attribute("chance").as_int();
+					wall_items[alignment].total_chance += itemNode.attribute("chance").as_int();
 					wt.chance = wall_items[alignment].total_chance;
 
 					wall_items[alignment].items.push_back(wt);
-				} else if(subChildName == "door") {
-					uint16_t id = subChildNode.attribute("id").as_ushort();
+				} else if(itemTag == "door") {
+					uint16_t id = itemNode.attribute("id").as_ushort();
 					if(id == 0) {
 						warnings.push_back("Could not read id tag of door node\n");
 						break;
 					}
 
-					std::string nodetype = subChildNode.attribute("type").as_string();
+					std::string nodetype = itemNode.attribute("type").as_string();
 					if(nodetype.empty()) {
 						warnings.push_back("Could not read type tag of door node\n");
 						continue;
 					}
 
 					bool isOpen;
-					pugi::xml_attribute openAttribute = subChildNode.attribute("open");
+					pugi::xml_attribute openAttribute = itemNode.attribute("open");
 					if(openAttribute) {
 						isOpen = openAttribute.as_bool();
 					} else {
@@ -159,7 +159,7 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 					type->isWall = true;
 					type->brush = this;
 					type->isBrushDoor = true;
-					type->wall_hate_me = subChildNode.attribute("hate").as_bool();
+					type->wall_hate_me = itemNode.attribute("hate").as_bool();
 					type->isOpen = isOpen;
 					type->border_alignment = ::BorderType(alignment);
 
@@ -211,15 +211,11 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 					}
 				}
 			}
-		} else if(childName == "friend") {
-			const std::string& name = childNode.attribute("name").as_string();
-			if(name.empty()) {
-				continue;
-			}
-
-			if(name == "all") {
+		} else if(childTag == "friend") {
+			std::string name = childNode.attribute("name").as_string();
+			if(name == "all"){
 				//friends.push_back(-1);
-			} else {
+			}else if(!name.empty()){
 				Brush* brush = g_brushes.getBrush(name);
 				if(brush) {
 					friends.push_back(brush->getID());

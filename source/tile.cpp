@@ -226,6 +226,7 @@ void Tile::addItem(Item *item)
 
 	if(replace && *it != NULL && (*it)->getStackPriority() == stackPriority){
 		item->next = (*it)->next;
+		(*it)->next = NULL;
 		delete (*it);
 		*it = item;
 	}else{

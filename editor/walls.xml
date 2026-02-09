@@ -1,0 +1,792 @@
+<?xml version='1.0' encoding='utf-8'?>
+<materials>
+
+	<brush name="ruin wall" type="wall" lookid="1451">
+		<wall type="horizontal">
+			<item id="1451" chance="1" />
+			<item id="1453" chance="0" />
+			<item id="1457" chance="0" />
+
+			<item id="1461" chance="0" />
+			<item id="1462" chance="0" />
+			<item id="1480" chance="0" />
+			<item id="1493" chance="0" />
+			<item id="1494" chance="0" />
+			<item id="1495" chance="0" />
+			<item id="1496" chance="0" />
+			<item id="1497" chance="0" />
+			<item id="1498" chance="0" />
+			<item id="1499" chance="0" />
+			<item id="1500" chance="0" />
+			<item id="1503" chance="0" />
+			<item id="1504" chance="0" />
+			<item id="1505" chance="0" />
+			<item id="1506" chance="0" />
+			<item id="1507" chance="0" />
+			<item id="1508" chance="0" />
+			<item id="1509" chance="0" />
+			<item id="1510" chance="0" />
+			<item id="1511" chance="0" />
+
+			<door id="1482" type="normal" open="false" />
+			<door id="1482" type="locked" open="false" />
+			<door id="1482" type="quest" open="false" />
+			<door id="1482" type="magic" open="false" />
+			<door id="1482" type="normal" open="false" />
+			<door id="1511" type="hatch window" open="false" />
+			<door id="1481" type="window" />
+		</wall>
+		<wall type="vertical">
+			<item id="1450" chance="1" />
+			<item id="1455" chance="0" />
+
+			<item id="1459" chance="0" />
+			<item id="1460" chance="0" />
+			<item id="1462" chance="0" />
+			<item id="1463" chance="0" />
+			<item id="1464" chance="0" />
+			<item id="1466" chance="0" />
+			<item id="1467" chance="0" />
+			<item id="1468" chance="0" />
+			<item id="1469" chance="0" />
+			<item id="1470" chance="0" />
+			<item id="1471" chance="0" />
+			<item id="1472" chance="0" />
+			<item id="1473" chance="0" />
+			<item id="1474" chance="0" />
+			<item id="1475" chance="0" />
+			<item id="1479" chance="0" />
+			<item id="1486" chance="0" />
+			<item id="1487" chance="0" />
+			<item id="1501" chance="0" />
+			<item id="1502" chance="0" />
+
+			<door id="1484" type="normal" open="false" />
+			<door id="1484" type="locked" open="false" />
+			<door id="1484" type="quest" open="false" />
+			<door id="1484" type="magic" open="false" />
+			<door id="1484" type="normal" open="false" />
+			<door id="1473" type="hatch window" open="false" />
+			<door id="1465" type="window" />
+		</wall>
+		<wall type="corner">
+			<item id="1454" chance="1" />
+			<item id="1456" chance="0" /> 
+			<item id="1458" chance="0" /> 
+		</wall>
+		<wall type="pole">
+			<item id="1452" chance="1" />
+		</wall>
+	</brush>
+
+		<brush name="jungle stone wall" type="wall" lookid="1547">
+		<wall type="horizontal">
+			<item id="1547" chance="500" />
+			<item id="1546" chance="100" />
+			<item id="1544" chance="100" />
+		</wall>
+		<wall type="vertical">
+			<item id="1549" chance="400" />
+			<item id="1548" chance="100" />
+			<item id="1545" chance="100" />
+		</wall>
+		<wall type="corner">
+			<item id="1550" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="1551" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="jungle stone wall ornamented" type="wall" lookid="1543">
+		<wall type="horizontal">
+			<item id="1543" chance="500" />
+			<item id="1559" chance="100" />
+			<item id="1558" chance="100" />
+		</wall>
+		<wall type="vertical">
+			<item id="1552" chance="500" />
+			<item id="1555" chance="100" />
+			<item id="1554" chance="100" />
+		</wall>
+		<wall type="corner">
+			<item id="1562" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="1553" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="bamboo wall" type="wall" lookid="1513">
+		<wall type="horizontal">
+			<item id="1513" chance="500" />
+			<item id="1515" chance="100" />
+			<item id="1521" chance="100" />
+			<door id="1682" type="normal" open="false" />
+			<door id="1683" type="normal" open="false" />
+			<door id="1684" type="normal" open="true" />
+			<door id="1685" type="locked" open="false" />
+			<door id="1686" type="locked" open="true" />
+			<door id="1687" type="quest" open="false" />
+			<door id="1688" type="quest" open="true" />
+			<door id="1689" type="magic" open="false" />
+			<door id="1690" type="magic" open="true" />
+			<door id="1538" type="window" />
+		</wall>
+		<wall type="vertical">
+			<item id="1512" chance="400" />
+			<item id="1517" chance="100" />
+			<item id="1519" chance="100" />
+			<door id="1691" type="normal" open="false" />
+			<door id="1692" type="normal" open="false" />
+			<door id="1693" type="normal" open="true" />
+			<door id="1694" type="locked" open="false" />
+			<door id="1695" type="locked" open="true" />
+			<door id="1696" type="quest" open="false" />
+			<door id="1697" type="quest" open="true" />
+			<door id="1698" type="magic" open="false" />
+			<door id="1699" type="magic" open="true" />
+			<door id="1541" type="window" />
+		</wall>
+		<wall type="corner">
+			<item id="1516" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="1514" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="marble railing" type="wall" lookid="2222">
+		<wall type="horizontal">
+			<item id="2222" chance="500" />
+		</wall>
+		<wall type="vertical">
+			<item id="2224" chance="400" />
+		</wall>
+		<wall type="corner">
+			<item id="2228" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="2226" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="ornamented marble railing" type="wall" lookid="2223">
+		<wall type="horizontal">
+			<item id="2223" chance="500" />
+		</wall>
+		<wall type="vertical">
+			<item id="2225" chance="400" />
+		</wall>
+		<wall type="corner">
+			<item id="2229" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="2227" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="pillared marble railing" type="wall" lookid="2230">
+		<wall type="horizontal">
+			<item id="2230" chance="500" />
+		</wall>
+		<wall type="vertical">
+			<item id="2231" chance="400" />
+		</wall>
+		<wall type="corner">
+			<item id="2233" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="2232" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="stone railing" type="wall" lookid="2162">
+		<wall type="horizontal">
+			<item id="2162" chance="500" />
+		</wall>
+		<wall type="vertical">
+			<item id="2164" chance="400" />
+		</wall>
+		<wall type="corner">
+			<item id="2168" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="2166" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="metal wall" type="wall" lookid="1335">
+		<wall type="horizontal">
+			<item id="1335" chance="500" />
+			<item id="1337" chance="100" />
+			<item id="1343" chance="100" />
+		</wall>
+		<wall type="vertical">
+			<item id="1334" chance="400" />
+			<item id="1341" chance="100" />
+			<item id="5008" chance="100" />
+		</wall>
+		<wall type="corner">
+			<item id="1338" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="1336" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="ornamented sandstone railing" type="wall" lookid="2209">
+		<wall type="horizontal">
+			<item id="2209" chance="500" />
+		</wall>
+		<wall type="vertical">
+			<item id="2211" chance="400" />
+		</wall>
+		<wall type="corner">
+			<item id="2215" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="2213" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="sandstone railing" type="wall" lookid="2201">
+		<wall type="horizontal">
+			<item id="2201" chance="500" />
+		</wall>
+		<wall type="vertical">
+			<item id="2203" chance="400" />
+		</wall>
+		<wall type="corner">
+			<item id="2207" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="2205" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="jungle stone railing" type="wall" lookid="1570">
+		<wall type="horizontal">
+			<item id="1570" chance="500" />
+		</wall>
+		<wall type="vertical">
+			<item id="1571" chance="400" />
+		</wall>
+		<wall type="corner">
+			<item id="1569" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="1572" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="grass wall" type="wall" lookid="1586">
+		<wall type="horizontal">
+			<item id="1586" chance="500" />
+			<item id="1587" chance="100" />
+			<door id="1588" type="window" />
+		</wall>
+		<wall type="vertical">
+			<item id="1589" chance="400" />
+			<item id="1590" chance="100" />
+			<door id="1591" type="window" />
+		</wall>
+		<wall type="corner">
+			<item id="1592" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="1585" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="thin bamboo wall" type="wall" lookid="2292">
+		<wall type="horizontal">
+			<item id="2292" chance="500" />
+		</wall>
+		<wall type="vertical">
+			<item id="2293" chance="400" />
+		</wall>
+		<wall type="corner">
+			<item id="2298" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="2297" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="paravent wall" type="wall" lookid="1416">
+		<wall type="horizontal">
+			<item id="1416" chance="500" />
+		</wall>
+		<wall type="vertical">
+			<item id="1415" chance="400" />
+		</wall>
+		<wall type="corner">
+			<item id="1418" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="1417" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="fiery wall" type="wall" lookid="1442">
+		<wall type="horizontal">
+			<item id="1442" chance="500" />
+			<item id="1444" chance="100" />
+			<item id="1448" chance="100" />
+		</wall>
+		<wall type="vertical">
+			<item id="1441" chance="400" />
+			<item id="1446" chance="100" />
+			<item id="5011" chance="100" />
+		</wall>
+		<wall type="corner">
+			<item id="1445" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="1443" chance="1000" />
+		</wall>
+	</brush>
+	<brush name="plaster wall" type="wall" lookid="1282">
+		<wall type="horizontal">
+			<item id="1282" chance="500" />
+			<item id="1284" chance="0" /> 
+			<item id="1290" chance="0" /> 
+			<door id="1634" type="archway" open="false" />
+			<door id="1635" type="archway" open="false" />
+			<door id="1631" type="normal" open="false" />
+			<door id="1632" type="normal" open="false" />
+			<door id="1633" type="normal" open="true" />
+			<door id="1640" type="locked" open="false" />
+			<door id="1641" type="locked" open="true" />
+			<door id="1644" type="quest" open="false" />
+			<door id="1645" type="quest" open="true" />
+			<door id="1648" type="magic" open="false" />
+			<door id="1649" type="magic" open="true" />
+			<door id="1734" type="window" />
+		</wall>
+		<wall type="vertical">
+			<item id="1281" chance="400" />
+			<item id="1286" chance="0" /> 
+			<item id="1288" chance="0" /> 
+			<door id="1636" type="archway" open="false" />
+			<door id="1637" type="archway" open="false" />
+			<door id="1629" type="normal" open="false" />
+			<door id="1628" type="normal" open="false" />
+			<door id="1630" type="normal" open="true" />
+			<door id="1638" type="locked" open="false" />
+			<door id="1639" type="locked" open="true" />
+			<door id="1642" type="quest" open="false" />
+			<door id="1643" type="quest" open="true" />
+			<door id="1646" type="magic" open="false" />
+			<door id="1647" type="magic" open="true" />
+			<door id="1735" type="window" />
+		</wall>
+		<wall type="corner">
+			<item id="1287" chance="1000" />
+			<item id="1285" chance="0" /> 
+			<item id="1289" chance="0" /> 
+			<item id="1291" chance="0" /> 
+			<item id="1292" chance="0" /> 
+			<item id="1293" chance="0" /> 
+		</wall>
+		<wall type="pole">
+			<item id="1283" chance="1000" />
+		</wall>
+	</brush>
+
+	<brush name="stone wall" type="wall" lookid="1295">
+		<wall type="horizontal">
+			<item id="1295" chance="500" />
+			<item id="1297" chance="0" /> 
+			<item id="1303" chance="0" /> 
+			<door id="1738" type="window" />
+		</wall>
+		<wall type="vertical">
+			<item id="1294" chance="400" />
+			<item id="1299" chance="0" /> 
+			<item id="1301" chance="0" /> 
+			<door id="1739" type="window" />
+		</wall>
+		<wall type="corner">
+			<item id="1298" chance="1000" />
+			<item id="1300" chance="0" /> 
+			<item id="1302" chance="0" /> 
+			<item id="1304" chance="0" /> 
+		</wall>
+		<wall type="pole">
+			<item id="1296" chance="1000" />
+		</wall>
+
+		<friend name="plaster wall" redirect="true" />
+	</brush>
+
+	<brush name="brick wall" type="wall" lookid="1271">
+		<wall type="horizontal">
+			<item id="1271" chance="1" />
+			<item id="1273" chance="0" />
+			<item id="1279" chance="0" />
+			<door id="1626" type="archway" open="false" />
+			<door id="1627" type="archway" open="false" />
+			<door id="1736" type="window" />
+		</wall>
+		<wall type="vertical">
+			<item id="1270" chance="1" />
+			<item id="1275" chance="0" />
+			<item id="1277" chance="0" />
+			<door id="1624" type="archway" open="false" />
+			<door id="1625" type="archway" open="false" />
+			<door id="1737" type="window" />
+		</wall>
+		<wall type="corner">
+			<item id="1274" chance="1" />
+			<item id="1276" chance="0" /> 
+			<item id="1278" chance="0" /> 
+			<item id="1280" chance="0" /> 
+		</wall>
+		<wall type="pole">
+			<item id="1272" chance="1" />
+		</wall>
+
+		<friend name="plaster wall" redirect="true" />
+	</brush>
+
+	<brush name="egypt wall" type="wall" lookid="1306">
+		<wall type="horizontal">
+			<item id="1306" chance="1" />
+			<item id="1308" chance="0" />
+			<item id="1314" chance="0" />
+			<door id="1653" type="normal" open="false" />
+			<door id="1654" type="normal" open="false" />
+			<door id="1655" type="normal" open="true" />
+			<door id="1658" type="locked" open="false" />
+			<door id="1659" type="locked" open="true" />
+			<door id="1662" type="quest" open="false" />
+			<door id="1663" type="quest" open="true" />
+			<door id="1666" type="magic" open="false" />
+			<door id="1667" type="magic" open="true" />
+			<door id="1744" type="window" />
+		</wall>
+		<wall type="vertical">
+			<item id="1305" chance="1" />
+			<item id="1310" chance="0" />
+			<item id="1312" chance="0" />
+			<door id="1650" type="normal" open="false" />
+			<door id="1651" type="normal" open="false" />
+			<door id="1652" type="normal" open="true" />
+			<door id="1656" type="locked" open="false" />
+			<door id="1657" type="locked" open="true" />
+			<door id="1660" type="quest" open="false" />
+			<door id="1661" type="quest" open="true" />
+			<door id="1664" type="magic" open="false" />
+			<door id="1665" type="magic" open="true" />
+			<door id="1745" type="window" />
+		</wall>
+		<wall type="corner">
+			<item id="1309" chance="1" />
+			<item id="1311" chance="0" /> 
+			<item id="1313" chance="0" /> 
+			<item id="1315" chance="0" /> 
+		</wall>
+		<wall type="pole">
+			<item id="1307" chance="1" />
+		</wall>
+	</brush>
+
+	<brush name="egypt stone wall" type="wall" lookid="1346">
+		<wall type="horizontal">
+			<item id="1346" chance="1" />
+			<item id="1348" chance="0" />
+			<item id="1354" chance="0" />
+			<door id="1746" type="window" />
+		</wall>
+		<wall type="vertical">
+			<item id="1345" chance="1" />
+			<item id="1350" chance="0" />
+			<item id="1352" chance="0" />
+			<door id="1747" type="window" />
+		</wall>
+		<wall type="corner">
+			<item id="1349" chance="1" />
+			<item id="1351" chance="0" /> 
+			<item id="1353" chance="0" /> 
+			<item id="1355" chance="0" /> 
+		</wall>
+		<wall type="pole">
+			<item id="1347" chance="1" />
+		</wall>
+
+		<friend name="egypt wall" redirect="true" /> -- There can only be one redirection! --
+	</brush>
+
+	<brush name="ruin wall" type="wall" lookid="1451">
+		<wall type="horizontal">
+			<item id="1451" chance="1" />
+			<item id="1453" chance="0" />
+			<item id="1457" chance="0" />
+
+			<item id="1461" chance="0" />
+			<item id="1462" chance="0" />
+			<item id="1480" chance="0" />
+			<item id="1493" chance="0" />
+			<item id="1494" chance="0" />
+			<item id="1495" chance="0" />
+			<item id="1496" chance="0" />
+			<item id="1497" chance="0" />
+			<item id="1498" chance="0" />
+			<item id="1499" chance="0" />
+			<item id="1500" chance="0" />
+			<item id="1503" chance="0" />
+			<item id="1504" chance="0" />
+			<item id="1505" chance="0" />
+			<item id="1506" chance="0" />
+			<item id="1507" chance="0" />
+			<item id="1508" chance="0" />
+			<item id="1509" chance="0" />
+			<item id="1510" chance="0" />
+			<item id="1511" chance="0" />
+
+			<door id="1482" type="normal" open="false" />
+			<door id="1483" type="normal" open="true" />
+			<door id="1481" type="window" />
+		</wall>
+		<wall type="vertical">
+			<item id="1450" chance="1" />
+			<item id="1455" chance="0" />
+
+			<item id="1459" chance="0" />
+			<item id="1460" chance="0" />
+			<item id="1462" chance="0" />
+			<item id="1463" chance="0" />
+			<item id="1464" chance="0" />
+			<item id="1466" chance="0" />
+			<item id="1467" chance="0" />
+			<item id="1468" chance="0" />
+			<item id="1469" chance="0" />
+			<item id="1470" chance="0" />
+			<item id="1471" chance="0" />
+			<item id="1472" chance="0" />
+			<item id="1473" chance="0" />
+			<item id="1474" chance="0" />
+			<item id="1475" chance="0" />
+			<item id="1479" chance="0" />
+			<item id="1486" chance="0" />
+			<item id="1487" chance="0" />
+			<item id="1501" chance="0" />
+			<item id="1502" chance="0" />
+
+			<door id="1484" type="normal" open="false" />
+			<door id="1485" type="normal" open="true" />
+			<door id="1465" type="window" />
+		</wall>
+		<wall type="corner">
+			<item id="1454" chance="1" />
+			<item id="1456" chance="0" /> 
+			<item id="1458" chance="0" /> 
+		</wall>
+		<wall type="pole">
+			<item id="1452" chance="1" />
+		</wall>
+
+		<friend name="plaster wall" redirect="true" /> -- There can only be one redirection! --
+	</brush>
+
+	<brush name="marble wall" type="wall" lookid="1357">
+		<wall type="horizontal">
+			<item id="1357" chance="4" />
+
+			<item id="1399" chance="0" />
+			<item id="1401" chance="0" />
+
+			<item id="1373" chance="0" />
+			<item id="1374" chance="0" />
+			<item id="1377" chance="0" />
+			<item id="1378" chance="0" />
+			<item id="1381" chance="0" />
+			<item id="1383" chance="0" />
+			<item id="1385" chance="0" />
+			<item id="1387" chance="0" />
+			<item id="1389" chance="0" />
+			<item id="1391" chance="0" />
+			<item id="1393" chance="0" />
+			<item id="1395" chance="0" />
+			<item id="1397" chance="0" />
+			<item id="1409" chance="0" />
+			<item id="1411" chance="0" />
+			<item id="1413" chance="0" />
+
+			<item id="1365" chance="0" />
+			<item id="1366" chance="0" />
+			<item id="1369" chance="0" />
+			<item id="1370" chance="0" />
+
+			<item id="1359" chance="0" />
+			<item id="1363" chance="0" />
+
+			<door id="1671" type="normal" open="false" />
+			<door id="1672" type="normal" open="false" />
+			<door id="1673" type="normal" open="true" />
+			
+			
+			<door id="1676" type="quest" open="false" />
+			<door id="1677" type="quest" open="true" />
+			<door id="1680" type="magic" open="false" />
+			<door id="1681" type="magic" open="true" />
+			<door id="1740" type="window" />
+			<door id="1742" type="window" />
+		</wall>
+		<wall type="vertical">
+			<item id="1356" chance="4" />
+
+			<item id="1400" chance="0" />
+			<item id="1402" chance="0" />
+
+			<item id="1375" chance="0" />
+			<item id="1376" chance="0" />
+			<item id="1379" chance="0" />
+			<item id="1380" chance="0" />
+			<item id="1382" chance="0" />
+			<item id="1384" chance="0" />
+			<item id="1386" chance="0" />
+			<item id="1388" chance="0" />
+			<item id="1390" chance="0" />
+			<item id="1392" chance="0" />
+			<item id="1394" chance="0" />
+			<item id="1396" chance="0" />
+			<item id="1398" chance="0" />
+			<item id="1412" chance="0" />
+			<item id="1414" chance="0" />
+
+			<item id="1367" chance="0" />
+			<item id="1368" chance="0" />
+			<item id="1371" chance="0" />
+			<item id="1372" chance="0" />
+
+			<item id="1361" chance="0" />
+			<item id="5009" chance="0" />
+
+			<door id="1668" type="normal" open="false" />
+			<door id="1669" type="normal" open="false" />
+			<door id="1670" type="normal" open="true" />
+			
+			
+			<door id="1674" type="quest" open="false" />
+			<door id="1675" type="quest" open="true" />
+			<door id="1678" type="magic" open="false" />
+			<door id="1679" type="magic" open="true" />
+			<door id="1741" type="window" />
+			<door id="1743" type="window" />
+		</wall>
+		<wall type="corner">
+			<item id="1360" chance="1" />
+			<item id="1362" chance="0" />
+			<item id="5010" chance="0" /> 
+			<item id="1364" chance="0" /> 
+		</wall>
+		<wall type="pole">
+			<item id="1358" chance="1" />
+		</wall>
+	</brush>
+
+	<brush name="rock wall" type="wall" lookid="1113">
+		<wall type="horizontal">
+			<item id="1113" chance="500" />
+			<item id="1115" chance="0" /> 
+			<item id="1121" chance="0" /> 
+		</wall>
+		<wall type="vertical">
+			<item id="1112" chance="400" />
+			<item id="1117" chance="0" /> 
+			<item id="1119" chance="0" /> 
+		</wall>
+		<wall type="corner">
+			<item id="1116" chance="1000" />
+			<item id="1118" chance="0" /> 
+			<item id="1120" chance="0" /> 
+			<item id="1122" chance="0" /> 
+		</wall>
+		<wall type="pole">
+			<item id="1114" chance="1000" />
+		</wall>
+
+		<friend id="plaster wall" redirect="true" />
+	</brush>
+
+	<brush name="brick wall arch" type="doodad" draggable="true" on_blocking="true" redo_borders="true" thickness="100/100" lookid="1627">
+		<alternate>
+			<composite chance="10">
+				<tile x="0" y="0" z="0">  <item id="1626" chance="10" /> </tile>
+				<tile x="1" y="0" z="0">  <item id="1627" chance="10" /> </tile>
+			</composite>
+		</alternate>
+		<alternate>
+			<composite chance="10">
+				<tile x="0" y="0" z="0">  <item id="1624" chance="10" /> </tile>
+				<tile x="0" y="1" z="0">  <item id="1625" chance="10" /> </tile>
+			</composite>
+		</alternate>
+	</brush>
+
+	<brush name="plaster wall arch" type="doodad" draggable="true" on_blocking="true" redo_borders="true" thickness="100/100" lookid="1635">
+		<alternate>
+			<composite chance="10">
+				<tile x="0" y="0" z="0">  <item id="1634" chance="10" /> </tile>
+				<tile x="1" y="0" z="0">  <item id="1635" chance="10" /> </tile>
+			</composite>
+		</alternate>
+		<alternate>
+			<composite chance="10">
+				<tile x="0" y="0" z="0">  <item id="1636" chance="10" /> </tile>
+				<tile x="0" y="1" z="0">  <item id="1637" chance="10" /> </tile>
+			</composite>
+		</alternate>
+	</brush>
+
+	<brush name="Wooden Palisade" type="wall" lookid="1598">
+		<wall type="horizontal">
+			<item id="1598" chance="500" />
+		</wall>
+		<wall type="vertical">
+			<item id="1606" chance="400" />
+		</wall>
+		<wall type="corner">
+			<item id="1619" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="1600" chance="1000" />
+		</wall>
+	</brush>
+	<brush name="Wooden Palisade (no strings)" type="wall" lookid="1599">
+		<wall type="horizontal">
+			<item id="1599" chance="500" />
+		</wall>
+		<wall type="vertical">
+			<item id="1607" chance="400" />
+		</wall>
+		<friend name="Wooden Palisade" redirect="true" />
+	</brush>
+	<brush name="Wooden Palisade (steel gate)" type="wall" lookid="1603">
+		<wall type="horizontal">
+			<item id="1603" chance="500" />
+		</wall>
+		<wall type="vertical">
+			<item id="1608" chance="400" />
+		</wall>
+		<friend name="Wooden Palisade" redirect="true" />
+	</brush>
+	<brush name="Wooden Palisade Railing" type="wall" lookid="1601">
+		<wall type="horizontal">
+			<item id="1601" chance="500" />
+		</wall>
+		<wall type="vertical">
+			<item id="1609" chance="400" />
+		</wall>
+		<wall type="corner">
+			<item id="1620" chance="1000" />
+		</wall>
+		<wall type="pole">
+			<item id="1621" chance="1000" />
+		</wall>
+		<friend name="Wooden Palisade" redirect="true" />
+	</brush>
+</materials>
