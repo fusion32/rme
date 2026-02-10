@@ -35,7 +35,6 @@ public:
 
 	virtual bool canDraw(Map *map, const Position& position) const;
 	virtual void draw(Map *map, Tile* tile, void* parameter);
-	void draw_creature(Map *map, Tile* tile);
 	virtual void undraw(Map *map, Tile* tile);
 
 	const CreatureType &getType() const { return GetCreatureType(raceId); }

@@ -42,7 +42,6 @@ PreferencesWindow::PreferencesWindow(wxWindow *parent)
     book->AddPage(CreateEditorPage(), "Editor");
     book->AddPage(CreateGraphicsPage(), "Graphics");
     book->AddPage(CreateUIPage(), "Interface");
-    book->AddPage(CreateClientPage(), "Client Version");
 
     sizer->Add(book, 1, wxEXPAND | wxALL, 10);
 
@@ -473,19 +472,6 @@ wxNotebookPage* PreferencesWindow::CreateUIPage()
 	ui_page->SetSizerAndFit(sizer);
 
 	return ui_page;
-}
-
-wxNotebookPage* PreferencesWindow::CreateClientPage()
-{
-	wxNotebookPage* client_page = newd wxPanel(book, wxID_ANY);
-
-	// TODO(fusion): We probably want to get rid of this page but we still want
-	// some way to determine which files are loaded. Probably get rid of multiple
-	// tabs and support a single open project ? Multiple windows would solve the
-	// need for multiple tabs while simplifying the management of different data
-	// sets (if any).
-
-	return client_page;
 }
 
 // Event handlers!

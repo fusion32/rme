@@ -226,21 +226,18 @@ void CreaturePalettePanel::OnListBoxChange(wxCommandEvent& event)
 void CreaturePalettePanel::OnChangeSpawnRadius(wxSpinEvent& event)
 {
 	g_editor.ActivatePalette(GetParentPalette());
-	g_editor.SetSpawnRadius(event.GetPosition());
 	g_settings.setInteger(Config::SPAWN_RADIUS, event.GetPosition());
 }
 
 void CreaturePalettePanel::OnChangeSpawnAmount(wxSpinEvent& event)
 {
 	g_editor.ActivatePalette(GetParentPalette());
-	g_editor.SetSpawnAmount(event.GetPosition());
 	g_settings.setInteger(Config::SPAWN_AMOUNT, event.GetPosition());
 }
 
 void CreaturePalettePanel::OnChangeSpawnInterval(wxSpinEvent& event)
 {
 	g_editor.ActivatePalette(GetParentPalette());
-	g_editor.SetSpawnInterval(event.GetPosition());
 	g_settings.setInteger(Config::SPAWN_INTERVAL, event.GetPosition());
 }
 

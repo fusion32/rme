@@ -404,6 +404,9 @@ int GetLiquidColor(int liquidType){
 }
 
 int GetMinItemTypeId(void){
+	// NOTE(fusion): This is not the minimum item type id but rather the minimum
+	// object type id, which happens to also be in the objects.srv file so we need
+	// to allow these [0, 99] object types to avoid any errors while loading.
 	return 0;
 }
 
@@ -461,7 +464,6 @@ bool LoadItemTypes(const wxString &projectDir, wxString &outError, wxArrayString
 	{
 		wxPathList paths;
 		paths.Add(projectDir);
-		paths.Add(projectDir + "editor");
 		paths.Add(projectDir + "dat");
 		filename = paths.FindValidPath("objects.srv");
 		if(filename.IsEmpty()){

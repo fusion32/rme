@@ -129,32 +129,31 @@ bool Editor::OpenProject(const wxString &dir)
 		return false;
 	}
 
-	// TODO(fusion): Do we need to lock the renderer here?
-	// UnnamedRenderingLock();
-
 	wxString error;
 	wxArrayString warnings;
-	if(!LoadProject(dir, error, warnings)){
-		PopupDialog("Error", error, wxOK);
-		return false;
+	{
+		UnnamedRenderingLock();
+		if(!LoadProject(dir, error, warnings)){
+			PopupDialog("Error", error, wxOK);
+			return false;
+		}
+
+		projectDir = dir;
+		AddRecentFile(projectDir);
+		SetStatusText("");
+		SetTitle(projectDir);
+		LoadPerspective();
+		RefreshPalettes();
+		UpdateMenubar();
+		root->Refresh();
+
+		// TODO(fusion): Just save session info like palettes, map position, zoom,
+		// on a file inside the project directory...
+		mapWindow->FitToMap();
+		mapWindow->SetScreenCenterPosition(map.getCenterPosition());
 	}
 
-	projectDir = dir;
-	AddRecentFile(projectDir);
-	SetStatusText("");
-	SetTitle(projectDir);
-	LoadPerspective();
-	RefreshPalettes();
-	UpdateMenubar();
-	root->Refresh();
-
-	// TODO(fusion): Just save session info like palettes, map position, zoom,
-	// on a file inside the project directory...
-	mapWindow->FitToMap();
-	mapWindow->SetScreenCenterPosition(map.getCenterPosition());
-
 	ListDialog("Warnings", warnings);
-
 	return true;
 }
 
@@ -207,32 +206,31 @@ bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWar
 	dir = NormalizeDir(dir);
 
 	{
-		ScopedLoadingBar loadingBar("Loading project assets...");
-		loadingBar.SetLoadDone(0, "Loading item types...");
+		ScopedLoadingBar loadingBar("Loading item types...");
 		if(!LoadItemTypes(dir, outError, outWarnings)){
 			outError = "Unable to load item types: " + outError;
 			UnloadProject();
 			return false;
 		}
 
-		loadingBar.SetLoadDone(20, "Loading DAT...");
+		loadingBar.SetLoadDone(20, "Loading creature types...");
+		if(!LoadCreatureTypes(dir, outError, outWarnings)){
+			outWarnings.push_back(wxString("Unable to load creature types: ") << outError);
+			outError.Clear();
+		}
+
+		loadingBar.SetLoadDone(40, "Loading DAT...");
 		if(!gfx.loadSpriteMetadata(dir, outError, outWarnings)){
 			outError = "Unable to load DAT: " + outError;
 			UnloadProject();
 			return false;
 		}
 
-		loadingBar.SetLoadDone(40, "Loading SPR...");
+		loadingBar.SetLoadDone(60, "Loading SPR...");
 		if(!gfx.loadSpriteData(dir, outError, outWarnings)){
 			outError = "Unable to load SPR: " + outError;
 			UnloadProject();
 			return false;
-		}
-
-		loadingBar.SetLoadDone(60, "Loading creatures.xml...");
-		if(!LoadCreatureTypes(dir, outError, outWarnings)){
-			outWarnings.push_back(wxString("Unable to load creatures.xml: ") << outError);
-			outError.Clear();
 		}
 
 		loadingBar.SetLoadDone(80, "Loading materials.xml...");
@@ -246,13 +244,29 @@ bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWar
 	}
 
 	{
-		ScopedLoadingBar loadingBar("Loading project map...");
 		if(!map.load(dir, outError, outWarnings)){
 			outError = "Unable to load map: " + outError;
 			UnloadProject();
 			return false;
 		}
+
+		ScopedLoadingBar loadingBar("");
+		// TODO(fusion): Check if there are existing patches and prompt to apply them?
+		//loadingBar.SetLoadDone(99, "Checking for existing patches...");
+
+		loadingBar.SetLoadDone(99, "Loading spawns...");
+		if(!map.loadSpawns(dir, outError, outWarnings)){
+			outWarnings.push_back(wxString() << "Unable to load spawns: " << outError);
+			outError.Clear();
+		}
+
+		loadingBar.SetLoadDone(99, "Loading houses...");
+		if(!map.loadHouses(dir, outError, outWarnings)){
+			outWarnings.push_back(wxString() << "Unable to load houses: " << outError);
+			outError.Clear();
+		}
 	}
+
 
 	return true;
 }

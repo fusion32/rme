@@ -128,7 +128,6 @@ public:
 	void DestroyLoadBar();
 	bool SetLoadDone(int32_t done, const wxString& newMessage = "");
 	void SetLoadScale(int32_t from, int32_t to);
-	bool HasLoadingBar(void) const { return progressBar != NULL; }
 
 	void ShowWelcomeDialog(const wxBitmap &icon);
 	void FinishWelcomeDialog();
@@ -234,13 +233,6 @@ public:
 	// Helper functions for size
 	void DecreaseBrushSize(bool wrap = false);
 	void IncreaseBrushSize(bool wrap = false);
-
-	int GetSpawnRadius() const { return spawn_radius; }
-	int GetSpawnAmount() const { return spawn_amount; }
-	int GetSpawnInterval() const { return spawn_interval; }
-	void SetSpawnRadius(int radius) { spawn_radius = radius; }
-	void SetSpawnAmount(int amount) { spawn_amount = amount; }
-	void SetSpawnInterval(int interval) { spawn_interval = interval; }
 
 	// Centers current view on position
 	void SetScreenCenterPosition(const Position& position, bool showIndicator = true);
@@ -443,9 +435,6 @@ protected:
 	BrushShape brush_shape = BRUSHSHAPE_SQUARE;
 	int brush_size = 0;
 	int brush_variation = 0;
-	int spawn_radius = 0;
-	int spawn_amount = 0;
-	int spawn_interval = 0;
 	bool use_custom_thickness = false;
 	float custom_thickness_mod = 0.0f;
 

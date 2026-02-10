@@ -16,12 +16,17 @@ void Script::error(const char *text){
 		return;
 	}
 
-	ScriptSource *source = &stack.back();
 	token = {};
 	token.kind = TOKEN_ERROR;
-	snprintf(token.string, sizeof(token.string),
-			"Error in script \"%s\", line %d: %s",
-			source->name.c_str(), source->line, text);
+	if(!stack.empty()){
+		ScriptSource *source = &stack.back();
+		snprintf(token.string, sizeof(token.string),
+				"Error in script \"%s\", line %d: %s",
+				source->name.c_str(), source->line, text);
+	}else{
+		snprintf(token.string, sizeof(token.string),
+				"Error in script, after EOF: %s", text);
+	}
 }
 
 ScriptSource *Script::push(const char *name){

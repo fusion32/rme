@@ -80,7 +80,8 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 		}
 
 		int index = 0;
-		int capacity = edit_item->getAttribute(CAPACITY);
+		int capacity = edit_item->getFlag(CONTAINER)
+			? edit_item->getAttribute(CAPACITY) : 1;
 		Item *item = edit_item->content;
 		while(item != NULL || index < capacity){
 			if(!horizontal_sizer) {
@@ -97,6 +98,7 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 				additional_height += additional_height_increment;
 			}
 
+			index += 1;
 			if(item != NULL){
 				item = item->next;
 			}
@@ -359,10 +361,13 @@ void OldPropertiesWindow::Update()
 {
 	if(edit_item->getFlag(CONTAINER) || edit_item->getFlag(CHEST)) {
 		int index = 0;
-		int capacity = edit_item->getAttribute(CAPACITY);
+		int capacity = edit_item->getFlag(CONTAINER)
+			? edit_item->getAttribute(CAPACITY) : 1;
 		Item *item = edit_item->content;
 		while(item != NULL || index < capacity){
 			container_items[index]->setItem(item);
+
+			index += 1;
 			if(item != NULL){
 				item = item->next;
 			}

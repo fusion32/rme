@@ -247,6 +247,21 @@ int Tile::addItems(Item *first)
 	return count;
 }
 
+void Tile::clearCreature(void){
+	delete creature;
+	creature = NULL;
+}
+
+void Tile::placeCreature(int raceId, int spawnRadius, int spawnAmount, int spawnInterval){
+	delete creature;
+	creature = newd Creature();
+	creature->raceId = raceId;
+	creature->spawnRadius = spawnRadius;
+	creature->spawnAmount = spawnAmount;
+	creature->spawnInterval = spawnInterval;
+	creature->selected = false;
+}
+
 int Tile::getIndexOf(Item *item) const
 {
 	if(item){

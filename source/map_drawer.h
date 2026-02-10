@@ -125,7 +125,6 @@ public:
 	void Release();
 
 	void Draw();
-	void DrawBackground();
 	void DrawShade(int mapz);
 	void DrawMap();
 	void DrawSecondaryMap(int mapz);

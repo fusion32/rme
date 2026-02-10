@@ -1203,7 +1203,7 @@ void MainMenuBar::OnMapRemoveCorpses(wxCommandEvent& WXUNUSED(event))
 					nextUpdate = progress + 0.01;
 				}
 
-				return g_materials.isInTileset(item, "Corpses");
+				return item->getFlag(CORPSE);
 			});
 		g_editor.DestroyLoadBar();
 

@@ -22,6 +22,9 @@
 #include "brush.h"
 #include "creature.h"
 #include "creature_brush.h"
+#include "script.h"
+
+#include <wx/dir.h>
 
 static std::vector<CreatureType> g_creatureTypes;
 
@@ -46,7 +49,7 @@ CreatureBrush *Creature::getBrush(void) const
 }
 
 int GetMinRaceId(void){
-	return 0;
+	return 1;
 }
 
 int GetMaxRaceId(void){
@@ -96,103 +99,245 @@ static CreatureType *GetOrCreateCreatureType(int raceId){
 	return &g_creatureTypes[raceId];
 }
 
-bool LoadCreatureTypes(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings)
-{
-	wxString filename;
-	{
-		wxPathList paths;
-		paths.Add(projectDir);
-		paths.Add(projectDir + "editor");
-		filename = paths.FindValidPath("creatures.xml");
-		if(filename.IsEmpty()){
-			outError << "Unable to locate creatures.xml";
+static Outfit ReadOutfit(Script *script){
+	Outfit outfit = {};
+	script->readSymbol('(');
+	outfit.lookType = script->readNumber();
+	script->readSymbol(',');
+	if(outfit.lookType != 0){
+		const uint8_t *colors = script->readBytes();
+		outfit.lookHead = (int)colors[0];
+		outfit.lookBody = (int)colors[1];
+		outfit.lookLegs = (int)colors[2];
+		outfit.lookFeet = (int)colors[3];
+	}else{
+		outfit.lookItem = script->readNumber();
+	}
+	script->readSymbol(')');
+	return outfit;
+}
+
+static bool LoadCreatureType(const wxString &filename, wxString &outError, wxArrayString &outWarnings){
+	Script script(filename.mb_str());
+
+	// NOTE(fusion): Make sure we don't attempt to parse anything if there was
+	// an error while opening the file. This is a bit different because some
+	// of the data is parsed outside the parsing loop.
+	if(!script.eof()){
+		if(strcmp(script.readIdentifier(), "racenumber") != 0){
+			outError << "Excepted race number as the first attribute";
 			return false;
 		}
+
+		script.readSymbol('=');
+		int raceId = script.readNumber();
+		if(raceId <= 0 || raceId > 1024){
+			outError << "Illegal race number " << raceId;
+			return false;
+		}
+
+		if(CreatureTypeExists(raceId)){
+			outError << "Race " << raceId << " already defined";
+			return false;
+		}
+
+		CreatureType *type = GetOrCreateCreatureType(raceId);
+		type->outfit.lookType = raceId;
+
+		std::string ident;
+		while(true){
+			script.nextToken();
+			if(script.eof()){
+				break;
+			}
+
+			ident = script.getIdentifier();
+			script.readSymbol('=');
+			if(ident == "name"){
+				type->name = script.readString();
+			}else if(ident == "article"){ // unused
+				script.readString();
+			}else if(ident == "outfit"){
+				type->outfit = ReadOutfit(&script);
+			}else if(ident == "corpse"){ // unused
+				script.readNumber();
+			}else if(ident == "corpses"){ // unused
+				script.readNumber();
+				script.readSymbol(',');
+				script.readNumber();
+			}else if(ident == "blood"){ // unused
+				script.readIdentifier();
+			}else if(ident == "experience"){ // unused
+				script.readNumber();
+			}else if(ident == "summoncost"){ // unused
+				script.readNumber();
+			}else if(ident == "fleethreshold"){ // unused
+				script.readNumber();
+			}else if(ident == "attack"){ // unused
+				script.readNumber();
+			}else if(ident == "defend"){ // unused
+				script.readNumber();
+			}else if(ident == "armor"){ // unused
+				script.readNumber();
+			}else if(ident == "poison"){ // unused
+				script.readNumber();
+			}else if(ident == "losetarget"){ // unused
+				script.readNumber();
+			}else if(ident == "strategy"){ // unused
+				script.readSymbol('(');
+				script.readNumber(); script.readSymbol(',');
+				script.readNumber(); script.readSymbol(',');
+				script.readNumber(); script.readSymbol(',');
+				script.readNumber(); script.readSymbol(')');
+			}else if(ident == "flags"){ // unused
+				script.readSymbol('{');
+				do{
+					script.readIdentifier();
+				}while(script.readSpecial() != '}');
+			}else if(ident == "skills"){ // unused
+				script.readSymbol('{');
+				do{
+					script.readSymbol('(');
+					script.readIdentifier(); script.readSymbol(','); // name
+					script.readNumber(); script.readSymbol(','); // level
+					script.readNumber(); script.readSymbol(','); // minimum
+					script.readNumber(); script.readSymbol(','); // maximum
+					script.readNumber(); script.readSymbol(','); // next level
+					script.readNumber(); script.readSymbol(','); // factor percent
+					script.readNumber(); script.readSymbol(')'); // add level
+				}while(script.readSpecial() != '}');
+			}else if(ident == "talk"){ // unused
+				script.readSymbol('{');
+				do{
+					script.readString();
+				}while(script.readSpecial() != '}');
+			}else if(ident == "inventory"){ // unused
+				script.readSymbol('{');
+				do{
+					script.readSymbol('(');
+					script.readNumber(); script.readSymbol(','); // type
+					script.readNumber(); script.readSymbol(','); // maximum
+					script.readNumber(); script.readSymbol(')'); // probability
+				}while(script.readSpecial() != '}');
+			}else if(ident == "spells"){ // unused
+				script.readSymbol('{');
+				do{
+					{ // Spell Shape
+						std::string_view spellShape = script.readIdentifier();
+						if(spellShape == "actor"){
+							script.readSymbol('(');
+							script.readNumber(); script.readSymbol(')');
+						}else if(spellShape == "victim"){
+							script.readSymbol('(');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(')');
+						}else if(spellShape == "origin"){
+							script.readSymbol('(');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(')');
+						}else if(spellShape == "destination"){
+							script.readSymbol('(');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(')');
+						}else if(spellShape == "angle"){
+							script.readSymbol('(');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(')');
+						}else{
+							script.error("unknown spell shape");
+						}
+					}
+
+					script.readSymbol('I');
+
+					{ // Spell Impact
+						std::string_view spellImpact = script.readIdentifier();
+						if(spellImpact == "damage"){
+							script.readSymbol('(');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(')');
+						}else if(spellImpact == "field"){
+							script.readSymbol('(');
+							script.readNumber(); script.readSymbol(')');
+						}else if(spellImpact == "healing"){
+							script.readSymbol('(');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(')');
+						}else if(spellImpact == "speed"){
+							script.readSymbol('(');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(')');
+						}else if(spellImpact == "drunken"){
+							script.readSymbol('(');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(')');
+						}else if(spellImpact == "strength"){
+							script.readSymbol('(');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(')');
+						}else if(spellImpact == "outfit"){
+							script.readSymbol('(');
+							ReadOutfit(&script); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(')');
+						}else if(spellImpact == "summon"){
+							script.readSymbol('(');
+							script.readNumber(); script.readSymbol(',');
+							script.readNumber(); script.readSymbol(')');
+						}else{
+							script.error("unknown spell impact");
+						}
+					}
+
+					script.readSymbol(':');
+
+					// Spell Delay
+					if(script.readNumber() == 0){
+						script.error("zero spell delay");
+					}
+
+				}while(script.readSpecial() != '}');
+			}else{
+				script.error("unknown race property");
+			}
+		}
 	}
 
-	pugi::xml_document doc;
-	pugi::xml_parse_result result = doc.load_file(filename.mb_str());
-	if(!result) {
-		outError << "Couldn't open file \"" << filename << "\":" << result.description();
+	if(const char *error = script.getError()){
+		outError << error;
 		return false;
 	}
 
-	pugi::xml_node node = doc.child("creatures");
-	if(!node) {
-		outError << "Creatures file is missing \"creatures\" top-level node.";
+	return true;
+}
+
+bool LoadCreatureTypes(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings){
+	wxString monsterDir = projectDir + "mon";
+	if(!wxDir::Exists(monsterDir)){
+		outError << "Unable to locate monster directory";
 		return false;
 	}
 
-	for(pugi::xml_node creatureNode: node.children("creature")){
-		// TODO(fusion): Npcs store their spawn point in their own files so we
-		// might need to review this later on, to be able to support NPCs.
-		pugi::xml_attribute raceAttr = creatureNode.attribute("race");
-		if(!raceAttr){
-			outWarnings.push_back(wxString() << filename
-					<< ":" << creatureNode.offset_debug()
-					<< ": Missing creature \"race\" attribute...");
-			continue;
-		}
-
-		int raceId = raceAttr.as_int();
-		if(raceId < 0 || raceId > 1024){
-			outWarnings.push_back(wxString() << filename
-					<< ":" << creatureNode.offset_debug()
-					<< ": Invalid creature \"race\" " << raceId);
-			continue;
-		}
-
-		CreatureType *creatureType = GetOrCreateCreatureType(raceId);
-
-		if(pugi::xml_attribute attr = creatureNode.attribute("name")){
-			creatureType->name = attr.as_string();
-		}else{
-			creatureType->name = "Unnamed";
-		}
-
-		if(pugi::xml_attribute attr = creatureNode.attribute("looktype")){
-			creatureType->outfit.lookType = attr.as_int();
-			if(g_editor.gfx.getCreatureSprite(creatureType->outfit.lookType) == NULL){
-				outWarnings.push_back(wxString() << filename
-						  << ":" << creatureNode.offset_debug()
-						  << ": Invalid creature look type "
-						  << creatureType->outfit.lookType);
+	wxString filename;
+	wxDir dir(monsterDir);
+	if(dir.GetFirst(&filename, "*.mon")){
+		do{
+			FileName fn(monsterDir, filename);
+			if(!LoadCreatureType(fn.GetFullPath(), outError, outWarnings)){
+				outError.Prepend(wxString() << "Unable to load monster " << filename << ": ");
+				return false;
 			}
-		}else if(pugi::xml_attribute attr = creatureNode.attribute("lookitem")){
-			creatureType->outfit.lookType = 0;
-			creatureType->outfit.lookItem = attr.as_int();
-			if(g_editor.gfx.getSprite(creatureType->outfit.lookItem) == NULL){
-				outWarnings.push_back(wxString() << filename
-						  << ":" << creatureNode.offset_debug()
-						  << ": Invalid creature look item "
-						  << creatureType->outfit.lookItem);
-			}
-		}
-
-		if(pugi::xml_attribute attr = creatureNode.attribute("lookhead")){
-			creatureType->outfit.lookHead = attr.as_int();
-		}
-
-		if(pugi::xml_attribute attr = creatureNode.attribute("lookbody")){
-			creatureType->outfit.lookBody = attr.as_int();
-		}
-
-		if(pugi::xml_attribute attr = creatureNode.attribute("looklegs")){
-			creatureType->outfit.lookLegs = attr.as_int();
-		}
-
-		if(pugi::xml_attribute attr = creatureNode.attribute("lookfeet")){
-			creatureType->outfit.lookFeet = attr.as_int();
-		}
-
-		if(pugi::xml_attribute attr = creatureNode.attribute("lookaddon")){
-			creatureType->outfit.lookAddon = attr.as_int();
-		}
-
-		if(pugi::xml_attribute attr = creatureNode.attribute("lookmount")){
-			creatureType->outfit.lookMount = attr.as_int();
-		}
+		}while(dir.GetNext(&filename));
 	}
+
 	return true;
 }
 

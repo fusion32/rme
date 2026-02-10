@@ -118,7 +118,6 @@ protected:
 	wxNotebookPage* CreateGraphicsPage();
 	wxNotebookPage* CreateUIPage();
 	wxNotebookPage* CreateEditorPage();
-	wxNotebookPage* CreateClientPage();
 
 	DECLARE_EVENT_TABLE()
 };

@@ -583,12 +583,11 @@ void MapCanvas::OnMouseLeftDoubleClick(wxMouseEvent& event)
 		if(newTile.creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
 			dialog = newd OldPropertiesWindow(g_editor.root, &map, &newTile, newTile.creature);
 		} else if(Item *topItem = newTile.getTopItem()) {
-			dialog = newd PropertiesWindow(g_editor.root, &map, &newTile, topItem);
+			dialog = newd OldPropertiesWindow(g_editor.root, &map, &newTile, topItem);
 		} else {
 			return;
 		}
 
-		int ret = dialog->ShowModal();
 		if(dialog->ShowModal() != 0){
 			Action *action = g_editor.actionQueue->createAction(ACTION_CHANGE_PROPERTIES);
 			action->changeTile(std::move(newTile));
@@ -1910,7 +1909,7 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event))
 	if(newTile.creature && g_settings.getInteger(Config::SHOW_CREATURES)){
 		w = newd OldPropertiesWindow(g_editor.root, &g_editor.map, &newTile, newTile.creature);
 	}else if(Item *item = newTile.getLastSelectedItem()){
-		w = newd PropertiesWindow(g_editor.root, &g_editor.map, &newTile, item);
+		w = newd OldPropertiesWindow(g_editor.root, &g_editor.map, &newTile, item);
 	}else{
 		return;
 	}
@@ -2067,7 +2066,7 @@ void MapPopupMenu::Update()
 						AppendSeparator();
 					}
 
-#if 0
+#if TODO
 					// TODO(fusion): We may still find a way to re-enable this with the `editor.xml` file.
 					if(topSelectedItem->isDoor())
 					{

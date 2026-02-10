@@ -161,7 +161,7 @@ wxWindow* PropertiesWindow::createAttributesPanel(wxWindow* parent)
 	// contents
 	// TODO(fusion): We probably want something similar to this, but using srv
 	// flags and attributes.
-#if 0
+#if TODO
 	ItemAttributeMap attrs = edit_item->getAttributes();
 	attributesGrid->AppendRows(attrs.size());
 	int i = 0;
@@ -179,7 +179,7 @@ wxWindow* PropertiesWindow::createAttributesPanel(wxWindow* parent)
 	return panel;
 }
 
-#if 0
+#if TODO
 void PropertiesWindow::SetGridValue(wxGrid* grid, int rowIndex, std::string label, const ItemAttribute& attr)
 {
 	wxArrayString types;
@@ -277,7 +277,7 @@ void PropertiesWindow::saveContainerPanel()
 
 void PropertiesWindow::saveAttributesPanel()
 {
-#if 0
+#if TODO
 	edit_item->clearAllAttributes();
 	for(int32_t rowIndex = 0; rowIndex < attributesGrid->GetNumberRows(); ++rowIndex) {
 		ItemAttribute attr;
@@ -306,7 +306,7 @@ void PropertiesWindow::saveAttributesPanel()
 
 void PropertiesWindow::OnGridValueChanged(wxGridEvent& event)
 {
-#if 0
+#if TODO
 	if(event.GetCol() == 1) {
 		wxString newType = attributesGrid->GetCellValue(event.GetRow(), 1);
 		if(newType == event.GetString()) {

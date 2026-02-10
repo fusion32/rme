@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <materials>
-	
+
 
 	<brush name="green trees" type="doodad" draggable="true" on_blocking="false" thickness="12/100" lookid="3621">
 		<item id="3614" chance="10" />
@@ -113,9 +113,9 @@
 	</brush>
 
 	<brush name="small rocks" type="doodad" draggable="true" on_blocking="true" thickness="25/100" lookid="1854">
-		
-		
-		
+
+
+
 		<item id="1854" chance="10" />
 		<item id="1855" chance="10" />
 		<item id="1856" chance="10" />
@@ -124,7 +124,7 @@
 		<item id="1865" chance="10" />
 		<item id="1866" chance="10" />
 		<item id="1867" chance="10" />
-		
+
 	</brush>
 
 	<brush name="debris" type="doodad" draggable="true" on_blocking="true" thickness="25/100" lookid="1892">
@@ -388,7 +388,7 @@
 		</alternate>
 	</brush>
 
-	
+
 
 	<brush name="bamboo plant" type="doodad" draggable="true" on_blocking="true" thickness="12/100" lookid="3761">
 		<item id="3761" chance="10" />
@@ -580,7 +580,7 @@
 		<wall type="southwest diagonal"> <item id="3972" chance="1" /> </wall>
 	</brush>
 
-	
+
 
 	<brush name="small drawer" type="doodad" draggable="true" on_blocking="true" on_duplicate="true" thickness="100/100" lookid="2433">
 		<alternate> -- south --
@@ -832,7 +832,7 @@
 		</alternate>
 	</brush>
 
-	
+
 
 	<brush name="wooden chair" type="doodad" draggable="true" on_blocking="true" on_duplicate="true" thickness="100/100" lookid="2360">
 		<alternate> -- south --
@@ -1008,7 +1008,7 @@
 		</alternate>
 	</brush>
 
-	
+
 
 	<brush name="ramp" type="doodad" draggable="false" on_blocking="true" one_size="true" redo_borders="true" lookid="1957">
 		<alternate> -- south --
@@ -1103,7 +1103,7 @@
 		</alternate>
 	</brush>
 
-	
+
 
 	<brush name="stone coffin (no rose)" type="doodad" draggable="false" on_blocking="true" thickness="100/100" lookid="1983">
 		<alternate> -- south --
@@ -1165,7 +1165,7 @@
 		</alternate>
 	</brush>
 
-	
+
 
 	<brush name="knight statue" type="doodad" draggable="true" on_blocking="true" thickness="100/100" lookid="2025">
 		<alternate> -- south --
@@ -1489,7 +1489,7 @@
 		</alternate>
 	</brush>
 
-	
+
 
 	<brush name="normal bed" type="doodad" draggable="true" on_blocking="true" thickness="100/100" lookid="2487">
 		<alternate> -- south --
@@ -1581,7 +1581,7 @@
 		</alternate>
 	</brush>
 
-	
+
 
 	<brush name="fire field (not decaying)" type="doodad" draggable="true" on_blocking="true" thickness="100/100" lookid="2118">
 		<item id="2118" chance="10" />
@@ -1647,7 +1647,7 @@
 		<item id="2140" chance="10" />
 	</brush>
 
-	
+
 	<brush name="wooden counter" type="table" lookid="2317">
 		<table align="north"> <item id="2321" chance="10" /> </table>
 		<table align="vertical"> <item id="2320" chance="10" /> </table>
@@ -1780,18 +1780,16 @@
 	</brush>
 
 	<brush name="steel bars" type="wall" lookid="2183">
-		<wall type="pole">               <item id="0" chance="1" /> </wall> --&gt;
 		<wall type="horizontal">         <item id="2182" chance="1" /> </wall>
 		<wall type="vertical">           <item id="2181" chance="1" /> </wall>
 		<wall type="corner">             <item id="2182" chance="1" /> </wall>
 	</brush>
 
 	<brush name="steel rebar" type="wall" lookid="2185">
-		<wall type="pole">               <item id="0" chance="1" /> </wall>
 		<wall type="horizontal">         <item id="2185" chance="1" /> </wall>
 		<wall type="vertical">           <item id="2184" chance="1" /> </wall>
-		<wall type="corner">             <item id="2184" chance="1" /> </wall> 
-		
+		<wall type="corner">             <item id="2184" chance="1" /> </wall>
+
 	</brush>
 
 	<brush name="dark fence" type="wall" lookid="2241">
@@ -1808,8 +1806,6 @@
 		<wall type="northeast diagonal"> <item id="2234" chance="1" /> </wall>
 		<wall type="southwest diagonal"> <item id="2235" chance="1" /> </wall>
 	</brush>
-
-	
 
 	<brush name="cobra wall statue" type="doodad" on_blocking="true" lookid="2057">
 		<alternate> -- south --
@@ -1966,7 +1962,7 @@
 		</wall>
 	</brush>
 
-	
+
 
 	<brush name="brown bear skin rug" type="doodad" draggable="true" on_blocking="true" thickness="100/100" lookid="2590">
 		<composite chance="10">
@@ -2000,7 +1996,7 @@
 		<carpet align="cse" id="2572" />
 		<carpet align="csw" id="2574" />
 		<carpet align="center" id="2576" />
-</brush>
+	</brush>
 
 	<brush name="fishing net" type="wall" lookid="2745">
 		<wall type="pole">
@@ -2050,7 +2046,7 @@
 		</composite>
 	</brush>
 
-	
+
 
 	<brush name="broken bottles" type="doodad" draggable="true" on_blocking="true" thickness="6/10" lookid="2894">
 		<item id="2894" chance="10" />

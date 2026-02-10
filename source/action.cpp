@@ -172,7 +172,7 @@ ActionGroup *ActionQueue::createGroup(ActionType type, int groupWindow /*= 0*/)
 	// TODO(fusion): We might want to review and re-enable this feature to limit
 	// memory usage, although having a queue size should suffice on most cases
 	// unless you're purpositely copying the whole map on every action. TBD.
-#if 0
+#if TODO
 	size_t megabyte = 1024 * 1024;
 	size_t curMemory = memsize();
 	size_t maxMemory = megabyte * g_settings.getInteger(Config::UNDO_MEM_SIZE);

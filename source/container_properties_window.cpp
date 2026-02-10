@@ -122,7 +122,7 @@ void ContainerItemButton::OnEditItem(wxCommandEvent& WXUNUSED(event))
 	}
 
 	newDialogAt += wxPoint(20, 20);
-	wxDialog *d = newd PropertiesWindow(this, edit_map, nullptr, edit_item, newDialogAt);
+	wxDialog *d = newd OldPropertiesWindow(this, edit_map, nullptr, edit_item, newDialogAt);
 	d->ShowModal();
 	d->Destroy();
 }

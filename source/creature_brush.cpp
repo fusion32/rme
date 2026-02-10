@@ -45,7 +45,7 @@ bool CreatureBrush::canDraw(Map *map, const Position &position) const
 {
 	bool result = false;
 	Tile *tile = map->getTile(position);
-	if(tile && tile->creature == NULL && !tile->getFlag(UNPASS) && !tile->getFlag(AVOID)) {
+	if(tile && !tile->getFlag(UNPASS) && !tile->getFlag(AVOID)) {
 		result = !tile->getTileFlag(TILE_FLAG_PROTECTIONZONE);
 	}
 	return result;
@@ -53,28 +53,17 @@ bool CreatureBrush::canDraw(Map *map, const Position &position) const
 
 void CreatureBrush::undraw(Map *map, Tile* tile)
 {
-	delete tile->creature;
-	tile->creature = NULL;
+	tile->clearCreature();
 }
 
 void CreatureBrush::draw(Map *map, Tile *tile, void *parameter)
 {
 	ASSERT(tile);
-	ASSERT(parameter);
-	draw_creature(map, tile);
-}
-
-void CreatureBrush::draw_creature(Map *map, Tile *tile)
-{
-	if(canDraw(map, tile->pos)) {
-		undraw(map, tile);
-
-		Creature *creature = newd Creature();
-		creature->raceId = raceId;
-		creature->spawnRadius = g_editor.GetSpawnRadius();
-		creature->spawnAmount = g_editor.GetSpawnAmount();
-		creature->spawnInterval = g_editor.GetSpawnInterval();
-		creature->selected = false;
-		tile->creature = creature;
+	if(canDraw(map, tile->pos)){
+		tile->placeCreature(raceId,
+				g_settings.getInteger(Config::SPAWN_RADIUS),
+				g_settings.getInteger(Config::SPAWN_AMOUNT),
+				g_settings.getInteger(Config::SPAWN_INTERVAL));
 	}
 }
+

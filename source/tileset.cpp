@@ -15,6 +15,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
+#include "ext/pugixml.cpp"
 #include "main.h"
 
 #include "tileset.h"
@@ -109,48 +110,16 @@ void Tileset::loadCategory(pugi::xml_node node, wxArrayString &warnings)
 	} else if(nodeName == "items_and_raw") {
 		category = getCategory(TILESET_ITEM);
 		subCategory = getCategory(TILESET_RAW);
-#if TODO
 	} else if(nodeName == "creatures") {
 		category = getCategory(TILESET_CREATURE);
-		for(pugi::xml_node brushNode = node.first_child(); brushNode; brushNode = brushNode.next_sibling()) {
-			const std::string& brushName = as_lower_str(brushNode.name());
-			if(brushName != "creature") {
-				continue;
-			}
-
-			pugi::xml_attribute attribute;
-			if(!(attribute = brushNode.attribute("name"))) {
-				warnings.push_back("Couldn't read creature name tag of creature tileset");
-				continue;
-			}
-
-			const std::string& creatureName = attribute.as_string();
-			CreatureType* ctype = g_creatures[creatureName];
-			if(ctype) {
-				CreatureBrush* brush;
-				if(ctype->brush) {
-					brush = ctype->brush;
-				} else {
-					brush = ctype->brush = newd CreatureBrush(ctype);
-					brushes.addBrush(brush);
-				}
-				brush->flagAsVisible();
-				category->brushlist.push_back(brush);
-			} else {
-				warnings.push_back(wxString("Unknown creature type \"") << wxstr(creatureName) << "\"");
-			}
-		}
-#endif
 	}
 
-	if(!category) {
-		return;
-	}
-
-	for(pugi::xml_node brushNode = node.first_child(); brushNode; brushNode = brushNode.next_sibling()) {
-		category->loadBrush(brushNode, warnings);
-		if(subCategory) {
-			subCategory->loadBrush(brushNode, warnings);
+	if(category){
+		for(pugi::xml_node childNode: node.children()){
+			category->loadBrush(childNode, warnings);
+			if(subCategory) {
+				subCategory->loadBrush(childNode, warnings);
+			}
 		}
 	}
 }
@@ -174,85 +143,84 @@ bool TilesetCategory::isTrivial() const
 
 void TilesetCategory::loadBrush(pugi::xml_node node, wxArrayString& warnings)
 {
-	pugi::xml_attribute attribute;
-
-	std::string brushName = node.attribute("after").as_string();
-	if((attribute = node.attribute("afteritem"))) {
-		const ItemType& type = GetItemType(attribute.as_ushort());
-		if(type.typeId != 0) {
-			brushName = type.raw_brush ? type.raw_brush->getName() : std::string();
-		}
-	}
-
-	const std::string& nodeName = as_lower_str(node.name());
-	if(nodeName == "brush") {
-		if(!(attribute = node.attribute("name"))) {
+	std::vector<Brush*> tmp;
+	std::string_view nodeTag = node.name();
+	if(nodeTag == "brush") {
+		const char *brushName = node.attribute("name").as_string();
+		Brush* brush = tileset.brushes.getBrush(brushName);
+		if(!brush){
+			warnings.push_back(wxString() << "Brush \"" << brushName << "\" doenst exist.");
 			return;
 		}
 
-		Brush* brush = tileset.brushes.getBrush(attribute.as_string());
-		if(brush) {
-			auto insertPosition = brushlist.end();
-			if(!brushName.empty()) {
-				for(auto itt = brushlist.begin(); itt != brushlist.end(); ++itt) {
-					if((*itt)->getName() == brushName) {
-						insertPosition = ++itt;
-						break;
-					}
-				}
-			}
-			brush->flagAsVisible();
-			brushlist.insert(insertPosition, brush);
-		} else {
-			warnings.push_back("Brush \"" + wxString(attribute.as_string(), wxConvUTF8) + "\" doesn't exist.");
+		brush->flagAsVisible();
+		tmp.push_back(brush);
+	}else if(nodeTag == "item"){
+		int fromId = 0, toId = 0;
+		if(pugi::xml_attribute attr = node.attribute("id")){
+			fromId = attr.as_int();
+			toId   = fromId;
+		}else if(pugi::xml_attribute attr = node.attribute("fromid")){
+			fromId = attr.as_int();
+			toId   = std::max<int>(fromId, node.attribute("toid").as_int());
+		}else{
+			warnings.push_back("Tileset item is missing id/fromid attribute");
+			return;
 		}
-	} else if(nodeName == "item") {
-		uint16_t fromId = 0, toId = 0;
-		if(!(attribute = node.attribute("id"))) {
-			if(!(attribute = node.attribute("fromid"))) {
-				warnings.push_back("Couldn't read raw ids.");
-			}
-			toId = node.attribute("toid").as_ushort();
-		}
-
-		fromId = attribute.as_ushort();
-		toId = std::max<uint16_t>(fromId, toId);
 
 		std::vector<Brush*> tempBrushVector;
-		for(uint16_t id = fromId; id <= toId; ++id) {
-			ItemType *type = GetMutableItemType(id);
+		for(int typeId = fromId; typeId <= toId; typeId += 1){
+			ItemType *type = GetMutableItemType(typeId);
 			if(!type) {
-				warnings.push_back(wxString::Format("Brush: %s, From: %d, To: %d", wxstr(brushName), fromId, toId));
-				warnings.push_back("Unknown item id #" + std::to_string(id) + ".");
+				warnings.push_back(wxString() << "Tileset item has invalid item type "
+						<< typeId << " (fromId=" << fromId << ", toId=" << toId << ")");
 				continue;
 			}
 
-			RAWBrush* brush;
-			if(type->raw_brush) {
-				brush = type->raw_brush;
-			} else {
-				brush = type->raw_brush = newd RAWBrush(type->typeId);
+			if(!type->raw_brush){
+				type->raw_brush = newd RAWBrush(type->typeId);
 				type->has_raw = true;
-				tileset.brushes.addBrush(brush); // This will take care of cleaning up afterwards
+				tileset.brushes.addBrush(type->raw_brush);
 			}
 
-			if(type->doodad_brush == nullptr && !isTrivial()) {
-				type->doodad_brush = brush;
+			if(type->doodad_brush == NULL && !isTrivial()){
+				type->doodad_brush = type->raw_brush;
 			}
 
-			brush->flagAsVisible();
-			tempBrushVector.push_back(brush);
+			type->raw_brush->flagAsVisible();
+			tmp.push_back(type->raw_brush);
+		}
+	}else if(nodeTag == "creature"){
+		pugi::xml_attribute raceAttr = node.attribute("race");
+		if(!raceAttr){
+			warnings.push_back("Tileset creature is missing race attribute.");
+			return;
 		}
 
-		auto insertPosition = brushlist.end();
-		if(!brushName.empty()) {
-			for(auto itt = brushlist.begin(); itt != brushlist.end(); ++itt) {
-				if((*itt)->getName() == brushName) {
-					insertPosition = ++itt;
-					break;
-				}
-			}
+		int raceId = raceAttr.as_int();
+		CreatureType *creatureType = GetMutableCreatureType(raceId);
+		if(!creatureType){
+			warnings.push_back(wxString() << "Invalid creature race" << raceId);
+			return;
 		}
-		brushlist.insert(insertPosition, tempBrushVector.begin(), tempBrushVector.end());
+
+		if(!creatureType->brush){
+			creatureType->brush = newd CreatureBrush(raceId);
+			tileset.brushes.addBrush(creatureType->brush);
+		}
+
+		creatureType->brush->flagAsVisible(); // ??
+		tmp.push_back(creatureType->brush);
+	}
+
+	if(pugi::xml_attribute attr = node.attribute("after")){
+		const char *after = attr.as_string();
+		auto it = brushlist.begin();
+		while(it != brushlist.end() && (*it)->getName() != after){
+			++it;
+		}
+		brushlist.insert(it, tmp.begin(), tmp.end());
+	}else{
+		brushlist.insert(brushlist.end(), tmp.begin(), tmp.end());
 	}
 }

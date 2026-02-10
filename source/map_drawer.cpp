@@ -182,20 +182,17 @@ void MapDrawer::SetupGL()
 {
 	glViewport(0, 0, screensize_x, screensize_y);
 
-	// Enable 2D mode
-	int vPort[4];
-
-	glGetIntegerv(GL_VIEWPORT, vPort);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
-	glOrtho(0, vPort[2]*zoom, vPort[3]*zoom, 0, -1, 1);
+	glOrtho(0, screensize_x * zoom, screensize_y * zoom, 0, -1, 1);
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glLoadIdentity();
-	glTranslatef(0.375f, 0.375f, 0.0f);
 }
 
 void MapDrawer::Release()
@@ -209,16 +206,20 @@ void MapDrawer::Release()
 		light_drawer->clear();
 	}
 
-	// Disable 2D mode
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
+
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
+
+	glDisable(GL_BLEND);
 }
 
 void MapDrawer::Draw()
 {
-	DrawBackground();
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
 	DrawMap();
 	DrawDraggingShadow();
 	DrawHigherFloors();
@@ -231,21 +232,6 @@ void MapDrawer::Draw()
 		DrawIngameBox();
 	if(options.isTooltips())
 		DrawTooltips();
-}
-
-void MapDrawer::DrawBackground()
-{
-	// Black Background
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glLoadIdentity();
-
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND);
-
-	//glAlphaFunc(GL_GEQUAL, 0.9f);
-	//glEnable(GL_ALPHA_TEST);
 }
 
 inline int getFloorAdjustment(int floor)
@@ -701,6 +687,9 @@ void MapDrawer::DrawSelectionBox()
 
 void MapDrawer::DrawBrush()
 {
+	// TODO(fusion): Some brushes will not be drawn at certain zoom levels, probably
+	// due to some issue with precision, or blending, or both, I'm not exactly sure.
+
 	if(options.ingame || !g_editor.IsDrawingMode() || !g_editor.GetCurrentBrush()) {
 		return;
 	}
@@ -710,6 +699,8 @@ void MapDrawer::DrawBrush()
 	BrushColor brushColor = COLOR_BLANK;
 	if(brush->isTerrain() || brush->isTable() || brush->isCarpet())
 		brushColor = COLOR_BRUSH;
+	else if(brush->isCreature())
+		brushColor = COLOR_SPAWN_BRUSH;
 	else if(brush->isHouse())
 		brushColor = COLOR_HOUSE_BRUSH;
 	else if(brush->isFlag())
@@ -942,16 +933,34 @@ void MapDrawer::DrawBrush()
 				glVertex2f(cx, cy);
 			glEnd();
 		} else if(brush->isCreature()) {
-			glEnable(GL_TEXTURE_2D);
-			int cy = (mouse_map_y) * rme::TileSize - view_scroll_y - adjustment;
-			int cx = (mouse_map_x) * rme::TileSize - view_scroll_x - adjustment;
-			CreatureBrush* creature_brush = brush->asCreature();
-			if(creature_brush->canDraw(&g_editor.map, Position(mouse_map_x, mouse_map_y, floor))){
-				BlitCreature(cx, cy, creature_brush->getOutfit(), SOUTH, 1.0f, 1.0f, 1.0f, 0.6f);
-			}else{
-				BlitCreature(cx, cy, creature_brush->getOutfit(), SOUTH, 1.0f, 0.25f, 0.25f, 0.6f);
+			// TODO(fusion): We might want to add some settings to control whether this is shown or not?
+			{ // draw spawn radius
+				int spawnRadius = g_settings.getInteger(Config::SPAWN_RADIUS);
+				int spawn_start_x = (mouse_map_x - spawnRadius)     * rme::TileSize - view_scroll_x - adjustment;
+				int spawn_start_y = (mouse_map_y - spawnRadius)     * rme::TileSize - view_scroll_y - adjustment;
+				int spawn_end_x   = (mouse_map_x + spawnRadius + 1) * rme::TileSize - view_scroll_x - adjustment;
+				int spawn_end_y   = (mouse_map_y + spawnRadius + 1) * rme::TileSize - view_scroll_y - adjustment;
+				glColor(brushColor);
+				glBegin(GL_QUADS);
+					glVertex2f(spawn_start_x, spawn_start_y);
+					glVertex2f(spawn_end_x,   spawn_start_y);
+					glVertex2f(spawn_end_x,   spawn_end_y);
+					glVertex2f(spawn_start_x, spawn_end_y);
+				glEnd();
 			}
-			glDisable(GL_TEXTURE_2D);
+
+			{ // draw creature
+				glEnable(GL_TEXTURE_2D);
+				int cx = (mouse_map_x) * rme::TileSize - view_scroll_x - adjustment;
+				int cy = (mouse_map_y) * rme::TileSize - view_scroll_y - adjustment;
+				CreatureBrush* creature_brush = brush->asCreature();
+				if(creature_brush->canDraw(&g_editor.map, Position(mouse_map_x, mouse_map_y, floor))){
+					BlitCreature(cx, cy, creature_brush->getOutfit(), SOUTH, 1.0f, 1.0f, 1.0f, 0.6f);
+				}else{
+					BlitCreature(cx, cy, creature_brush->getOutfit(), SOUTH, 1.0f, 0.25f, 0.25f, 0.6f);
+				}
+				glDisable(GL_TEXTURE_2D);
+			}
 		} else if(!brush->isDoodad()) {
 			RAWBrush* raw_brush = nullptr;
 			if(brush->isRaw()) { // Textured brush
@@ -967,51 +976,47 @@ void MapDrawer::DrawBrush()
 					int cx = (mouse_map_x + x) * rme::TileSize - view_scroll_x - adjustment;
 					if(g_editor.GetBrushShape() == BRUSHSHAPE_SQUARE) {
 						if(x >= -g_editor.GetBrushSize() && x <= g_editor.GetBrushSize() && y >= -g_editor.GetBrushSize() && y <= g_editor.GetBrushSize()) {
-							if(brush->isRaw()) {
+							if(brush->isRaw()){
 								BlitSpriteType(cx, cy, raw_brush->getItemType()->sprite, 0.6f, 0.6f, 0.6f, 0.6f);
-							} else {
-								if(brush->isWaypoint()) {
-									float r, g, b;
-									getColor(brush, Position(mouse_map_x + x, mouse_map_y + y, floor), r, g, b);
-									DrawBrushIndicator(cx, cy, brush, r, g, b);
-								} else {
-									if(brush->isHouseExit() || brush->isOptionalBorder())
-										glColorCheck(brush, Position(mouse_map_x + x, mouse_map_y + y, floor));
-									else
-										glColor(brushColor);
+							}else if(brush->isWaypoint()){
+								float r, g, b;
+								getColor(brush, Position(mouse_map_x + x, mouse_map_y + y, floor), r, g, b);
+								DrawBrushIndicator(cx, cy, brush, r, g, b);
+							}else{
+								if(brush->isHouseExit() || brush->isOptionalBorder())
+									glColorCheck(brush, Position(mouse_map_x + x, mouse_map_y + y, floor));
+								else
+									glColor(brushColor);
 
-									glBegin(GL_QUADS);
-										glVertex2f(cx, cy + rme::TileSize);
-										glVertex2f(cx + rme::TileSize, cy + rme::TileSize);
-										glVertex2f(cx + rme::TileSize, cy);
-										glVertex2f(cx, cy);
-									glEnd();
-								}
+								glBegin(GL_QUADS);
+									glVertex2f(cx, cy + rme::TileSize);
+									glVertex2f(cx + rme::TileSize, cy + rme::TileSize);
+									glVertex2f(cx + rme::TileSize, cy);
+									glVertex2f(cx, cy);
+								glEnd();
 							}
 						}
 					} else if(g_editor.GetBrushShape() == BRUSHSHAPE_CIRCLE) {
 						double distance = sqrt(double(x*x) + double(y*y));
 						if(distance < g_editor.GetBrushSize()+0.005) {
-							if(brush->isRaw()) {
+							if(brush->isRaw()){
 								BlitSpriteType(cx, cy, raw_brush->getItemType()->sprite, 0.6f, 0.6f, 0.6f, 0.6f);
-							} else {
-								if(brush->isWaypoint()) {
-									float r, g, b;
-									getColor(brush, Position(mouse_map_x + x, mouse_map_y + y, floor), r, g, b);
-									DrawBrushIndicator(cx, cy, brush, r, g, b);
-								} else {
-									if(brush->isHouseExit() || brush->isOptionalBorder())
-										glColorCheck(brush, Position(mouse_map_x + x, mouse_map_y + y, floor));
-									else
-										glColor(brushColor);
+							}else if(brush->isWaypoint()){
+								float r, g, b;
+								getColor(brush, Position(mouse_map_x + x, mouse_map_y + y, floor), r, g, b);
+								DrawBrushIndicator(cx, cy, brush, r, g, b);
+							}else{
+								if(brush->isHouseExit() || brush->isOptionalBorder())
+									glColorCheck(brush, Position(mouse_map_x + x, mouse_map_y + y, floor));
+								else
+									glColor(brushColor);
 
-									glBegin(GL_QUADS);
-										glVertex2f(cx, cy + rme::TileSize);
-										glVertex2f(cx + rme::TileSize, cy + rme::TileSize);
-										glVertex2f(cx + rme::TileSize, cy);
-										glVertex2f(cx, cy);
-									glEnd();
-								}
+								glBegin(GL_QUADS);
+									glVertex2f(cx, cy + rme::TileSize);
+									glVertex2f(cx + rme::TileSize, cy + rme::TileSize);
+									glVertex2f(cx + rme::TileSize, cy);
+									glVertex2f(cx, cy);
+								glEnd();
 							}
 						}
 					}

@@ -82,8 +82,11 @@ struct MapSector{
 };
 
 struct Map {
-	wxString mapDir = {};
-	wxString saveDir = {};
+	wxString mapDir;
+	wxString saveDir;
+	wxString spawnsFile;
+	wxString housesFile;
+	wxString houseAreasFile;
 
 	int minSectorX = 0;
 	int minSectorY = 0;
@@ -98,9 +101,13 @@ struct Map {
 	std::unordered_map<uint32_t, MapSector> sectors;
 	std::unordered_set<uint32_t> dirtySectors;
 
-	//std::vector<Town> towns;
 	//std::vector<House> houses;
 	//std::vector<Waypoint> waypoints;
+
+	bool loadSpawns(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
+	bool saveSpawns(void);
+	bool loadHouses(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
+	bool saveHouses(void);
 
 	bool loadSector(const wxString &filename, int sectorX, int sectorY, int sectorZ,
 					wxString &outError, wxArrayString &outWarnings);

@@ -23,6 +23,70 @@
 
 #include <wx/dir.h>
 
+bool Map::loadSpawns(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings){
+	wxString filename;
+	{
+		wxPathList paths;
+		paths.Add(projectDir);
+		paths.Add(projectDir + "dat");
+		filename = paths.FindValidPath("monster.db");
+		if(filename.IsEmpty()){
+			outError << "Unable to locate monster.db";
+			return false;
+		}
+	}
+
+	// NOTE(fusion): A singular ZERO is used to denote the end of the file.
+	Script script(filename.mb_str());
+	while(int raceId = script.readNumber()){
+		int x = script.readNumber();
+		int y = script.readNumber();
+		int z = script.readNumber();
+		int radius = script.readNumber();
+		int amount = script.readNumber();
+		int interval = script.readNumber();
+		if(Tile *tile = getTile(x, y, z)){
+			tile->placeCreature(raceId, radius, amount, interval);
+		}else{
+			outWarnings.push_back(wxString() << "Spawn " << raceId << " at "
+					<< x << ", " << y << ", " << z << " is out of bounds");
+		}
+	}
+
+	if(const char *error = script.getError()){
+		outError << error;
+		return false;
+	}
+
+	spawnsFile = std::move(filename);
+	return true;
+}
+
+bool Map::saveSpawns(void){
+	if(spawnsFile.IsEmpty()){
+		return false;
+	}
+
+	// TODO(fusion): Save spawns.
+
+	return false;
+}
+
+bool Map::loadHouses(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings){
+
+	return false;
+}
+
+bool Map::saveHouses(void){
+	if(housesFile.IsEmpty() || houseAreasFile.IsEmpty()){
+		return false;
+	}
+
+	// TODO(fusion): Save houses.
+
+	return false;
+}
+
 static Item *LoadObjects(Script *script){
 	Item *items = NULL;
 	Item **tail = &items;
@@ -163,7 +227,7 @@ bool Map::load(const wxString &projectDir, wxString &outError, wxArrayString &ou
 
 	wxString mapDirAttempt = projectDir + "origmap";
 	if(!wxDir::Exists(mapDirAttempt)){
-		if(!wxDir::Make(mapDirAttempt)){
+		if(!wxDir::Make(mapDirAttempt, 0755)){
 			outError << "Unable to create new map directory";
 			return false;
 		}
@@ -175,7 +239,7 @@ bool Map::load(const wxString &projectDir, wxString &outError, wxArrayString &ou
 
 	wxString saveDirAttempt = projectDir + "save";
 	if(!wxDir::Exists(saveDirAttempt)){
-		if(!wxDir::Make(saveDirAttempt)){
+		if(!wxDir::Make(saveDirAttempt, 0755)){
 			outError << "Unable to locate nor create save directory";
 			return false;
 		}
@@ -185,9 +249,7 @@ bool Map::load(const wxString &projectDir, wxString &outError, wxArrayString &ou
 				<< saveDirAttempt << " was created");
 	}
 
-	if(g_editor.HasLoadingBar()){
-		g_editor.SetLoadDone(0, "Discovering sector files...");
-	}
+	ScopedLoadingBar loadingBar("Discovering sector files...");
 
 	int numSectors = 0;
 	wxString filename;
@@ -209,11 +271,9 @@ bool Map::load(const wxString &projectDir, wxString &outError, wxArrayString &ou
 				continue;
 			}
 
-			if(g_editor.HasLoadingBar()){
-				g_editor.SetLoadDone((numLoaded * 100 / numSectors),
-						wxString::Format("Loading sector %s (%d/%d)",
-							filename, numLoaded, numSectors));
-			}
+			loadingBar.SetLoadDone((numLoaded * 99 / numSectors),
+					wxString::Format("Loading sector %s (%d/%d)",
+						filename, numLoaded, numSectors));
 
 
 			FileName fn(mapDirAttempt, filename);
@@ -226,7 +286,7 @@ bool Map::load(const wxString &projectDir, wxString &outError, wxArrayString &ou
 		}while(dir.GetNext(&filename));
 	}
 
-	mapDir = std::move(mapDir);
+	mapDir = std::move(mapDirAttempt);
 	saveDir = std::move(saveDirAttempt);
 	return true;
 }
@@ -237,7 +297,8 @@ bool Map::save(void)
 		return false;
 	}
 
-	// TODO
+	// TODO(fusion): Save patches.
+
 	return false;
 }
 
