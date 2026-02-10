@@ -267,7 +267,6 @@ bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWar
 		}
 	}
 
-
 	return true;
 }
 

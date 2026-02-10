@@ -20,7 +20,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
 target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:__DEBUG__>)
 
 include_directories(
-    ${LibArchive_INCLUDE_DIRS}
     ${OPENGL_INCLUDE_DIR}
     ${GLUT_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIR}
@@ -28,7 +27,6 @@ include_directories(
 
 target_link_libraries(${PROJECT_NAME}
     ${wxWidgets_LIBRARIES}
-    ${LibArchive_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${GLUT_LIBRARIES}
     ${ZLIB_LIBRARIES}

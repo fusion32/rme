@@ -1,0 +1,9 @@
+{
+  "name": "rme",
+  "dependencies": [
+    "freeglut",
+    "opengl",
+    "wxwidgets",
+    "zlib"
+  ]
+}
