@@ -127,10 +127,10 @@ wxDialog(parent, wxID_ANY, "Browse Field", position, wxSize(600, 400), wxCAPTION
 	item_list = newd BrowseTileListBox(this, wxID_ANY, tile);
 	sizer->Add(item_list, wxSizerFlags(1).Expand());
 
-	wxString pos = wxString() << "(" << tile->pos.x << ", " << tile->pos.y << ", " << tile->pos.z << ")";
-	wxString sec = wxString() << (tile->pos.x / MAP_SECTOR_SIZE)
-			<< "-" << (tile->pos.y / MAP_SECTOR_SIZE)
-			<< "-" << tile->pos.z;
+	wxString pos, sec, secOffset;
+	pos << "(" << tile->pos.x << ", " << tile->pos.y << ", " << tile->pos.z << ")";
+	sec << (tile->pos.x / MAP_SECTOR_SIZE) << "-" << (tile->pos.y / MAP_SECTOR_SIZE) << "-" << tile->pos.z;
+	secOffset << "(" << (tile->pos.x & MAP_SECTOR_MASK) << ", " << (tile->pos.y & MAP_SECTOR_MASK) << ")";
 
 	wxSizer* infoSizer = newd wxBoxSizer(wxVERTICAL);
     wxBoxSizer* buttons = newd wxBoxSizer(wxHORIZONTAL);
@@ -143,8 +143,9 @@ wxDialog(parent, wxID_ANY, "Browse Field", position, wxSize(600, 400), wxCAPTION
 	buttons->Add(select_raw_button);
 	infoSizer->Add(buttons);
 	infoSizer->AddSpacer(5);
-	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "Sector:  " + sec), wxSizerFlags(0).Left());
 	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "Position:  " + pos), wxSizerFlags(0).Left());
+	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "Sector:  " + sec), wxSizerFlags(0).Left());
+	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "Sector Offset:  " + secOffset), wxSizerFlags(0).Left());
 	infoSizer->Add(item_count_txt = newd wxStaticText(this, wxID_ANY, "Item count:  " + i2ws(item_list->GetItemCount())), wxSizerFlags(0).Left());
 	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "Refresh:  " + b2yn(tile->getTileFlag(TILE_FLAG_REFRESH))), wxSizerFlags(0).Left());
 	infoSizer->Add(newd wxStaticText(this, wxID_ANY, "No logout:  " + b2yn(tile->getTileFlag(TILE_FLAG_NOLOGOUT))), wxSizerFlags(0).Left());

@@ -210,10 +210,9 @@ void Tile::addItem(Item *item)
 	ASSERT(item->next == NULL);
 	int stackPriority = item->getStackPriority();
 	bool append = (stackPriority == STACK_PRIORITY_CREATURE
-			|| stackPriority == STACK_PRIORITY_LOW);
-	// TODO(fusion): Review this?
-	bool replace = (stackPriority == STACK_PRIORITY_BANK
 			|| stackPriority == STACK_PRIORITY_CLIP
+			|| stackPriority == STACK_PRIORITY_LOW);
+	bool replace = (stackPriority == STACK_PRIORITY_BANK
 			|| stackPriority == STACK_PRIORITY_BOTTOM
 			|| stackPriority == STACK_PRIORITY_TOP);
 
