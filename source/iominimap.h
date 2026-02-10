@@ -20,6 +20,8 @@
 
 #include "map.h"
 
+#include <array>
+
 enum class MinimapExportFormat {
 	Otmm,
 	Png,

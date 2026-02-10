@@ -169,8 +169,7 @@ AboutWindow::AboutWindow(wxWindow* parent) :
 {
 	wxString about;
 
-	about << "This is an OpenTibia Map Editor created by Remere.\n";
-	about << "Version " << __W_RME_VERSION__ << " for ";
+	about << "Remere's Map Editor " << __RME_VERSION__ << " for ";
 #ifdef __WINDOWS__
 	about << "Windows";
 #elif __LINUX__
@@ -178,7 +177,7 @@ AboutWindow::AboutWindow(wxWindow* parent) :
 #elif __APPLE__
 	about << "macOS";
 #else
-	about << "Unsupported OS";
+	about << "unknown";
 #endif
 	about << "\n\n";
 

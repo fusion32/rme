@@ -57,7 +57,6 @@ ${CMAKE_CURRENT_LIST_DIR}/pngfiles.h
 ${CMAKE_CURRENT_LIST_DIR}/position.h
 ${CMAKE_CURRENT_LIST_DIR}/positionctrl.h
 ${CMAKE_CURRENT_LIST_DIR}/preferences.h
-${CMAKE_CURRENT_LIST_DIR}/process_com.h
 ${CMAKE_CURRENT_LIST_DIR}/properties_window.h
 ${CMAKE_CURRENT_LIST_DIR}/raw_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/replace_items_window.h
@@ -67,11 +66,9 @@ ${CMAKE_CURRENT_LIST_DIR}/selection.h
 ${CMAKE_CURRENT_LIST_DIR}/settings.h
 ${CMAKE_CURRENT_LIST_DIR}/sprites.h
 ${CMAKE_CURRENT_LIST_DIR}/table_brush.h
-${CMAKE_CURRENT_LIST_DIR}/threads.h
 ${CMAKE_CURRENT_LIST_DIR}/tile.h
 ${CMAKE_CURRENT_LIST_DIR}/tileset.h
 ${CMAKE_CURRENT_LIST_DIR}/town.h
-${CMAKE_CURRENT_LIST_DIR}/updater.h
 ${CMAKE_CURRENT_LIST_DIR}/wall_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/waypoint_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/waypoints.h
@@ -134,7 +131,6 @@ ${CMAKE_CURRENT_LIST_DIR}/palette_waypoints.cpp
 ${CMAKE_CURRENT_LIST_DIR}/palette_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/pngfiles.cpp
 ${CMAKE_CURRENT_LIST_DIR}/preferences.cpp
-${CMAKE_CURRENT_LIST_DIR}/process_com.cpp
 ${CMAKE_CURRENT_LIST_DIR}/properties_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/raw_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/replace_items_window.cpp
@@ -146,7 +142,6 @@ ${CMAKE_CURRENT_LIST_DIR}/table_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/tile.cpp
 ${CMAKE_CURRENT_LIST_DIR}/tileset.cpp
 ${CMAKE_CURRENT_LIST_DIR}/town.cpp
-${CMAKE_CURRENT_LIST_DIR}/updater.cpp
 ${CMAKE_CURRENT_LIST_DIR}/wall_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/waypoint_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/waypoints.cpp

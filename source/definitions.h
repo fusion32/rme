@@ -18,113 +18,32 @@
 #ifndef RME_DEFINITIONS_H_
 #define RME_DEFINITIONS_H_
 
-#define __W_RME_APPLICATION_NAME__ wxString("Remere's Map Editor")
+#define __RME_APPLICATION_NAME__ "Remere's Map Editor"
+#define __RME_WEBSITE_URL__      "https://otland.net"
 
 // Version info
-// xxyyzzt (major, minor, subversion)
-#define __RME_VERSION_MAJOR__      3
-#define __RME_VERSION_MINOR__      8
-#define __RME_SUBVERSION__         0
+// xxyyzzt (major, minor, patch)
+#define __RME_VERSION_MAJOR__      7
+#define __RME_VERSION_MINOR__      7
+#define __RME_VERSION_PATCH__      0
 
-#define MAKE_VERSION_ID(major, minor, subversion) \
-	((major)      * 10000000 + \
-     (minor)      * 100000 + \
-     (subversion) * 1000)
+#define MAKE_VERSION_ID(major, minor, patch) ((major) * 10000000 + (minor) * 100000 +  (patch) * 1000)
+#define __RME_VERSION_ID__ MAKE_VERSION_ID(__RME_VERSION_MAJOR__, __RME_VERSION_MINOR__, __RME_VERSION_PATCH__)
 
-#define __RME_VERSION_ID__ MAKE_VERSION_ID(\
-	__RME_VERSION_MAJOR__, \
-    __RME_VERSION_MINOR__, \
-    __RME_SUBVERSION__)
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x) STRINGIFY_(x)
+#define __RME_VERSION__ ("v" STRINGIFY(__RME_VERSION_MAJOR__) "." STRINGIFY(__RME_VERSION_MINOR__) "." STRINGIFY(__RME_VERSION_PATCH__) "T")
 
-#ifdef __EXPERIMENTAL__
-#   define __RME_VERSION__ std::string(i2s(__RME_VERSION_MAJOR__) + "." + i2s(__RME_VERSION_MINOR__) + "." + i2s(__RME_SUBVERSION__) + " BETA")
-#   define __W_RME_VERSION__ (wxString() << __RME_VERSION_MAJOR__ << "." << __RME_VERSION_MINOR__ << "." << __RME_SUBVERSION__ << " BETA")
-#elif __SNAPSHOT__
-#   define __RME_VERSION__ std::string(i2s(__RME_VERSION_MAJOR__) + "." + i2s(__RME_VERSION_MINOR__) + "." + i2s(__RME_SUBVERSION__) + " - SNAPSHOT")
-#   define __W_RME_VERSION__ (wxString() << __RME_VERSION_MAJOR__ << "." << __RME_VERSION_MINOR__ << "." << __RME_SUBVERSION__ << " - SNAPSHOT")
-#else
-#   define __RME_VERSION__ std::string(i2s(__RME_VERSION_MAJOR__) + "." + i2s(__RME_VERSION_MINOR__) + "." + i2s(__RME_SUBVERSION__))
-#   define __W_RME_VERSION__ (wxString() << __RME_VERSION_MAJOR__ << "." << __RME_VERSION_MINOR__ << "." << __RME_SUBVERSION__)
-#endif
-// OS
-
-#define ASSETS_NAME "Tibia"
-
-#ifdef __VISUALC__
-#pragma warning(disable:4996) // Stupid MSVC complaining 'bout "unsafe" functions
-#pragma warning(disable:4800) // Bool conversion warning
-#pragma warning(disable:4100) // Unused parameter warning ( I like to name unused stuff... )
-#pragma warning(disable:4706) // Assignment within conditional expression
+#if defined(__DEBUG__) && defined(NDEBUG)
+#	undef NDEBUG
 #endif
 
-#ifndef FORCEINLINE
-#   ifdef __VISUALC__
-#       define FORCEINLINE __forceinline
-#   else
-#       define FORCEINLINE inline
-#   endif
-#endif
-
-// Debug mode?
-#if defined __DEBUG__ || defined _DEBUG || defined __DEBUG_MODE__
-#	undef __DEBUG_MODE__
-#	define __DEBUG_MODE__ 1
-#	undef _DEBUG
-#	define _DEBUG 1
-#	undef __DEBUG__
-#	define __DEBUG__ 1
-#else
-#   ifndef __RELEASE__
-#       define __RELEASE__ 1
-#   endif
-#	ifndef NDEBUG
-#		define NDEBUG 1
-#	endif
-#endif
-
-#ifdef __RELEASE__
-#   ifdef __VISUALC__
-#       define _SCL_SECURE 0
-#       define _SECURE_SCL 0 // They can't even decide on a coherent define interface!
-#       define _HAS_ITERATOR_DEBUGGING 0
-#   endif
-#endif
-
-#ifndef _DONT_USE_UPDATER_
-#   if defined __WINDOWS__ && !defined _USE_UPDATER_
-#       define _USE_UPDATER_
-#    endif
-#endif
-
-#ifndef _DONT_USE_PROCESS_COM
-#   if defined __WINDOWS__ && !defined _USE_PROCESS_COM
-#       define _USE_PROCESS_COM
-#   endif
+#if defined(_MSC_VER) && !defined(__DEBUG__)
+#	define _ITERATOR_DEBUG_LEVEL 0
 #endif
 
 // wxString conversions
 #define nstr(str) std::string((const char*)(str.mb_str(wxConvUTF8)))
 #define wxstr(str) wxString((str).c_str(), wxConvUTF8)
-
-// increment & decrement definitions
-#define IMPLEMENT_INCREMENT_OP(Type) \
-	namespace { \
-		Type& operator++(Type& type) { \
-			return (type = static_cast<Type>(type + 1)); \
-		} \
-		Type operator++(Type& type, int) { \
-			return static_cast<Type>((++type) - 1); \
-		} \
-	}
-
-#define IMPLEMENT_DECREMENT_OP(Type) \
-	namespace { \
-		Type& operator--(Type& type) { \
-			return (type = static_cast<Type>(type - 1)); \
-		} \
-		Type operator--(Type& type, int) { \
-			return static_cast<Type>((--type) + 1); \
-		} \
-	}
 
 #endif

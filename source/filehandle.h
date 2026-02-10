@@ -25,14 +25,6 @@
 #include <stack>
 #include <stdio.h>
 
-#ifndef FORCEINLINE
-#   ifdef _MSV_VER
-#       define FORCEINLINE __forceinline
-#   else
-#       define FORCEINLINE inline
-#   endif
-#endif
-
 enum FileHandleError {
 	FILE_NO_ERROR,
 	FILE_COULD_NOT_OPEN,
@@ -58,7 +50,7 @@ public:
 
 	bool seek(size_t offset, int origin = SEEK_SET);
 	size_t tell();
-	FORCEINLINE void skip(size_t offset) { seek(offset, SEEK_CUR); }
+	void skip(size_t offset) { seek(offset, SEEK_CUR); }
 
 	// Ensures we don't accidentally copy it.
 	FileHandle(const FileHandle &) = delete;
@@ -80,12 +72,12 @@ public:
 	explicit FileReadHandle(const std::string& name);
 	virtual ~FileReadHandle();
 
-	FORCEINLINE bool getU8(uint8_t& u8) { return getType(u8); }
-	FORCEINLINE bool getByte(uint8_t& u8) { return getType(u8); }
-	FORCEINLINE bool getSByte(int8_t& i8) { return getType(i8); }
-	FORCEINLINE bool getU16(uint16_t& u16) { return getType(u16); }
-	FORCEINLINE bool getU32(uint32_t& u32) { return getType(u32); }
-	FORCEINLINE bool get32(int32_t& i32) { return getType(i32); }
+	bool getU8(uint8_t& u8) { return getType(u8); }
+	bool getByte(uint8_t& u8) { return getType(u8); }
+	bool getSByte(int8_t& i8) { return getType(i8); }
+	bool getU16(uint16_t& u16) { return getType(u16); }
+	bool getU32(uint32_t& u32) { return getType(u32); }
+	bool get32(int32_t& i32) { return getType(i32); }
 	bool getRAW(uint8_t* ptr, size_t sz);
 	bool getRAW(std::string& str, size_t sz);
 	bool getString(std::string& str);
@@ -114,12 +106,12 @@ public:
 	BinaryNode(NodeFileReadHandle* file, BinaryNode* parent);
 	~BinaryNode();
 
-	FORCEINLINE bool getU8(uint8_t& u8) { return getType(u8); }
-	FORCEINLINE bool getByte(uint8_t& u8) { return getType(u8); }
-	FORCEINLINE bool getU16(uint16_t& u16) { return getType(u16); }
-	FORCEINLINE bool getU32(uint32_t& u32) { return getType(u32); }
-	FORCEINLINE bool getU64(uint64_t& u64) { return getType(u64); }
-	FORCEINLINE bool skip(size_t sz) {
+	bool getU8(uint8_t& u8) { return getType(u8); }
+	bool getByte(uint8_t& u8) { return getType(u8); }
+	bool getU16(uint16_t& u16) { return getType(u16); }
+	bool getU32(uint32_t& u32) { return getType(u32); }
+	bool getU64(uint64_t& u64) { return getType(u64); }
+	bool skip(size_t sz) {
 		if(read_offset + sz > data.size()) {
 			read_offset = data.size();
 			return false;
@@ -232,11 +224,11 @@ public:
 	explicit FileWriteHandle(const std::string& name);
 	virtual ~FileWriteHandle();
 
-	FORCEINLINE bool addU8(uint8_t u8) { return addType(u8); }
-	FORCEINLINE bool addByte(uint8_t u8) { return addType(u8); }
-	FORCEINLINE bool addU16(uint16_t u16) { return addType(u16); }
-	FORCEINLINE bool addU32(uint32_t u32) { return addType(u32); }
-	FORCEINLINE bool addU64(uint64_t u64) { return addType(u64); }
+	bool addU8(uint8_t u8) { return addType(u8); }
+	bool addByte(uint8_t u8) { return addType(u8); }
+	bool addU16(uint16_t u16) { return addType(u16); }
+	bool addU32(uint32_t u32) { return addType(u32); }
+	bool addU64(uint64_t u64) { return addType(u64); }
 	bool addString(const std::string& str);
 	bool addString(const char* str);
 	bool addLongString(const std::string& str);
@@ -284,7 +276,7 @@ protected:
 	size_t cache_size;
 	size_t local_write_index;
 
-	FORCEINLINE void writeBytes(const uint8_t* ptr, size_t sz) {
+	void writeBytes(const uint8_t* ptr, size_t sz) {
 		if(sz) {
 			do {
 				if(*ptr == NODE_START || *ptr == NODE_END || *ptr == ESCAPE_CHAR) {

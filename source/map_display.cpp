@@ -426,7 +426,9 @@ void MapCanvas::UpdateZoomStatus()
 void MapCanvas::OnMouseMove(wxMouseEvent& event)
 {
 	if(screendragging) {
-		GetMapWindow()->ScrollRelative(int(g_settings.getFloat(Config::SCROLL_SPEED) * zoom*(event.GetX() - cursor_x)), int(g_settings.getFloat(Config::SCROLL_SPEED) * zoom*(event.GetY() - cursor_y)));
+		GetMapWindow()->ScrollRelative(
+				(int)(zoom * (cursor_x - event.GetX())),
+				(int)(zoom * (cursor_y - event.GetY())));
 		Refresh();
 	}
 
@@ -1338,6 +1340,7 @@ void MapCanvas::OnWheel(wxMouseEvent& event)
 			diff = 0.125 - oldzoom;
 			zoom = 0.125;
 		}
+
 		if(zoom > 25.00) {
 			diff = 25.00 - oldzoom;
 			zoom = 25.0;

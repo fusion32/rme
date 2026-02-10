@@ -206,7 +206,13 @@ bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWar
 	dir = NormalizeDir(dir);
 
 	{
-		ScopedLoadingBar loadingBar("Loading item types...");
+		ScopedLoadingBar loadingBar("Loading menu bar...");
+		if(!menubar->Load(dir, outError, outWarnings)){
+			outWarnings.push_back(wxString() << "Unable to load menu bar: " << outError);
+			outError.Clear();
+		}
+
+		loadingBar.SetLoadDone(0, "Loading item types...");
 		if(!LoadItemTypes(dir, outError, outWarnings)){
 			outError = "Unable to load item types: " + outError;
 			UnloadProject();
@@ -215,7 +221,7 @@ bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWar
 
 		loadingBar.SetLoadDone(20, "Loading creature types...");
 		if(!LoadCreatureTypes(dir, outError, outWarnings)){
-			outWarnings.push_back(wxString("Unable to load creature types: ") << outError);
+			outWarnings.push_back(wxString() << "Unable to load creature types: " << outError);
 			outError.Clear();
 		}
 
@@ -235,7 +241,7 @@ bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWar
 
 		loadingBar.SetLoadDone(80, "Loading materials.xml...");
 		if(!g_materials.loadMaterials(dir, outError, outWarnings)){
-			outWarnings.push_back(wxString("Unable to load materials.xml: ") << outError);
+			outWarnings.push_back(wxString() << "Unable to load materials.xml: " << outError);
 			outError.Clear();
 		}
 
@@ -251,7 +257,10 @@ bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWar
 		}
 
 		ScopedLoadingBar loadingBar("");
-		// TODO(fusion): Check if there are existing patches and prompt to apply them?
+
+		// TODO(fusion): Check if there are existing patches, and apply them.
+		// There should be some editor function later on to patch the map and
+		// delete any patch files.
 		//loadingBar.SetLoadDone(99, "Checking for existing patches...");
 
 		loadingBar.SetLoadDone(99, "Loading spawns...");
@@ -1017,7 +1026,7 @@ void Editor::DestroyLoadBar()
 
 void Editor::ShowWelcomeDialog(const wxBitmap &icon) {
     std::vector<wxString> recent_files = GetRecentFiles();
-    welcomeDialog = newd WelcomeDialog(__W_RME_APPLICATION_NAME__, "Version " + __W_RME_VERSION__, FROM_DIP(root, wxSize(800, 480)), icon, recent_files);
+    welcomeDialog = newd WelcomeDialog(__RME_APPLICATION_NAME__, __RME_VERSION__, FROM_DIP(root, wxSize(800, 480)), icon, recent_files);
     welcomeDialog->Bind(wxEVT_CLOSE_WINDOW, &Editor::OnWelcomeDialogClosed, this);
     welcomeDialog->Bind(WELCOME_DIALOG_ACTION, &Editor::OnWelcomeDialogAction, this);
     welcomeDialog->Show();

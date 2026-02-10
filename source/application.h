@@ -23,7 +23,6 @@
 #include "action.h"
 #include "settings.h"
 
-#include "process_com.h"
 #include "map_display.h"
 #include "welcome_dialog.h"
 
@@ -46,14 +45,7 @@ private:
     bool m_startup;
     wxString m_file_to_open;
 	void FixVersionDiscrapencies();
-
 	virtual void OnFatalException();
-
-#ifdef _USE_PROCESS_COM
-	RMEProcessServer* m_proc_server;
-	wxSingleInstanceChecker* m_single_instance_checker;
-#endif
-
 };
 
 class MainMenuBar;
@@ -75,10 +67,6 @@ public:
 	void UpdateIndicatorsMenu();
 	void OnIdle(wxIdleEvent& event);
 	void OnExit(wxCloseEvent& event);
-
-#ifdef _USE_UPDATER_
-	void OnUpdateReceived(wxCommandEvent& event);
-#endif
 
 #ifdef __WINDOWS__
 	virtual bool MSWTranslateMessage(WXMSG *msg);

@@ -450,31 +450,73 @@ void MainMenuBar::UpdateIndicatorsMenu()
 	CheckItem(SHOW_MOVEABLES, g_settings.getBoolean(Config::SHOW_MOVEABLES));
 }
 
-bool MainMenuBar::Load(const FileName& path, wxArrayString& warnings, wxString& error)
+void MainMenuBar::LoadDefault(void){
+	while(menubar->GetMenuCount() > 0){
+		menubar->Remove(0);
+	}
+
+	wxMenu *recentFiles = newd wxMenu;
+	g_editor.recentFiles.UseMenu(recentFiles);
+
+	wxMenu *fileMenu = newd wxMenu("File");
+	fileMenu->Append(MAIN_FRAME_MENU + MenuBar::OPEN,        "Open\tCtrl+O",  "Open project.");
+	fileMenu->Append(MAIN_FRAME_MENU + MenuBar::SAVE,        "Save\tCtrl+S",  "Save project.");
+	fileMenu->Append(MAIN_FRAME_MENU + MenuBar::CLOSE,       "Close\tCtrl+Q", "Close project.");
+	fileMenu->AppendSeparator();
+	fileMenu->AppendSubMenu(recentFiles,                     "Recent Files",  "");
+	fileMenu->Append(MAIN_FRAME_MENU + MenuBar::PREFERENCES, "Preferences",   "Configure editor.");
+	fileMenu->Append(MAIN_FRAME_MENU + MenuBar::CLOSE,       "Exit",          "Close editor.");
+
+	menubar->Append(fileMenu, "File");
+
+	wxAcceleratorEntry accelerators[] = {
+		wxAcceleratorEntry(wxACCEL_CTRL, 'O', MAIN_FRAME_MENU + MenuBar::OPEN),
+		wxAcceleratorEntry(wxACCEL_CTRL, 'S', MAIN_FRAME_MENU + MenuBar::OPEN),
+		wxAcceleratorEntry(wxACCEL_CTRL, 'Q', MAIN_FRAME_MENU + MenuBar::OPEN),
+	};
+
+	frame->SetAcceleratorTable(wxAcceleratorTable(
+			NARRAY(accelerators), accelerators));
+}
+
+bool MainMenuBar::Load(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings)
 {
+	wxString filename;
+	{
+		wxPathList paths;
+		paths.Add(projectDir);
+		paths.Add(projectDir + "editor");
+		filename = paths.FindValidPath("menubar.xml");
+		if(filename.IsEmpty()){
+			outError << "Unable to locate menubar.xml";
+			return false;
+		}
+	}
+
 	// Open the XML file
 	pugi::xml_document doc;
-	pugi::xml_parse_result result = doc.load_file(path.GetFullPath().mb_str());
+	pugi::xml_parse_result result = doc.load_file(filename.mb_str());
 	if(!result) {
-		error = "Could not open " + path.GetFullName() + " (file not found or syntax error)";
+		outError << "Unable to open " << filename << " for reading.";
 		return false;
 	}
 
 	pugi::xml_node node = doc.child("menubar");
 	if(!node) {
-		error = path.GetFullName() + ": Invalid rootheader.";
+		outError << "Menu file " << filename << "is missing top-level menubar node.";
 		return false;
 	}
 
 	// Clear the menu
-	while(menubar->GetMenuCount() > 0) {
+	while(menubar->GetMenuCount() > 0){
 		menubar->Remove(0);
 	}
 
 	// Load succeded
+	std::vector<wxAcceleratorEntry> accelerators;
 	for(pugi::xml_node menuNode: node.children()){
 		// For each child node, load it
-		wxObject *i = LoadItem(menuNode, nullptr, warnings, error);
+		wxObject *i = LoadItem(menuNode, nullptr, outError, outWarnings, accelerators);
 		if (wxMenu *m = dynamic_cast<wxMenu*>(i)) {
 			menubar->Append(m, m->GetTitle());
 #ifdef __APPLE__
@@ -482,64 +524,14 @@ bool MainMenuBar::Load(const FileName& path, wxArrayString& warnings, wxString& 
 #else
 			m->SetTitle("");
 #endif
-		} else if(i) {
+		}else if(i){
 			delete i;
-			warnings.push_back(path.GetFullName() + ": Only menus can be subitems of main menu");
+			outWarnings.push_back(wxString() << filename << ": Only menus can be subitems of main menu");
 		}
 	}
 
-#ifdef __LINUX__
-	const int count = 41;
-	wxAcceleratorEntry entries[count];
-	// Edit
-	entries[0].Set(wxACCEL_CTRL, (int)'Z', MAIN_FRAME_MENU + MenuBar::UNDO);
-	entries[1].Set(wxACCEL_CTRL | wxACCEL_SHIFT, (int)'Z', MAIN_FRAME_MENU + MenuBar::REDO);
-	entries[2].Set(wxACCEL_CTRL, (int)'F', MAIN_FRAME_MENU + MenuBar::FIND_ITEM);
-	entries[3].Set(wxACCEL_CTRL | wxACCEL_SHIFT, (int)'F', MAIN_FRAME_MENU + MenuBar::REPLACE_ITEMS);
-	entries[4].Set(wxACCEL_NORMAL, (int)'A', MAIN_FRAME_MENU + MenuBar::AUTOMAGIC);
-	entries[5].Set(wxACCEL_CTRL, (int)'B', MAIN_FRAME_MENU + MenuBar::BORDERIZE_SELECTION);
-	entries[6].Set(wxACCEL_NORMAL, (int)'P', MAIN_FRAME_MENU + MenuBar::GOTO_PREVIOUS_POSITION);
-	entries[7].Set(wxACCEL_CTRL, (int)'G', MAIN_FRAME_MENU + MenuBar::GOTO_POSITION);
-	entries[8].Set(wxACCEL_NORMAL, (int)'J', MAIN_FRAME_MENU + MenuBar::JUMP_TO_BRUSH);
-	entries[9].Set(wxACCEL_CTRL, (int)'X', MAIN_FRAME_MENU + MenuBar::CUT);
-	entries[10].Set(wxACCEL_CTRL, (int)'C', MAIN_FRAME_MENU + MenuBar::COPY);
-	entries[11].Set(wxACCEL_CTRL, (int)'V', MAIN_FRAME_MENU + MenuBar::PASTE);
-	// Select
-	entries[12].Set(wxACCEL_CTRL, (int)'R', MAIN_FRAME_MENU + MenuBar::SEARCH_ON_SELECTION_DUPLICATED_ITEMS);
-	// View
-	entries[13].Set(wxACCEL_CTRL, (int)'=', MAIN_FRAME_MENU + MenuBar::ZOOM_IN);
-	entries[14].Set(wxACCEL_CTRL, (int)'-', MAIN_FRAME_MENU + MenuBar::ZOOM_OUT);
-	entries[15].Set(wxACCEL_CTRL, (int)'0', MAIN_FRAME_MENU + MenuBar::ZOOM_NORMAL);
-	entries[16].Set(wxACCEL_NORMAL, (int)'Q', MAIN_FRAME_MENU + MenuBar::SHOW_SHADE);
-	entries[17].Set(wxACCEL_CTRL, (int)'W', MAIN_FRAME_MENU + MenuBar::SHOW_ALL_FLOORS);
-	entries[18].Set(wxACCEL_NORMAL, (int)'Q', MAIN_FRAME_MENU + MenuBar::GHOST_ITEMS);
-	entries[19].Set(wxACCEL_CTRL, (int)'L', MAIN_FRAME_MENU + MenuBar::GHOST_HIGHER_FLOORS);
-	entries[20].Set(wxACCEL_SHIFT, (int)'I', MAIN_FRAME_MENU + MenuBar::SHOW_INGAME_BOX);
-	entries[21].Set(wxACCEL_SHIFT, (int)'G', MAIN_FRAME_MENU + MenuBar::SHOW_GRID);
-	entries[22].Set(wxACCEL_NORMAL, (int)'V', MAIN_FRAME_MENU + MenuBar::HIGHLIGHT_ITEMS);
-	entries[23].Set(wxACCEL_NORMAL, (int)'F', MAIN_FRAME_MENU + MenuBar::SHOW_CREATURES);
-	entries[24].Set(wxACCEL_NORMAL, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_SPECIAL);
-	entries[25].Set(wxACCEL_SHIFT, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_AS_MINIMAP);
-	entries[26].Set(wxACCEL_CTRL, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_ONLY_COLORS);
-	entries[27].Set(wxACCEL_CTRL, (int)'M', MAIN_FRAME_MENU + MenuBar::SHOW_ONLY_MODIFIED);
-	entries[28].Set(wxACCEL_CTRL, (int)'H', MAIN_FRAME_MENU + MenuBar::SHOW_HOUSES);
-	entries[29].Set(wxACCEL_NORMAL, (int)'O', MAIN_FRAME_MENU + MenuBar::SHOW_PATHING);
-	entries[30].Set(wxACCEL_NORMAL, (int)'Y', MAIN_FRAME_MENU + MenuBar::SHOW_TOOLTIPS);
-	entries[31].Set(wxACCEL_NORMAL, (int)'L', MAIN_FRAME_MENU + MenuBar::SHOW_PREVIEW);
-	entries[32].Set(wxACCEL_NORMAL, (int)'K', MAIN_FRAME_MENU + MenuBar::SHOW_WALL_HOOKS);
-	// Window
-	entries[33].Set(wxACCEL_NORMAL, (int)'M', MAIN_FRAME_MENU + MenuBar::WIN_MINIMAP);
-	entries[34].Set(wxACCEL_NORMAL, (int)'T', MAIN_FRAME_MENU + MenuBar::SELECT_TERRAIN);
-	entries[35].Set(wxACCEL_NORMAL, (int)'D', MAIN_FRAME_MENU + MenuBar::SELECT_DOODAD);
-	entries[36].Set(wxACCEL_NORMAL, (int)'I', MAIN_FRAME_MENU + MenuBar::SELECT_ITEM);
-	entries[37].Set(wxACCEL_NORMAL, (int)'H', MAIN_FRAME_MENU + MenuBar::SELECT_HOUSE);
-	entries[38].Set(wxACCEL_NORMAL, (int)'C', MAIN_FRAME_MENU + MenuBar::SELECT_CREATURE);
-	entries[39].Set(wxACCEL_NORMAL, (int)'W', MAIN_FRAME_MENU + MenuBar::SELECT_WAYPOINT);
-	entries[40].Set(wxACCEL_NORMAL, (int)'R', MAIN_FRAME_MENU + MenuBar::SELECT_RAW);
-
-	wxAcceleratorTable accelerator(count, entries);
-	frame->SetAcceleratorTable(accelerator);
-#endif
+	frame->SetAcceleratorTable(wxAcceleratorTable(
+			(int)accelerators.size(), accelerators.data()));
 
 	g_editor.recentFiles.AddFilesToMenu();
 	Update();
@@ -547,26 +539,23 @@ bool MainMenuBar::Load(const FileName& path, wxArrayString& warnings, wxString& 
 	return true;
 }
 
-wxObject* MainMenuBar::LoadItem(pugi::xml_node node, wxMenu* parent, wxArrayString& warnings, wxString& error)
-{
-	pugi::xml_attribute attribute;
-
-	const std::string& nodeName = as_lower_str(node.name());
-	if(nodeName == "menu") {
-		if(!(attribute = node.attribute("name"))) {
+wxObject *MainMenuBar::LoadItem(pugi::xml_node node, wxMenu *parent, wxString &outError,
+		wxArrayString &outWarnings, std::vector<wxAcceleratorEntry> &accelerators){
+	std::string_view nodeTag = node.name();
+	if(nodeTag == "menu") {
+		if(!node.attribute("name")){
 			return nullptr;
 		}
 
-		std::string name = attribute.as_string();
+		std::string name = node.attribute("name").as_string();
 		std::replace(name.begin(), name.end(), '$', '&');
 
 		wxMenu* menu = newd wxMenu;
-		if((attribute = node.attribute("special")) && std::string(attribute.as_string()) == "RECENT_FILES") {
+		if(std::string_view(node.attribute("special").as_string()) == "RECENT_FILES") {
 			g_editor.recentFiles.UseMenu(menu);
 		} else {
-			for(pugi::xml_node menuNode = node.first_child(); menuNode; menuNode = menuNode.next_sibling()) {
-				// Load an add each item in order
-				LoadItem(menuNode, menu, warnings, error);
+			for(pugi::xml_node menuNode: node.children()){
+				LoadItem(menuNode, menu, outError, outWarnings, accelerators);
 			}
 		}
 
@@ -576,55 +565,56 @@ wxObject* MainMenuBar::LoadItem(pugi::xml_node node, wxMenu* parent, wxArrayStri
 		if(parent) {
 			parent->AppendSubMenu(menu, wxstr(name));
 		} else {
-			menu->SetTitle((name));
+			menu->SetTitle(name);
 		}
+
 		return menu;
-	} else if(nodeName == "item") {
+	} else if(nodeTag == "item") {
 		// We must have a parent when loading items
-		if(!parent) {
-			return nullptr;
-		} else if(!(attribute = node.attribute("name"))) {
+		if(!parent || !node.attribute("name")) {
 			return nullptr;
 		}
 
-		std::string name = attribute.as_string();
+		std::string name = node.attribute("name").as_string();
 		std::replace(name.begin(), name.end(), '$', '&');
-		if(!(attribute = node.attribute("action"))) {
+
+		std::string action = node.attribute("action").as_string();
+		if(action.empty()){
 			return nullptr;
 		}
-
-		const std::string& action = attribute.as_string();
-		std::string hotkey = node.attribute("hotkey").as_string();
-		if(!hotkey.empty()) {
-			hotkey = '\t' + hotkey;
-		}
-
-		const std::string& help = node.attribute("help").as_string();
-		name += hotkey;
 
 		auto it = actions.find(action);
 		if(it == actions.end()) {
-			warnings.push_back("Invalid action type '" + wxstr(action) + "'.");
+			outWarnings.push_back(wxString() << "Invalid action type '" << action << "'.");
 			return nullptr;
 		}
 
-		const MenuBar::Action& act = *it->second;
-		wxAcceleratorEntry* entry = wxAcceleratorEntry::Create(wxstr(hotkey));
-		if(entry) {
-			delete entry; // accelerators.push_back(entry);
-		} else {
-			warnings.push_back("Invalid hotkey.");
+		std::string_view hotkey = node.attribute("hotkey").as_string();
+		if(!hotkey.empty()){
+			name += "\t";
+			name += hotkey;
+
+			wxAcceleratorEntry entry;
+			if(entry.FromString(name)){
+				accelerators.push_back(wxAcceleratorEntry(
+						entry.GetFlags(), entry.GetKeyCode(),
+						MAIN_FRAME_MENU + it->second->id));
+			}else{
+				outWarnings.push_back(wxString() << "Invalid hotkey for item '" << name << "'.");
+			}
 		}
 
-		wxMenuItem* tmp = parent->Append(
-			MAIN_FRAME_MENU + act.id, // ID
-			wxstr(name), // Title of button
-			wxstr(help), // Help text
-			act.kind // Kind of item
+		wxMenuItem *menuItem = parent->Append(
+			MAIN_FRAME_MENU + it->second->id,	// ID
+			name,								// Title of button
+			node.attribute("help").as_string(), // Help text
+			it->second->kind					// Kind of item
 		);
-		items[MenuBar::ActionID(act.id)].push_back(tmp);
-		return tmp;
-	} else if(nodeName == "separator") {
+
+		items[MenuBar::ActionID(it->second->id)].push_back(menuItem);
+
+		return menuItem;
+	} else if(nodeTag == "separator") {
 		// We must have a parent when loading items
 		if(!parent) {
 			return nullptr;
@@ -765,7 +755,7 @@ void MainMenuBar::OnReloadDataFiles(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnGotoWebsite(wxCommandEvent& WXUNUSED(event))
 {
-	::wxLaunchDefaultBrowser("http://www.remeresmapeditor.com/",  wxBROWSER_NEW_WINDOW);
+	::wxLaunchDefaultBrowser(__RME_WEBSITE_URL__,  wxBROWSER_NEW_WINDOW);
 }
 
 void MainMenuBar::OnAbout(wxCommandEvent& WXUNUSED(event))
@@ -1484,7 +1474,7 @@ void MainMenuBar::OnMapStatistics(wxCommandEvent& WXUNUSED(event))
 		os << "\t\tLargest House: \"" << largest_house->name << "\" (" << largest_house_size << " sqm)\n";
 
 	os << "\n";
-	os << "Generated by Remere's Map Editor version " + __RME_VERSION__ + "\n";
+	os << "Generated by Remere's Map Editor " << __RME_VERSION__ << "\n";
 
 
     wxDialog* dg = newd wxDialog(frame, wxID_ANY, "Map Statistics", wxDefaultPosition, wxDefaultSize, wxRESIZE_BORDER | wxCAPTION | wxCLOSE_BOX);

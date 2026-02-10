@@ -48,8 +48,8 @@ bool Map::loadSpawns(const wxString &projectDir, wxString &outError, wxArrayStri
 		if(Tile *tile = getTile(x, y, z)){
 			tile->placeCreature(raceId, radius, amount, interval);
 		}else{
-			outWarnings.push_back(wxString() << "Spawn " << raceId << " at "
-					<< x << ", " << y << ", " << z << " is out of bounds");
+			outWarnings.push_back(wxString() << "Spawn " << raceId << " at ("
+					<< x << ", " << y << ", " << z << ") is out of bounds");
 		}
 	}
 
@@ -323,7 +323,7 @@ MapSector *Map::getSectorAt(int x, int y, int z){
 
 	uint32_t sectorId = GetMapSectorId(x, y, z);
 	auto it = sectors.find(sectorId);
-	if(it != NULL){
+	if(it != sectors.end()){
 		return &it->second;
 	}else{
 		return NULL;

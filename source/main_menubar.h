@@ -154,7 +154,8 @@ public:
 	MainMenuBar(MainFrame* frame);
 	virtual ~MainMenuBar();
 
-	bool Load(const FileName&, wxArrayString& warnings, wxString& error);
+	void LoadDefault(void);
+	bool Load(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
 
 	// Update
 	// Turn on/off all buttons according to current editor state
@@ -263,7 +264,8 @@ public:
 
 protected:
 	// Load and returns a menu item, also sets accelerator
-	wxObject* LoadItem(pugi::xml_node node, wxMenu* parent, wxArrayString& warnings, wxString& error);
+	wxObject* LoadItem(pugi::xml_node node, wxMenu* parent, wxString &outError,
+			wxArrayString &outWarnings, std::vector<wxAcceleratorEntry> &accelerators);
 	// Checks the items in the menus according to the settings (in config)
 	void LoadValues();
 	void SearchItems(bool container, bool writable, bool onSelection = false);

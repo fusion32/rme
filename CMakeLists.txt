@@ -5,7 +5,7 @@ project(rme)
 find_package(GLUT REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(wxWidgets COMPONENTS html aui gl adv core net base REQUIRED)
+find_package(wxWidgets COMPONENTS base core aui gl adv REQUIRED)
 
 if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
 	add_compile_options(-Wno-deprecated-enum-enum-conversion)
@@ -13,7 +13,7 @@ endif ()
 
 include(${wxWidgets_USE_FILE})
 include(source/CMakeLists.txt)
-add_executable(${PROJECT_NAME} ${rme_H} ${rme_SRC})
+add_executable(${PROJECT_NAME} WIN32 ${rme_H} ${rme_SRC})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)

@@ -3,7 +3,10 @@
   "dependencies": [
     "freeglut",
     "opengl",
-    "wxwidgets",
-    "zlib"
+    "zlib",
+    {
+      "name": "wxwidgets",
+      "default-features": false
+    }
   ]
 }

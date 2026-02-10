@@ -28,7 +28,6 @@
 #include "minimap_window.h"
 #include "about_window.h"
 #include "main_menubar.h"
-#include "updater.h"
 #include "artprovider.h"
 
 #include "materials.h"
@@ -44,17 +43,10 @@
 #include "../brushes/icon/rme_icon.xpm"
 
 BEGIN_EVENT_TABLE(MainFrame, wxFrame)
+	EVT_IDLE(MainFrame::OnIdle)
 	EVT_CLOSE(MainFrame::OnExit)
-
-	// Update check complete
-#ifdef _USE_UPDATER_
-	EVT_ON_UPDATE_CHECK_FINISHED(wxID_ANY, MainFrame::OnUpdateReceived)
-#endif
 	EVT_ON_UPDATE_MENUS(wxID_ANY, MainFrame::OnUpdateMenus)
 	EVT_ON_UPDATE_ACTIONS(wxID_ANY, MainFrame::OnUpdateActions)
-
-	// Idle event handler
-	EVT_IDLE(MainFrame::OnIdle)
 END_EVENT_TABLE()
 
 BEGIN_EVENT_TABLE(MapWindow, wxPanel)
@@ -96,7 +88,7 @@ Application::~Application()
 
 bool Application::OnInit()
 {
-#if defined __DEBUG_MODE__ && defined __WINDOWS__
+#if defined(__DEBUG__) && defined(__WINDOWS__)
 	_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
 
@@ -122,29 +114,6 @@ bool Application::OnInit()
 	FixVersionDiscrapencies();
 	g_editor.LoadHotkeys();
 
-#ifdef _USE_PROCESS_COM
-	m_single_instance_checker = newd wxSingleInstanceChecker; //Instance checker has to stay alive throughout the applications lifetime
-	if(g_settings.getInteger(Config::ONLY_ONE_INSTANCE) && m_single_instance_checker->IsAnotherRunning()) {
-		RMEProcessClient client;
-		wxConnectionBase* connection = client.MakeConnection("localhost", "rme_host", "rme_talk");
-		if(connection) {
-			if(argc == 2){
-				wxLogNull nolog; //We might get a timeout message if the file fails to open on the running instance. Let's not show that message.
-				connection->Execute(argv[1]);
-			}
-			connection->Disconnect();
-			wxDELETE(connection);
-		}
-		wxDELETE(m_single_instance_checker);
-		return false; //Since we return false - OnExit is never called
-	}
-	// We act as server then
-	m_proc_server = newd RMEProcessServer();
-	if(!m_proc_server->Create("rme_host")) {
-		wxLogWarning("Could not register IPC service!");
-	}
-#endif
-
 	// Image handlers
 	//wxImage::AddHandler(newd wxBMPHandler);
 	wxImage::AddHandler(newd wxPNGHandler);
@@ -153,7 +122,7 @@ bool Application::OnInit()
 
 	g_editor.gfx.loadEditorSprites();
 
-#ifndef __DEBUG_MODE__
+#ifndef __DEBUG__
 	//wxHandleFatalExceptions(true);
 #endif
 
@@ -162,7 +131,7 @@ bool Application::OnInit()
 		m_file_to_open = argv[1];
 	}
 
-    g_editor.root = newd MainFrame(__W_RME_APPLICATION_NAME__, wxDefaultPosition, wxSize(700, 500));
+	g_editor.root = newd MainFrame(__RME_APPLICATION_NAME__, wxDefaultPosition, wxSize(700, 500));
 	SetTopWindow(g_editor.root);
 	g_editor.SetTitle("");
 	g_editor.LoadRecentFiles();
@@ -182,29 +151,9 @@ bool Application::OnInit()
 
 	// Goto RME website?
 	if(g_settings.getInteger(Config::GOTO_WEBSITE_ON_BOOT) == 1) {
-		::wxLaunchDefaultBrowser("http://www.remeresmapeditor.com/", wxBROWSER_NEW_WINDOW);
+		::wxLaunchDefaultBrowser(__RME_WEBSITE_URL__, wxBROWSER_NEW_WINDOW);
 		g_settings.setInteger(Config::GOTO_WEBSITE_ON_BOOT, 0);
 	}
-
-	// Check for updates
-#ifdef _USE_UPDATER_
-	if(g_settings.getInteger(Config::USE_UPDATER) == -1) {
-		int ret = g_editor.PopupDialog(
-			"Notice",
-			"Do you want the editor to automatically check for updates?\n"
-			"It will connect to the internet if you choose yes.\n"
-			"You can change this setting in the preferences later.", wxYES | wxNO);
-		if(ret == wxID_YES) {
-			g_settings.setInteger(Config::USE_UPDATER, 1);
-		} else {
-			g_settings.setInteger(Config::USE_UPDATER, 0);
-		}
-	}
-	if(g_settings.getInteger(Config::USE_UPDATER) == 1) {
-		UpdateChecker updater;
-		updater.connect(g_editor.root);
-	}
-#endif
 
     // Keep track of first event loop entry
     m_startup = true;
@@ -262,10 +211,6 @@ void Application::Unload()
 
 int Application::OnExit()
 {
-#ifdef _USE_PROCESS_COM
-	wxDELETE(m_proc_server);
-	wxDELETE(m_single_instance_checker);
-#endif
 	return 1;
 }
 
@@ -286,12 +231,8 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
     #endif
 
 	// Creates the file-dropdown menu
-	wxString error;         // unused?
-	wxArrayString warnings; // unused?
 	g_editor.menubar = newd MainMenuBar(this);
-	if(!g_editor.menubar->Load(GetExecDirectory() + "menubar.xml", warnings, error)) {
-		wxLogError(wxString() + "Could not load menubar.xml, editor will NOT be able to show the menu.\n");
-	}
+	g_editor.menubar->LoadDefault();
 
 	g_editor.aui_manager = newd wxAuiManager(this);
 	g_editor.toolbar = newd MainToolBar(this, g_editor.aui_manager);
@@ -303,7 +244,7 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
 
 	wxStatusBar* statusbar = CreateStatusBar();
 	statusbar->SetFieldsCount(4);
-	SetStatusText(wxString("Welcome to ") << __W_RME_APPLICATION_NAME__ << " " << __W_RME_VERSION__);
+	SetStatusText(wxString("Welcome to ") << __RME_APPLICATION_NAME__ << " " << __RME_VERSION__);
 }
 
 MainFrame::~MainFrame(){
@@ -314,36 +255,6 @@ void MainFrame::OnIdle(wxIdleEvent& event)
 {
 	////
 }
-
-#ifdef _USE_UPDATER_
-void MainFrame::OnUpdateReceived(wxCommandEvent& event)
-{
-	std::string data = *(std::string*)event.GetClientData();
-	delete (std::string*)event.GetClientData();
-	size_t first_colon = data.find(':');
-	size_t second_colon = data.find(':', first_colon+1);
-
-	if(first_colon == std::string::npos || second_colon == std::string::npos)
-		return;
-
-	std::string update = data.substr(0, first_colon);
-	std::string verstr = data.substr(first_colon+1, second_colon-first_colon-1);
-	std::string url = (second_colon == data.size()? "" : data.substr(second_colon+1));
-
-	if(update == "yes") {
-		int ret = g_editor.PopupDialog(
-			"Update Notice",
-			wxString("There is a newd update available (") << wxstr(verstr) <<
-			"). Do you want to go to the website and download it?",
-			wxYES | wxNO,
-			"I don't want any update notices",
-			Config::AUTOCHECK_FOR_UPDATES
-			);
-		if(ret == wxID_YES)
-			::wxLaunchDefaultBrowser(wxstr(url),  wxBROWSER_NEW_WINDOW);
-	}
-}
-#endif
 
 void MainFrame::OnUpdateMenus(wxCommandEvent&)
 {
@@ -464,16 +375,3 @@ void MainFrame::PrepareDC(wxDC& dc)
 	dc.SetUserScale( 1.0, 1.0 );
 	dc.SetMapMode( wxMM_TEXT );
 }
-
-#ifdef _WIN32
-// This is necessary for cmake to understand that it needs to set the executable
-int main(int argc, char** argv)
-{
-	wxEntryStart(argc, argv); // Start the wxWidgets library
-	Application* app = new Application(); // Create the application object
-	wxApp::SetInstance(app); // Informs wxWidgets that app is the application object
-	wxEntry(); // Call the wxEntry() function to start the application execution
-	wxEntryCleanup(); // Clear the wxWidgets library
-	return 0;
-}
-#endif
