@@ -57,10 +57,6 @@ public:
 		const wxPoint& pos, const wxSize& size);
 	~MainFrame();
 
-	bool DoQueryClose();
-	bool DoQuerySave(bool doclose = true);
-	bool DoQueryImportCreatures();
-
 	void OnUpdateMenus(wxCommandEvent& event);
 	void OnUpdateActions(wxCommandEvent& event);
 	void UpdateFloorMenu();

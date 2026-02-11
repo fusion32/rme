@@ -21,6 +21,8 @@
 #include "forward.h"
 #include "position.h"
 
+#include <unordered_set>
+
 class Selection
 {
 public:
@@ -54,7 +56,7 @@ public:
 	}
 
 private:
-	TileSet tiles;
+	std::unordered_set<Tile*> tiles;
 };
 
 #endif

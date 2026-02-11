@@ -287,10 +287,13 @@ public:
 
 	long getElapsedTime() const { return (animation_timer->TimeInMicro() / 1000).ToLong(); }
 
-	int getItemSpriteMinID() const noexcept { return itemBaseId; }
-	int getItemSpriteMaxID() const noexcept { return itemBaseId + itemCount - 1; }
-	int getCreatureSpriteMinID() const noexcept { return creatureBaseId; }
-	int getCreatureSpriteMaxID() const noexcept { return creatureBaseId + creatureCount - 1; }
+	int getItemCount() const { return itemCount; }
+	int getItemSpriteMinID() const { return itemBaseId; }
+	int getItemSpriteMaxID() const { return itemBaseId + itemCount - 1; }
+
+	int getCreatureCount() const { return creatureCount; }
+	int getCreatureSpriteMinID() const { return creatureBaseId; }
+	int getCreatureSpriteMaxID() const { return creatureBaseId + creatureCount - 1; }
 
 	// Get an unused texture id (this is acquired by simply increasing a value starting from 0x10000000)
 	GLuint getFreeTextureID();

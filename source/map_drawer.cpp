@@ -1365,7 +1365,7 @@ void MapDrawer::WriteTooltip(const Waypoint* waypoint, std::ostringstream& strea
 void MapDrawer::DrawTile(Tile *tile)
 {
 	ASSERT(tile);
-	if(options.show_only_modified && !tile->isModified()){
+	if(options.show_only_modified && !tile->getTileFlag(TILE_FLAG_DIRTY)){
 		return;
 	}
 

@@ -35,23 +35,20 @@ public:
 	wxCoord OnMeasureItem(size_t index) const;
 
 protected:
-	std::unordered_map<int, Sprite*> sprites;
+	std::vector<Sprite*> sprites;
 };
 
 DatDebugViewListBox::DatDebugViewListBox(wxWindow* parent, wxWindowID id) :
 	wxVListBox(parent, id, wxDefaultPosition, wxDefaultSize, wxLB_SINGLE)
 {
-	int n = 0;
-	for(int id = g_editor.gfx.getItemSpriteMinID();
-			id < g_editor.gfx.getItemSpriteMaxID();
-			id += 1){
-		Sprite* spr = g_editor.gfx.getSprite(id);
-		if(spr) {
-			sprites[n] = spr;
-			++n;
-		}
+	sprites.clear();
+	sprites.reserve(g_editor.gfx.getItemCount());
+	for(int typeId = g_editor.gfx.getItemSpriteMinID();
+			typeId < g_editor.gfx.getItemSpriteMaxID();
+			typeId += 1){
+		sprites.push_back(g_editor.gfx.getSprite(typeId));
 	}
-	SetItemCount(n);
+	SetItemCount(sprites.size());
 }
 
 DatDebugViewListBox::~DatDebugViewListBox()
@@ -61,9 +58,9 @@ DatDebugViewListBox::~DatDebugViewListBox()
 
 void DatDebugViewListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const
 {
-	auto spr_iter = sprites.find(int(n));
-	if(spr_iter != sprites.end())
-		spr_iter->second->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetWidth(), rect.GetHeight());
+	if(sprites[n] != NULL){
+		sprites[n]->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetWidth(), rect.GetHeight());
+	}
 
 	if(IsSelected(n)) {
 		if(HasFocus())
@@ -74,7 +71,8 @@ void DatDebugViewListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) con
 		dc.SetTextForeground(wxColor(0x00, 0x00, 0x00));
 	}
 
-	dc.DrawText(wxString() << n, rect.GetX() + 40, rect.GetY() + 6);
+	int typeId = g_editor.gfx.getItemSpriteMinID() + (int)n;
+	dc.DrawText(wxString() << typeId, rect.GetX() + 40, rect.GetY() + 6);
 }
 
 wxCoord DatDebugViewListBox::OnMeasureItem(size_t n) const

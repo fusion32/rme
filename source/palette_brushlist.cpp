@@ -341,8 +341,8 @@ bool BrushPanel::SelectBrush(const Brush* whatbrush)
 		return brushbox->SelectBrush(whatbrush);
 	}
 
-	for(BrushVector::const_iterator iter = tileset->brushlist.begin(); iter != tileset->brushlist.end(); ++iter) {
-		if(*iter == whatbrush) {
+	for(Brush *brush: tileset->brushlist){
+		if(brush == whatbrush) {
 			LoadContents();
 			return brushbox->SelectBrush(whatbrush);
 		}
@@ -402,15 +402,14 @@ BrushIconBox::BrushIconBox(wxWindow *parent, const TilesetCategory *_tileset, Re
 	wxSizer* stacksizer = newd wxBoxSizer(wxVERTICAL);
 	wxSizer* rowsizer = nullptr;
 	int item_counter = 0;
-	for(BrushVector::const_iterator iter = tileset->brushlist.begin(); iter != tileset->brushlist.end(); ++iter) {
-		ASSERT(*iter);
+	for(Brush *brush: tileset->brushlist){
 		++item_counter;
 
 		if(!rowsizer) {
 			rowsizer = newd wxBoxSizer(wxHORIZONTAL);
 		}
 
-		BrushButton* bb = newd BrushButton(this, *iter, rsz);
+		BrushButton* bb = newd BrushButton(this, brush, rsz);
 		rowsizer->Add(bb);
 		brush_buttons.push_back(bb);
 

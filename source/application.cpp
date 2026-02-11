@@ -282,68 +282,6 @@ bool MainFrame::MSWTranslateMessage(WXMSG *msg)
 }
 #endif
 
-bool MainFrame::DoQueryClose() {
-	return true;
-}
-
-bool MainFrame::DoQuerySave(bool doclose)
-{
-	if(!g_editor.IsProjectOpen()) {
-		return true;
-	}
-
-	if(g_editor.IsProjectDirty()) {
-		long ret = g_editor.PopupDialog(
-			"Save changes",
-			"Do you want to save your changes to \"" + g_editor.projectDir + "\"?",
-			wxYES | wxNO | wxCANCEL
-		);
-
-		if(ret == wxID_CANCEL){
-			return false;
-		}
-
-		g_editor.SaveProject();
-	}
-
-	if(doclose) {
-		g_editor.CloseProject();
-	}
-
-	return true;
-}
-
-bool MainFrame::DoQueryImportCreatures()
-{
-#if TODO
-	if(g_creatures.hasMissing()) {
-		long ret = g_editor.PopupDialog("Missing creatures", "There are missing creatures and/or NPC in the editor, do you want to load them from an OT monster/npc file?", wxYES | wxNO);
-		if(ret == wxID_YES) {
-			do {
-				wxFileDialog dlg(g_editor.root, "Import monster/npc file", "","","*.xml", wxFD_OPEN | wxFD_MULTIPLE | wxFD_FILE_MUST_EXIST);
-				if(dlg.ShowModal() == wxID_OK) {
-					wxArrayString paths;
-					dlg.GetPaths(paths);
-					for(uint32_t i = 0; i < paths.GetCount(); ++i) {
-						wxString error;
-						wxArrayString warnings;
-						bool ok = g_creatures.importXMLFromOT(paths[i], error, warnings);
-						if(ok)
-							g_editor.ListDialog("Monster loader errors", warnings);
-						else
-							wxMessageBox("Error OT data file \"" + paths[i] + "\".\n" + error, "Error", wxOK | wxICON_INFORMATION, g_editor.root);
-					}
-				} else {
-					break;
-				}
-			} while(g_creatures.hasMissing());
-		}
-	}
-	g_editor.RefreshPalettes();
-#endif
-	return true;
-}
-
 void MainFrame::UpdateFloorMenu()
 {
 	g_editor.menubar->UpdateFloorMenu();
@@ -357,7 +295,7 @@ void MainFrame::UpdateIndicatorsMenu()
 void MainFrame::OnExit(wxCloseEvent& event)
 {
 	if(g_editor.IsProjectOpen()) {
-		if(!DoQuerySave() && event.CanVeto()) {
+		if(!g_editor.CloseProject() && event.CanVeto()) {
 			event.Veto();
 			return;
 		}

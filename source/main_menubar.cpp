@@ -49,7 +49,6 @@ MainMenuBar::MainMenuBar(MainFrame *frame) : frame(frame)
 	MAKE_ACTION(OPEN, wxITEM_NORMAL, OnOpen);
 	MAKE_ACTION(SAVE, wxITEM_NORMAL, OnSave);
 	MAKE_ACTION(SAVE_AS, wxITEM_NORMAL, OnSaveAs);
-	MAKE_ACTION(GENERATE_MAP, wxITEM_NORMAL, OnGenerateMap);
 	MAKE_ACTION(CLOSE, wxITEM_NORMAL, OnClose);
 
 	MAKE_ACTION(IMPORT_MAP, wxITEM_NORMAL, OnImportMap);
@@ -629,27 +628,6 @@ void MainMenuBar::OnNew(wxCommandEvent& WXUNUSED(event))
 	g_editor.NewProject();
 }
 
-void MainMenuBar::OnGenerateMap(wxCommandEvent& WXUNUSED(event))
-{
-	/*
-	if(!DoQuerySave()) return;
-
-	std::ostringstream os;
-	os << "Untitled-" << untitled_counter << ".otbm";
-	++untitled_counter;
-
-	editor.generateMap(wxstr(os.str()));
-
-	g_editor.SetStatusText("Generated newd map");
-
-	g_editor.RefreshPalettes();
-	g_editor.UpdateMinimap();
-	g_editor.FitViewToMap();
-	g_editor.UpdateMenubar();
-	Refresh();
-	*/
-}
-
 void MainMenuBar::OnOpenRecent(wxCommandEvent& event)
 {
 	const wxFileHistory &recentFiles = g_editor.recentFiles;
@@ -663,7 +641,7 @@ void MainMenuBar::OnOpen(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnClose(wxCommandEvent& WXUNUSED(event))
 {
-	frame->DoQuerySave(true); // It closes the editor too
+	g_editor.CloseProject();
 }
 
 void MainMenuBar::OnSave(wxCommandEvent& WXUNUSED(event))
@@ -685,12 +663,6 @@ void MainMenuBar::OnPreferences(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnQuit(wxCommandEvent& WXUNUSED(event))
 {
-	/*
-	while(g_editor.IsProjectOpen())
-		if(!frame->DoQuerySave(true))
-			return;
-			*/
-	//((Application*)wxTheApp)->Unload();
 	g_editor.root->Close();
 }
 

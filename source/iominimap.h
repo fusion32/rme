@@ -51,7 +51,7 @@ enum MinimapTileFlags {
 struct MinimapTile
 {
 	uint8_t flags = 0;
-	uint8_t color = INVALID_MINIMAP_COLOR;
+	uint8_t color = 0;
 	uint8_t speed = 10;
 };
 

@@ -21,8 +21,6 @@
 #include "brush.h"
 #include "graphics.h"
 #include "editor.h"
-#include "tile.h"
-#include "iomap.h"
 #include "item.h"
 
 #include "ground_brush.h"
@@ -254,6 +252,11 @@ bool Item::getFlag(ObjectFlag flag) const
 int Item::getAttribute(ObjectTypeAttribute attr) const
 {
 	return getItemType().getAttribute(attr);
+}
+
+int Item::getAttributeOffset(ObjectInstanceAttribute attr) const
+{
+	return getItemType().getAttributeOffset(attr);
 }
 
 int Item::getAttribute(ObjectInstanceAttribute attr) const

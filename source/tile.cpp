@@ -36,25 +36,28 @@ void Tile::clear(void)
 	}
 
 	delete creature;
+
+	items    = NULL;
+	creature = NULL;
+	houseId  = 0;
+	flags    = 0;
 }
 
 void Tile::swap(Tile &other){
-	std::swap(pos, other.pos);
-	std::swap(flags, other.flags);
-	std::swap(houseId, other.houseId);
-	std::swap(minimapColor, other.minimapColor);
-	std::swap(creature, other.creature);
 	std::swap(items, other.items);
+	std::swap(creature, other.creature);
+	std::swap(pos, other.pos);
+	std::swap(houseId, other.houseId);
+	std::swap(flags, other.flags);
 }
 
 void Tile::deepCopy(const Tile &other)
 {
 	clear();
 
-	pos = other.pos;
-	flags = other.flags;
+	pos     = other.pos;
 	houseId = other.houseId;
-	minimapColor = other.minimapColor;
+	flags   = other.flags;
 
 	if(other.creature){
 		creature = other.creature->deepCopy();
@@ -319,9 +322,6 @@ uint16_t Tile::getGroundSpeed(void) const noexcept
 
 uint8_t Tile::getMiniMapColor(void) const
 {
-	if(minimapColor != INVALID_MINIMAP_COLOR)
-		return minimapColor;
-
 	uint8_t result = 0;
 	for(Item *it = items; it != NULL; it = it->next){
 		uint8_t color = it->getMiniMapColor();
@@ -329,6 +329,7 @@ uint8_t Tile::getMiniMapColor(void) const
 			result = color;
 		}
 	}
+
 	return result;
 }
 

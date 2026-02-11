@@ -29,6 +29,13 @@
 STATIC_ASSERT(MAP_SECTOR_SIZE >= 16);
 STATIC_ASSERT(ISPOW2(MAP_SECTOR_SIZE));
 
+enum SectorType {
+	SECTOR_BASELINE,
+	SECTOR_PATCH,
+	SECTOR_FULL_PATCH,
+	SECTOR_OVERLAY,
+};
+
 inline bool PositionValid(int x, int y, int z){
 	return x >= 0 && x <= UINT16_MAX
 		&& y >= 0 && y <= UINT16_MAX
@@ -81,6 +88,7 @@ struct MapSector{
 	Tile tiles[MAP_SECTOR_SIZE * MAP_SECTOR_SIZE];
 };
 
+struct Script;
 struct Map {
 	wxString mapDir;
 	wxString saveDir;
@@ -99,20 +107,29 @@ struct Map {
 	// pointers should remain stable and valid while their sectors are still in
 	// this map.
 	std::unordered_map<uint32_t, MapSector> sectors;
-	std::unordered_set<uint32_t> dirtySectors;
 
 	//std::vector<House> houses;
 	//std::vector<Waypoint> waypoints;
 
+
+	void loadSector(SectorType type, MapSector *sector, Script *script);
+	bool loadSector(SectorType type, const wxFileName &filename, wxString &outError);
+	bool loadPatch(SectorType type, const wxFileName &filename, wxString &outError);
+	bool load(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
+
+	bool saveSector(const wxString &dir, const MapSector *sector,
+					wxArrayString &outWarnings);
+	bool savePatch(const wxString &dir, const MapSector *sector,
+					int patchNumber, wxArrayString &outWarnings);
+	bool save(wxArrayString &outWarnings);
+
+
 	bool loadSpawns(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
 	bool saveSpawns(void);
+
 	bool loadHouses(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
 	bool saveHouses(void);
 
-	bool loadSector(const wxString &filename, int sectorX, int sectorY, int sectorZ,
-					wxString &outError, wxArrayString &outWarnings);
-	bool load(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
-	bool save(void);
 	void clear(void);
 
 	MapSector *getSectorAt(int x, int y, int z);
@@ -122,7 +139,6 @@ struct Map {
 	Tile *getTile(Position pos) { return getTile(pos.x, pos.y, pos.z); }
 	Tile *getOrCreateTile(Position pos) { return getOrCreateTile(pos.x, pos.y, pos.z); }
 	bool isEmpty(void) const { return sectors.empty(); }
-	bool isDirty(void) const { return !dirtySectors.empty(); }
 
 	const Tile *getTile(int x, int y, int z) const { return const_cast<Map*>(this)->getTile(x, y, z); }
 	const Tile *getTile(Position pos)        const { return const_cast<Map*>(this)->getTile(pos); }

@@ -126,8 +126,8 @@ public:
 
 	void CreateLoadBar(wxString message, bool canCancel = false);
 	void DestroyLoadBar();
-	bool SetLoadDone(int32_t done, const wxString& newMessage = "");
-	void SetLoadScale(int32_t from, int32_t to);
+	bool SetLoadDone(int done, const wxString& newMessage = "");
+	void SetLoadScale(int from, int to);
 
 	void ShowWelcomeDialog(const wxBitmap &icon);
 	void FinishWelcomeDialog();
@@ -159,8 +159,8 @@ public:
 	void ShowToolbar(ToolBarID id, bool show);
 	void SetStatusText(wxString text);
 
-	long PopupDialog(wxWindow* parent, wxString title, wxString text, long style, wxString configsavename = wxEmptyString, uint32_t configsavevalue = 0);
-	long PopupDialog(wxString title, wxString text, long style, wxString configsavename = wxEmptyString, uint32_t configsavevalue = 0);
+	int PopupDialog(wxWindow* parent, wxString title, wxString text, long style);
+	int PopupDialog(wxString title, wxString text, long style);
 
 	void ListDialog(wxWindow* parent, wxString title, const wxArrayString& vec);
 	void ListDialog(const wxString& title, const wxArrayString& vec) { ListDialog(nullptr, title, vec); }
@@ -442,9 +442,9 @@ protected:
 	// Progress bar tracking
 	//=========================================================================
 	wxString progressText = {};
-	int32_t progressFrom = 0;
-	int32_t progressTo = 0;
-	int32_t currentProgress = 0;
+	int progressFrom = 0;
+	int progressTo = 0;
+	int progress = 0;
 	wxGenericProgressDialog *progressBar = NULL;
 
 	// ??

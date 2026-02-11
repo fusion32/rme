@@ -328,7 +328,7 @@ bool LoadCreatureTypes(const wxString &projectDir, wxString &outError, wxArraySt
 
 	wxString filename;
 	wxDir dir(monsterDir);
-	if(dir.GetFirst(&filename, "*.mon")){
+	if(dir.GetFirst(&filename, "*.mon", wxDIR_FILES)){
 		do{
 			FileName fn(monsterDir, filename);
 			if(!LoadCreatureType(fn.GetFullPath(), outError, outWarnings)){

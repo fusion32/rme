@@ -172,7 +172,6 @@ public:
 	// File Menu
 	void OnNew(wxCommandEvent& event);
 	void OnOpen(wxCommandEvent& event);
-	void OnGenerateMap(wxCommandEvent& event);
 	void OnOpenRecent(wxCommandEvent& event);
 	void OnSave(wxCommandEvent& event);
 	void OnSaveAs(wxCommandEvent& event);

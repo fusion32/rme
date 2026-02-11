@@ -22,72 +22,63 @@
 #include "script.h"
 
 #include <wx/dir.h>
+#include <wx/zipstrm.h>
+#include <wx/wfstream.h>
 
-bool Map::loadSpawns(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings){
-	wxString filename;
+static bool BackupSectorsAndPatches(const wxString &dir, wxString &outError){
+	wxArrayString filenames;
+	wxDir::GetAllFiles(dir, &filenames, "*.sec", wxDIR_FILES);
+	wxDir::GetAllFiles(dir, &filenames, "*.pat", wxDIR_FILES);
+	if(filenames.IsEmpty()){
+		return true;
+	}
+
+	wxFileName backupName(dir, wxDateTime().UNow().Format("%Y-%m-%d-%H%M%S%l.bak.zip"));
+	wxTempFileOutputStream outputFile(backupName.GetFullPath());
+	if(!outputFile.IsOk()){
+		outError << "Failed to create backup file " << backupName.GetFullName();
+		return false;
+	}
+
 	{
-		wxPathList paths;
-		paths.Add(projectDir);
-		paths.Add(projectDir + "dat");
-		filename = paths.FindValidPath("monster.db");
-		if(filename.IsEmpty()){
-			outError << "Unable to locate monster.db";
+		wxZipOutputStream zip(outputFile, 9);
+		for(const wxString &filename: filenames){
+			wxFileInputStream inputStream(filename);
+			if(!inputStream.IsOk()){
+				outError << "Failed to open file " << filename << " for reading";
+				return false;
+			}
+
+			wxString entryName = wxFileNameFromPath(filename);
+			if(!zip.PutNextEntry(entryName)){
+				outError << "Failed to append ZIP entry for " << entryName;
+				return false;
+			}
+
+			zip << inputStream;
+		}
+
+		if(!zip.Close()){
+			outError << "Failed to wrap backup file " << backupName.GetFullName();
 			return false;
 		}
 	}
 
-	// NOTE(fusion): A singular ZERO is used to denote the end of the file.
-	Script script(filename.mb_str());
-	while(int raceId = script.readNumber()){
-		int x = script.readNumber();
-		int y = script.readNumber();
-		int z = script.readNumber();
-		int radius = script.readNumber();
-		int amount = script.readNumber();
-		int interval = script.readNumber();
-		if(Tile *tile = getTile(x, y, z)){
-			tile->placeCreature(raceId, radius, amount, interval);
-		}else{
-			outWarnings.push_back(wxString() << "Spawn " << raceId << " at ("
-					<< x << ", " << y << ", " << z << ") is out of bounds");
-		}
-	}
-
-	if(const char *error = script.getError()){
-		outError << error;
+	if(!outputFile.Commit()){
+		outError << "Failed to commit backup file " << backupName.GetFullName();
 		return false;
 	}
 
-	spawnsFile = std::move(filename);
+	for(const wxString &filename: filenames){
+		wxRemoveFile(filename);
+	}
+
 	return true;
 }
 
-bool Map::saveSpawns(void){
-	if(spawnsFile.IsEmpty()){
-		return false;
-	}
-
-	// TODO(fusion): Save spawns.
-
-	return false;
-}
-
-bool Map::loadHouses(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings){
-
-	return false;
-}
-
-bool Map::saveHouses(void){
-	if(housesFile.IsEmpty() || houseAreasFile.IsEmpty()){
-		return false;
-	}
-
-	// TODO(fusion): Save houses.
-
-	return false;
-}
-
 static Item *LoadObjects(Script *script){
+	ASSERT(script != NULL);
+
 	Item *items = NULL;
 	Item **tail = &items;
 	Item *currentItem = NULL;
@@ -149,48 +140,117 @@ static Item *LoadObjects(Script *script){
 	return items;
 }
 
-bool Map::loadSector(const wxString &filename, int sectorX, int sectorY, int sectorZ,
-					 wxString &outError, wxArrayString &outWarnings){
-	if(!SectorValid(sectorX, sectorY, sectorZ)){
-		outError << "Invalid sector coordinates "
-				<< sectorX << "-" << sectorY << "-" << sectorZ;
-		return false;
+static void SaveObjects(ScriptWriter *script, const Item *first){
+	ASSERT(script != NULL);
+	script->writeText("{");
+	for(const Item *item = first; item != NULL; item = item->next){
+		if(item != first) script->writeText(", ");
+		script->writeNumber(item->getID());
+
+		int attrCount = 0;
+		for(int attr = 0; attr <= NUM_INSTANCE_ATTRIBUTES; attr += 1){
+			if(attr == CONTENT || item->getAttributeOffset((ObjectInstanceAttribute)attr) == -1){
+				continue;
+			}
+
+			script->writeText(" ");
+			script->writeText(GetInstanceAttributeName(attr));
+			script->writeText("=");
+			if(attr == TEXTSTRING || attr == EDITOR){
+				script->writeString(item->getTextAttribute((ObjectInstanceAttribute)attr));
+			}else{
+				script->writeNumber(item->getAttribute((ObjectInstanceAttribute)attr));
+			}
+			attrCount += 1;
+		}
+
+		if(item->getAttributeOffset(CONTENT) != -1){
+			script->writeText(" Content=");
+			SaveObjects(script, item->content);
+		}
+	}
+	script->writeText("}");
+}
+
+static void SaveTile(ScriptWriter *script, int offsetX, int offsetY, const Tile *tile){
+	ASSERT(script != NULL && tile != NULL);
+
+	script->writeNumber(offsetX);
+	script->writeText("-");
+	script->writeNumber(offsetY);
+	script->writeText(": ");
+
+	if(tile->getTileFlag(TILE_FLAG_REFRESH)){
+		script->writeText("Refresh, ");
+	}
+
+	if(tile->getTileFlag(TILE_FLAG_NOLOGOUT)){
+		script->writeText("NoLogout, ");
+	}
+
+	if(tile->getTileFlag(TILE_FLAG_PROTECTIONZONE)){
+		script->writeText("ProtectionZone, ");
+	}
+
+	script->writeText("Content=");
+	SaveObjects(script, tile->items);
+
+	script->writeLn();
+}
+
+void Map::loadSector(SectorType type, MapSector *sector, Script *script){
+	ASSERT(sector != NULL && script != NULL);
+
+	// NOTE(fusion): A full patch replaces the whole sector.
+	if(type == SECTOR_FULL_PATCH){
+		for(Tile &tile: sector->tiles){
+			tile.clear();
+			tile.setTileFlag(TILE_FLAG_DIRTY);
+		}
 	}
 
 	Tile *tile = NULL;
 	std::string ident;
-	Script script(filename.mb_str());
-	MapSector *sector = getOrCreateSectorAt(
-			sectorX * MAP_SECTOR_SIZE,
-			sectorY * MAP_SECTOR_SIZE,
-			sectorZ);
 	while(true){
-		script.nextToken();
-		if(script.eof()){
+		script->nextToken();
+		if(script->eof()){
 			break;
 		}
 
-		if(script.token.kind == TOKEN_SPECIAL && script.getSpecial() == ','){
+		if(script->token.kind == TOKEN_SPECIAL && script->getSpecial() == ','){
 			continue;
 		}
 
-		if(script.token.kind == TOKEN_BYTES){
-			const uint8_t *offset = script.getBytes();
+		if(script->token.kind == TOKEN_BYTES){
+			const uint8_t *offset = script->getBytes();
 			int offsetX = (int)offset[0];
 			int offsetY = (int)offset[1];
+			script->readSymbol(':');
+
 			tile = sector->getTile(offsetX, offsetY);
 			if(tile == NULL){
-				script.error("invalid sector offset");
-				break;
-			}
-			script.readSymbol(':');
-		}else if(script.token.kind == TOKEN_IDENTIFIER){
-			if(tile == NULL){
-				script.error("coordinate expected");
+				script->error("invalid sector offset");
 				break;
 			}
 
-			ident = script.getIdentifier();
+			// NOTE(fusion): A regular patch replaces only specified tiles.
+			if(type == SECTOR_PATCH){
+				tile->clear();
+				tile->setTileFlag(TILE_FLAG_DIRTY);
+			}
+
+			// NOTE(fusion): An overlay add changes on top specified tiles.
+			if(type == SECTOR_OVERLAY){
+				tile->setTileFlag(TILE_FLAG_DIRTY);
+			}
+
+		}else if(script->token.kind == TOKEN_IDENTIFIER){
+			if(tile == NULL){
+				script->error("coordinate expected");
+				break;
+			}
+
+			ident = script->getIdentifier();
 			if(ident == "refresh"){
 				tile->setTileFlag(TILE_FLAG_REFRESH);
 			}else if(ident == "nologout"){
@@ -198,18 +258,66 @@ bool Map::loadSector(const wxString &filename, int sectorX, int sectorY, int sec
 			}else if(ident == "protectionzone"){
 				tile->setTileFlag(TILE_FLAG_PROTECTIONZONE);
 			}else if(ident == "content"){
-				script.readSymbol('=');
-				tile->addItems(LoadObjects(&script));
+				script->readSymbol('=');
+				tile->addItems(LoadObjects(script));
 			}else{
-				script.error("unknown map flag");
+				script->error("unknown map flag");
 				break;
 			}
-
 		}else{
-			script.error("next map point expected");
+			script->error("next map point expected");
 			break;
 		}
+	}
+}
 
+bool Map::loadSector(SectorType type, const wxFileName &filename, wxString &outError){
+	int sectorX, sectorY, sectorZ;
+	if(sscanf(filename.GetFullName().mb_str(), "%d-%d-%d.sec", &sectorX, &sectorY, &sectorZ) != 3){
+		outError << "Invalid sector name format: " << filename.GetFullName();
+		return false;
+	}
+
+	if(!SectorValid(sectorX, sectorY, sectorZ)){
+		outError << "Invalid sector coordinates " << sectorX << "-" << sectorY << "-" << sectorZ;
+		return false;
+	}
+
+	Script script(filename.GetFullPath().mb_str());
+	MapSector *sector = getOrCreateSectorAt(sectorX * MAP_SECTOR_SIZE, sectorY * MAP_SECTOR_SIZE, sectorZ);
+	loadSector(type, sector, &script);
+	if(const char *error = script.getError()){
+		outError << error;
+		return false;
+	}
+
+	return true;
+}
+
+bool Map::loadPatch(SectorType type, const wxFileName &filename, wxString &outError){
+	int patchNumber;
+	if(sscanf(filename.GetFullName().mb_str(), "%d.sec", &patchNumber) != 1){
+		outError << "Invalid patch name format: " << filename.GetFullName();
+		return false;
+	}
+
+	Script script(filename.GetFullPath().mb_str());
+	if(strcmp(script.readIdentifier(), "sector") != 0){
+		outError << "Expected patch sector identifier";
+		return false;
+	}
+
+	int sectorX = script.readNumber();
+	script.readSymbol(',');
+	int sectorY = script.readNumber();
+	script.readSymbol(',');
+	int sectorZ = script.readNumber();
+	if(!script.eof()){
+		MapSector *sector = getOrCreateSectorAt(
+				sectorX * MAP_SECTOR_SIZE,
+				sectorY * MAP_SECTOR_SIZE,
+				sectorZ);
+		loadSector(type, sector, &script);
 	}
 
 	if(const char *error = script.getError()){
@@ -249,41 +357,72 @@ bool Map::load(const wxString &projectDir, wxString &outError, wxArrayString &ou
 				<< saveDirAttempt << " was created");
 	}
 
-	ScopedLoadingBar loadingBar("Discovering sector files...");
+	{ // NOTE(fusion): Load base map.
+		g_editor.SetLoadDone(0, "Discovering sector files...");
 
-	int numSectors = 0;
-	wxString filename;
-	wxDir dir(mapDirAttempt);
-	if(dir.GetFirst(&filename, "*.sec")){
-		do{
-			numSectors += 1;
-		}while(dir.GetNext(&filename));
+		int numSectors = 0;
+		wxString filename;
+		wxDir dir(mapDirAttempt);
+		if(dir.GetFirst(&filename, "*.sec", wxDIR_FILES)){
+			do{
+				numSectors += 1;
+			}while(dir.GetNext(&filename));
+		}
+
+		int numLoaded = 0;
+		if(dir.GetFirst(&filename, "*.sec", wxDIR_FILES)){
+			do{
+				g_editor.SetLoadDone((numLoaded * 95 / numSectors),
+						wxString::Format("Loading sector %s (%d/%d)",
+							filename, numLoaded, numSectors));
+
+				wxFileName fn(mapDirAttempt, filename);
+				if(!loadSector(SECTOR_BASELINE, fn, outError)){
+					outWarnings.push_back(wxString() << "Unable to load sector " << fn.GetFullPath() << ": " << outError);
+					outError.Clear();
+				}
+
+				numLoaded += 1;
+			}while(dir.GetNext(&filename));
+		}
 	}
 
-	int numLoaded = 0;
-	if(dir.GetFirst(&filename, "*.sec")){
-		do{
-			int sectorX, sectorY, sectorZ;
-			if(sscanf(filename.mb_str(), "%d-%d-%d.sec", &sectorX, &sectorY, &sectorZ) != 3){
-				//outWarnings.push_back(wxString()
-				//		<< "Non sector file " << filename << " in map directory " << mapDirAttempt);
-				numSectors -= 1;
-				continue;
-			}
+	{
+		g_editor.SetLoadDone(95, "Loading patches...");
 
-			loadingBar.SetLoadDone((numLoaded * 99 / numSectors),
-					wxString::Format("Loading sector %s (%d/%d)",
-						filename, numLoaded, numSectors));
+		int numLoaded = 0;
+		wxString filename;
+		wxDir dir(saveDirAttempt);
 
+		// NOTE(fusion): Load full patches.
+		if(dir.GetFirst(&filename, "*.sec", wxDIR_FILES)){
+			do{
+				g_editor.SetLoadDone(96, wxString::Format("Loading sector patch %s (%d)", filename, numLoaded));
 
-			FileName fn(mapDirAttempt, filename);
-			if(!loadSector(fn.GetFullPath(), sectorX, sectorY, sectorZ, outError, outWarnings)){
-				outError.Prepend(wxString() << "Unable to load sector " << filename << ": ");
-				return false;
-			}
+				FileName fn(saveDirAttempt, filename);
+				if(!loadSector(SECTOR_FULL_PATCH, fn, outError)){
+					outWarnings.push_back(wxString() << "Unable to load full patch " << fn.GetFullPath() << ": " << outError);
+					outError.Clear();
+				}
 
-			numLoaded += 1;
-		}while(dir.GetNext(&filename));
+				numLoaded += 1;
+			}while(dir.GetNext(&filename));
+		}
+
+		// NOTE(fusion): Load patches.
+		if(dir.GetFirst(&filename, "*.pat", wxDIR_FILES)){
+			do{
+				g_editor.SetLoadDone(98, wxString::Format("Loading sector patch %s (%d)", filename, numLoaded));
+
+				FileName fn(saveDirAttempt, filename);
+				if(!loadPatch(SECTOR_PATCH, fn, outError)){
+					outWarnings.push_back(wxString() << "Unable to load patch " << fn.GetFullPath() << ": " << outError);
+					outError.Clear();
+				}
+
+				numLoaded += 1;
+			}while(dir.GetNext(&filename));
+		}
 	}
 
 	mapDir = std::move(mapDirAttempt);
@@ -291,13 +430,207 @@ bool Map::load(const wxString &projectDir, wxString &outError, wxArrayString &ou
 	return true;
 }
 
-bool Map::save(void)
-{
-	if(mapDir.IsEmpty() || saveDir.IsEmpty()){
+bool Map::saveSector(const wxString &dir, const MapSector *sector,
+					 wxArrayString &outWarnings){
+	ASSERT(sector != NULL);
+	int sectorX = sector->tiles[0].pos.x / MAP_SECTOR_SIZE;
+	int sectorY = sector->tiles[0].pos.y / MAP_SECTOR_SIZE;
+	int sectorZ = sector->tiles[0].pos.z;
+
+	ScriptWriter script;
+	wxString filename = wxString::Format("%s/%04d-%04d-%02d.sec", dir, sectorX, sectorY, sectorZ);
+	if(!script.begin(filename.mb_str())){
+		outWarnings.push_back(wxString()
+				<< "Failed to open sector script " << filename << " for writing");
 		return false;
 	}
 
-	// TODO(fusion): Save patches.
+	script.writeText("# Tibia - graphical Multi-User-Dungeon");
+	script.writeLn();
+	script.writeText("# Data for sector ");
+	script.writeNumber(sectorX);
+	script.writeText("/");
+	script.writeNumber(sectorY);
+	script.writeText("/");
+	script.writeNumber(sectorZ);
+	script.writeLn();
+	script.writeLn();
+
+	for(const Tile &tile: sector->tiles){
+		int offsetX = tile.pos.x & MAP_SECTOR_MASK;
+		int offsetY = tile.pos.y & MAP_SECTOR_MASK;
+		SaveTile(&script, offsetX, offsetY, &tile);
+	}
+
+	if(!script.end()){
+		outWarnings.push_back(wxString()
+				<< "Failed to wrap sector script " << filename
+				<< ", it may not have been properly stored.");
+		return false;
+	}
+
+	return true;
+}
+
+bool Map::savePatch(const wxString &dir, const MapSector *sector,
+					int patchNumber, wxArrayString &outWarnings){
+	ASSERT(sector != NULL);
+	int sectorX = sector->tiles[0].pos.x / MAP_SECTOR_SIZE;
+	int sectorY = sector->tiles[0].pos.y / MAP_SECTOR_SIZE;
+	int sectorZ = sector->tiles[0].pos.z;
+
+	ScriptWriter script;
+	wxString filename = wxString::Format("%s/%03d.pat", dir, patchNumber);
+	if(!script.begin(filename.mb_str())){
+		outWarnings.push_back(wxString() << "Failed to open patch script " << filename
+				<< " for writing (sectorX=" << sectorX << ", sectorY=" << sectorY
+				<< ", sectorZ=" << sectorZ << ").");
+		return false;
+	}
+
+	script.writeText("# Tibia - graphical Multi-User-Dungeon");
+	script.writeLn();
+	script.writeText("# Patch data for sector:");
+	script.writeLn();
+	script.writeText("Sector ");
+	script.writeNumber(sectorX);
+	script.writeText(",");
+	script.writeNumber(sectorY);
+	script.writeText(",");
+	script.writeNumber(sectorZ);
+	script.writeLn();
+	script.writeLn();
+
+	for(const Tile &tile: sector->tiles){
+		if(!tile.getTileFlag(TILE_FLAG_DIRTY)){
+			continue;
+		}
+
+		int offsetX = tile.pos.x & MAP_SECTOR_MASK;
+		int offsetY = tile.pos.y & MAP_SECTOR_MASK;
+		SaveTile(&script, offsetX, offsetY, &tile);
+	}
+
+	if(!script.end()){
+		outWarnings.push_back(wxString() << "Failed to wrap patch script " << filename
+				<< "(sectorX=" << sectorX << ", sectorY=" << sectorY << ", sectorZ="
+				<< sectorZ << "), it may not have been properly stored.");
+		return false;
+	}
+
+	return true;
+}
+
+bool Map::save(wxArrayString &outWarnings)
+{
+	if(saveDir.IsEmpty()){
+		return false;
+	}
+
+	if(true){ //if(g_settings.getBoolean(Config::BACKUP_PATCHES)){
+		wxString error;
+		while(!BackupSectorsAndPatches(saveDir, error)){
+			int ret = g_editor.PopupDialog("Backup error",
+					wxString() << "There was an error while backing up patches:\n"
+							<< error << "\n" << "Do you want to retry?",
+					wxYES | wxNO | wxCANCEL);
+			if(ret == wxID_CANCEL) return false;
+			if(ret == wxID_NO)     break;
+			error.Clear();
+		}
+	}
+
+	int nextPatchNumber = 0;
+	int fullPatchThreshold = (MAP_SECTOR_SIZE * MAP_SECTOR_SIZE) / 2;
+	for(const auto &[sectorId, sector]: sectors){
+		int numDirty = 0;
+		for(const Tile &tile: sector.tiles){
+			if(tile.getTileFlag(TILE_FLAG_DIRTY)){
+				numDirty += 1;
+			}
+		}
+
+		// TODO(fusion): I have no idea whether this is a good heuristic,
+		// or if there something else when determining a full patch. There
+		// is also the issue with tiles being dirty if we modify respawns
+		// so we might want to do a different approach like only tagging
+		// sectors as dirty and checking the differences with the original
+		// sector.
+		if(numDirty >= fullPatchThreshold){
+			saveSector(saveDir, &sector, outWarnings);
+		}else if(numDirty > 0){
+			savePatch(saveDir, &sector, nextPatchNumber, outWarnings);
+			nextPatchNumber += 1;
+		}
+	}
+
+	// TODO(fusion): Modify map.dat as well since the size of the map may have
+	// changed. We'll also want to modify it to parse and save waypoints but
+	// that's also pending.
+
+	return true;
+}
+
+bool Map::loadSpawns(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings){
+	wxString filename;
+	{
+		wxPathList paths;
+		paths.Add(projectDir);
+		paths.Add(projectDir + "dat");
+		filename = paths.FindValidPath("monster.db");
+		if(filename.IsEmpty()){
+			outError << "Unable to locate monster.db";
+			return false;
+		}
+	}
+
+	// NOTE(fusion): A singular ZERO is used to denote the end of the file.
+	Script script(filename.mb_str());
+	while(int raceId = script.readNumber()){
+		int x = script.readNumber();
+		int y = script.readNumber();
+		int z = script.readNumber();
+		int radius = script.readNumber();
+		int amount = script.readNumber();
+		int interval = script.readNumber();
+		if(Tile *tile = getTile(x, y, z)){
+			tile->placeCreature(raceId, radius, amount, interval);
+		}else{
+			outWarnings.push_back(wxString() << "Spawn " << raceId << " at ("
+					<< x << ", " << y << ", " << z << ") is out of bounds");
+		}
+	}
+
+	if(const char *error = script.getError()){
+		outError << error;
+		return false;
+	}
+
+	spawnsFile = std::move(filename);
+	return true;
+}
+
+bool Map::saveSpawns(void){
+	if(spawnsFile.IsEmpty()){
+		return false;
+	}
+
+	// TODO(fusion): Save spawns.
+
+	return false;
+}
+
+bool Map::loadHouses(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings){
+	outError << "Map::loadHouses: Not implemented.";
+	return false;
+}
+
+bool Map::saveHouses(void){
+	if(housesFile.IsEmpty() || houseAreasFile.IsEmpty()){
+		return false;
+	}
+
+	// TODO(fusion): Save houses.
 
 	return false;
 }
@@ -306,6 +639,9 @@ void Map::clear(void)
 {
 	mapDir.Clear();
 	saveDir.Clear();
+	spawnsFile.Clear();
+	housesFile.Clear();
+	houseAreasFile.Clear();
 	minSectorX = 0;
 	minSectorY = 0;
 	minSectorZ = 0;
@@ -313,7 +649,6 @@ void Map::clear(void)
 	maxSectorY = 0;
 	maxSectorZ = 0;
 	sectors.clear();
-	dirtySectors.clear();
 }
 
 MapSector *Map::getSectorAt(int x, int y, int z){

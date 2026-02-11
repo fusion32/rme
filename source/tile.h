@@ -21,25 +21,22 @@
 #include "position.h"
 #include "item.h"
 #include "wall_brush.h"
-#include <unordered_set>
 
 enum {
-	TILE_FLAG_REFRESH        = 0x01,
-	TILE_FLAG_NOLOGOUT       = 0x02,
-	TILE_FLAG_PROTECTIONZONE = 0x04,
-};
+	TILE_FLAG_REFRESH         = 0x01,
+	TILE_FLAG_NOLOGOUT        = 0x02,
+	TILE_FLAG_PROTECTIONZONE  = 0x04,
 
-enum {
-	INVALID_MINIMAP_COLOR = 0xFF
+	TILE_FLAG_OPTIONAL_BORDER = 0x40,
+	TILE_FLAG_DIRTY           = 0x80,
 };
 
 struct Tile {
-	Item     *items       = NULL;
-	Creature *creature    = NULL;
-	Position pos          = {};
-	uint16_t houseId      = 0;
-	uint8_t  flags        = 0;
-	uint8_t  minimapColor = INVALID_MINIMAP_COLOR;
+	Item     *items    = NULL;
+	Creature *creature = NULL;
+	Position pos       = {};
+	uint16_t houseId   = 0;
+	uint8_t  flags     = 0;
 
 	Tile(void) = default;
 	~Tile(void) { clear(); }
@@ -74,6 +71,8 @@ struct Tile {
 
 	void addItem(Item *item);
 	int addItems(Item *first);
+	void removeItem(int index);
+	void removeItem(Item *item);
 	void clearCreature(void);
 	void placeCreature(int raceId, int spawnRadius, int spawnAmount, int spawnInterval);
 	void removeCreature(void);
@@ -198,17 +197,19 @@ struct Tile {
 	void setTileFlag(uint8_t flag) { flags |= flag; }
 	void clearTileFlag(uint8_t flag) { flags &= ~flag; }
 
-	// TODO(fusion): This could be a non-persistent tile flag but I'm not sure it
-	// is used for anything particularly useful.
-	bool isModified(void) const { return false; }
-	void modify(void) {}
-	void unmodify(void) {}
+	// TODO(fusion): See if we want to keep these?
 
-	// TODO(fusion): Same thing.
-	bool hasOptionalBorder(void) const { return false; }
-	void setOptionalBorder(bool dummy) {}
+	bool hasOptionalBorder(void) const {
+		return getTileFlag(TILE_FLAG_OPTIONAL_BORDER);
+	}
+
+	void setOptionalBorder(bool value) {
+		if(value){
+			setTileFlag(TILE_FLAG_OPTIONAL_BORDER);
+		}else{
+			clearTileFlag(TILE_FLAG_OPTIONAL_BORDER);
+		}
+	}
 };
-
-typedef std::unordered_set<Tile*> TileSet;
 
 #endif

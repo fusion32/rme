@@ -44,6 +44,7 @@ struct Item {
 	//const std::string &getDescription() const { return getItemType().description; }
 	bool getFlag(ObjectFlag flag) const;
 	int getAttribute(ObjectTypeAttribute attr) const;
+	int getAttributeOffset(ObjectInstanceAttribute attr) const;
 	int getAttribute(ObjectInstanceAttribute attr) const;
 	const char *getTextAttribute(ObjectInstanceAttribute attr) const;
 	int getStackPriority(void) const;

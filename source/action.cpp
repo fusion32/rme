@@ -40,6 +40,12 @@ size_t Action::memsize(void) const
 }
 
 void Action::changeTile(Tile tile){
+	// TODO(fusion): Since every tile change goes through this function, this is
+	// hopefully enough (?) to determine whether a tile is dirty.
+	if(type != ACTION_SELECT && type != ACTION_UNSELECT){
+		tile.setTileFlag(TILE_FLAG_DIRTY);
+	}
+
 	changes.emplace_back(ChangeTile(std::move(tile)));
 }
 

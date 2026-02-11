@@ -163,7 +163,13 @@ bool Editor::CloseProject(void)
 		return false;
 	}
 
-	// prompt for a save? then actually save
+	if(IsProjectDirty()){
+		int ret = PopupDialog("Save changes",
+				"Do you want to save your changes to \"" + projectDir + "\"?",
+				wxYES | wxNO | wxCANCEL);
+		if(ret == wxID_CANCEL) return false;
+		if(ret == wxID_YES)    SaveProject();
+	}
 
 	SavePerspective();
 
@@ -182,6 +188,10 @@ void Editor::SaveProject(void)
 	if(!IsProjectOpen()){
 		return;
 	}
+
+	wxArrayString warnings;
+	map.save(warnings);
+	ListDialog("Warnings", warnings);
 }
 
 void Editor::SaveProjectAs(void)
@@ -196,7 +206,10 @@ bool Editor::IsProjectOpen(void) const {
 }
 
 bool Editor::IsProjectDirty(void) const {
-	return false;
+	// TODO(fusion): I'm not sure this is reliable since the action queue is
+	// limited to a number of entries. While probably unrealistic, it could be
+	// the case that real changes are pushed off by selects/deselects.
+	return actionQueue->hasChanges();
 }
 
 bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWarnings)
@@ -250,20 +263,17 @@ bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWar
 	}
 
 	{
+		ScopedLoadingBar loadingBar("Loading map...");
+		loadingBar.SetLoadScale(0, 98);
 		if(!map.load(dir, outError, outWarnings)){
 			outError = "Unable to load map: " + outError;
 			UnloadProject();
 			return false;
 		}
 
-		ScopedLoadingBar loadingBar("");
+		loadingBar.SetLoadScale(0, 100);
 
-		// TODO(fusion): Check if there are existing patches, and apply them.
-		// There should be some editor function later on to patch the map and
-		// delete any patch files.
-		//loadingBar.SetLoadDone(99, "Checking for existing patches...");
-
-		loadingBar.SetLoadDone(99, "Loading spawns...");
+		loadingBar.SetLoadDone(98, "Loading spawns...");
 		if(!map.loadSpawns(dir, outError, outWarnings)){
 			outWarnings.push_back(wxString() << "Unable to load spawns: " << outError);
 			outError.Clear();
@@ -304,261 +314,9 @@ void Editor::UnloadProject(void)
 	ClearCreatureTypes();
 	gfx.clear();
 	ClearItemTypes();
+	menubar->LoadDefault();
 	projectDir.Clear();
 }
-
-#if TODO
-void Editor::SaveCurrentMap(FileName filename, bool showdialog)
-{
-	MapTab* mapTab = GetCurrentMapTab();
-	if(mapTab) {
-		Editor* editor = mapTab->GetEditor();
-		if(editor) {
-			editor->saveMap(filename, showdialog);
-
-			const std::string& filename = editor->getMap().getFilename();
-			const Position& position = mapTab->GetScreenCenterPosition();
-			std::ostringstream stream;
-			stream << position;
-			g_settings.setString(Config::RECENT_EDITED_MAP_PATH, filename);
-			g_settings.setString(Config::RECENT_EDITED_MAP_POSITION, stream.str());
-		}
-	}
-
-	UpdateTitle();
-	UpdateMenubar();
-	root->Refresh();
-}
-
-bool Editor::LoadMap(const FileName& fileName)
-{
-    FinishWelcomeDialog();
-
-	if(GetCurrentEditor() && !GetCurrentMap().hasChanged() && !GetCurrentMap().hasFile())
-		CloseCurrentEditor();
-
-	Editor* editor;
-	try
-	{
-		editor = newd Editor(copybuffer, fileName);
-	}
-	catch(std::runtime_error& e)
-	{
-		PopupDialog(root, "Error!", wxString(e.what(), wxConvUTF8), wxOK);
-		return false;
-	}
-
-	auto *mapTab = newd MapTab(tabbook, editor);
-	mapTab->OnSwitchEditorMode(mode);
-
-	AddRecentFile(fileName);
-
-	mapTab->GetView()->FitToMap();
-	UpdateTitle();
-	ListDialog("Map loader errors", mapTab->GetMap()->getWarnings());
-	root->DoQueryImportCreatures();
-
-	FitViewToMap(mapTab);
-	UpdateMenubar();
-
-	std::string path = g_settings.getString(Config::RECENT_EDITED_MAP_PATH);
-	if(!path.empty()) {
-		FileName file(path);
-		if(file == fileName) {
-			std::istringstream stream(g_settings.getString(Config::RECENT_EDITED_MAP_POSITION));
-			Position position;
-			stream >> position;
-			mapTab->SetScreenCenterPosition(position);
-		}
-	}
-	return true;
-}
-
-bool Editor::ShouldSave()
-{
-	Editor* editor = GetCurrentEditor();
-	ASSERT(editor);
-	return editor->hasChanges();
-}
-
-
-bool Editor::hasChanges() const
-{
-	if(map.hasChanged()) {
-		if(map.getTileCount() == 0) {
-			return actionQueue->hasChanges();
-		}
-		return true;
-	}
-	return false;
-}
-
-void Editor::clearChanges()
-{
-	map.clearChanges();
-}
-
-void Editor::saveMap(FileName filename, bool showdialog)
-{
-	std::string savefile = filename.GetFullPath().mb_str(wxConvUTF8).data();
-	bool save_as = false;
-
-	if(savefile.empty()) {
-		savefile = map.filename;
-
-		FileName c1(wxstr(savefile));
-		FileName c2(wxstr(map.filename));
-		save_as = c1 != c2;
-	}
-
-	// If not named yet, propagate the file name to the auxilliary files
-	if(map.unnamed) {
-		FileName _name(filename);
-		_name.SetExt("xml");
-
-		_name.SetName(filename.GetName() + "-spawn");
-		map.spawnfile = nstr(_name.GetFullName());
-		_name.SetName(filename.GetName() + "-house");
-		map.housefile = nstr(_name.GetFullName());
-
-		map.unnamed = false;
-	}
-
-	// File object to convert between local paths etc.
-	FileName converter;
-	converter.Assign(wxstr(savefile));
-	std::string map_path = nstr(converter.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME));
-
-	// Make temporary backups
-	//converter.Assign(wxstr(savefile));
-	std::string backup_otbm, backup_house, backup_spawn;
-
-	if(converter.FileExists()) {
-		backup_otbm = map_path + nstr(converter.GetName()) + ".otbm~";
-		std::remove(backup_otbm.c_str());
-		std::rename(savefile.c_str(), backup_otbm.c_str());
-	}
-
-	converter.SetFullName(wxstr(map.housefile));
-	if(converter.FileExists()) {
-		backup_house = map_path + nstr(converter.GetName()) + ".xml~";
-		std::remove(backup_house.c_str());
-		std::rename((map_path + map.housefile).c_str(), backup_house.c_str());
-	}
-
-	converter.SetFullName(wxstr(map.spawnfile));
-	if(converter.FileExists()) {
-		backup_spawn = map_path + nstr(converter.GetName()) + ".xml~";
-		std::remove(backup_spawn.c_str());
-		std::rename((map_path + map.spawnfile).c_str(), backup_spawn.c_str());
-	}
-
-	// Save the map
-	{
-		std::string n = nstr(GetLocalDataDirectory()) + ".saving.txt";
-		std::ofstream f(n.c_str(), std::ios::trunc | std::ios::out);
-		f <<
-			backup_otbm << std::endl <<
-			backup_house << std::endl <<
-			backup_spawn << std::endl;
-	}
-
-	{
-		// Set up the Map paths
-		wxFileName fn = wxstr(savefile);
-		map.filename = fn.GetFullPath().mb_str(wxConvUTF8);
-		map.name = fn.GetFullName().mb_str(wxConvUTF8);
-
-		if(showdialog)
-			CreateLoadBar("Saving OTBM map...");
-
-		// Perform the actual save
-		IOMapOTBM mapsaver(map.getVersion());
-		bool success = mapsaver.saveMap(map, fn);
-
-		if(showdialog)
-			DestroyLoadBar();
-
-		// Check for errors...
-		if(!success) {
-			// Rename the temporary backup files back to their previous names
-			if(!backup_otbm.empty()) {
-				converter.SetFullName(wxstr(savefile));
-				std::string otbm_filename = map_path + nstr(converter.GetName());
-				std::rename(backup_otbm.c_str(), std::string(otbm_filename + ".otbm").c_str());
-			}
-
-			if(!backup_house.empty()) {
-				converter.SetFullName(wxstr(map.housefile));
-				std::string house_filename = map_path + nstr(converter.GetName());
-				std::rename(backup_house.c_str(), std::string(house_filename + ".xml").c_str());
-			}
-
-			if(!backup_spawn.empty()) {
-				converter.SetFullName(wxstr(map.spawnfile));
-				std::string spawn_filename = map_path + nstr(converter.GetName());
-				std::rename(backup_spawn.c_str(), std::string(spawn_filename + ".xml").c_str());
-			}
-
-			// Display the error
-			PopupDialog("Error", "Could not save, unable to open target for writing.", wxOK);
-		}
-
-		// Remove temporary save runfile
-		{
-			std::string n = nstr(GetLocalDataDirectory()) + ".saving.txt";
-			std::remove(n.c_str());
-		}
-
-		if(!success)
-			return;
-	}
-
-	// Move to permanent backup
-	if(!save_as && g_settings.getInteger(Config::ALWAYS_MAKE_BACKUP)) {
-		// Move temporary backups to their proper files
-		time_t t = time(nullptr);
-		tm* current_time = localtime(&t);
-		ASSERT(current_time);
-
-		std::ostringstream date;
-		date << (1900 + current_time->tm_year);
-		if(current_time->tm_mon < 9)
-			date << "-" << "0" << current_time->tm_mon+1;
-		else
-			date << "-" << current_time->tm_mon+1;
-		date << "-" << current_time->tm_mday;
-		date << "-" << current_time->tm_hour;
-		date << "-" << current_time->tm_min;
-		date << "-" << current_time->tm_sec;
-
-		if(!backup_otbm.empty()) {
-			converter.SetFullName(wxstr(savefile));
-			std::string otbm_filename = map_path + nstr(converter.GetName());
-			std::rename(backup_otbm.c_str(), std::string(otbm_filename + "." + date.str() + ".otbm").c_str());
-		}
-
-		if(!backup_house.empty()) {
-			converter.SetFullName(wxstr(map.housefile));
-			std::string house_filename = map_path + nstr(converter.GetName());
-			std::rename(backup_house.c_str(), std::string(house_filename + "." + date.str() + ".xml").c_str());
-		}
-
-		if(!backup_spawn.empty()) {
-			converter.SetFullName(wxstr(map.spawnfile));
-			std::string spawn_filename = map_path + nstr(converter.GetName());
-			std::rename(backup_spawn.c_str(), std::string(spawn_filename + "." + date.str() + ".xml").c_str());
-		}
-	} else {
-		// Delete the temporary files
-		std::remove(backup_otbm.c_str());
-		std::remove(backup_house.c_str());
-		std::remove(backup_spawn.c_str());
-	}
-
-	clearChanges();
-}
-#endif
 
 double Editor::GetCurrentZoom()
 {
@@ -957,33 +715,32 @@ void Editor::RefreshView()
 void Editor::CreateLoadBar(wxString message, bool canCancel /* = false */)
 {
 	DestroyLoadBar();
-
 	progressText = message;
-
 	progressFrom = 0;
-	progressTo = 100;
-	currentProgress = -1;
+	progressTo   = 100;
+	progress     = -1;
+	progressBar  = newd wxGenericProgressDialog("Loading", progressText + " (0%)",
+			100, root, wxPD_APP_MODAL | wxPD_SMOOTH | (canCancel ? wxPD_CAN_ABORT : 0));
 
-	progressBar = newd wxGenericProgressDialog("Loading", progressText + " (0%)", 100, root,
-		wxPD_APP_MODAL | wxPD_SMOOTH | (canCancel ? wxPD_CAN_ABORT : 0)
-	);
 	progressBar->SetSize(280, -1);
 	progressBar->Show(true);
 	progressBar->Update(0);
 }
 
-void Editor::SetLoadScale(int32_t from, int32_t to)
+void Editor::SetLoadScale(int from, int to)
 {
 	progressFrom = from;
-	progressTo = to;
+	progressTo   = to;
 }
 
-bool Editor::SetLoadDone(int32_t done, const wxString& newMessage)
+bool Editor::SetLoadDone(int done, const wxString& newMessage)
 {
-	if(done == 100) {
-		DestroyLoadBar();
+	if(!progressBar || done == progress){
 		return true;
-	} else if(done == currentProgress) {
+	}
+
+	if(done >= 100) {
+		DestroyLoadBar();
 		return true;
 	}
 
@@ -991,30 +748,19 @@ bool Editor::SetLoadDone(int32_t done, const wxString& newMessage)
 		progressText = newMessage;
 	}
 
-	int32_t newProgress = progressFrom + static_cast<int32_t>((done / 100.f) * (progressTo - progressFrom));
-	newProgress = std::max<int32_t>(0, std::min<int32_t>(100, newProgress));
-
-	bool skip = false;
-	if(progressBar) {
-		progressBar->Update(
-			newProgress,
-			wxString::Format("%s (%d%%)", progressText, newProgress),
-			&skip
-		);
-		currentProgress = newProgress;
-	}
-
-	return skip;
+	progress = progressFrom + (int)((done / 100.0) * (progressTo - progressFrom));
+	if(progress < 0)   progress = 0;
+	if(progress > 100) progress = 100;
+	return progressBar->Update(progress, (wxString() << progressText << " (" << progress << "%)"));
 }
 
 void Editor::DestroyLoadBar()
 {
 	if(progressBar) {
 		progressBar->Show(false);
-		currentProgress = -1;
-
 		progressBar->Destroy();
 		progressBar = nullptr;
+		progress = -1;
 
 		if(root->IsActive()) {
 			root->Raise();
@@ -1601,7 +1347,7 @@ void Editor::FillDoodadPreviewBuffer()
 	}
 }
 
-long Editor::PopupDialog(wxWindow* parent, wxString title, wxString text, long style, wxString confisavename, uint32_t configsavevalue)
+int Editor::PopupDialog(wxWindow* parent, wxString title, wxString text, long style)
 {
 	if(text.empty())
 		return wxID_ANY;
@@ -1610,9 +1356,9 @@ long Editor::PopupDialog(wxWindow* parent, wxString title, wxString text, long s
 	return dlg.ShowModal();
 }
 
-long Editor::PopupDialog(wxString title, wxString text, long style, wxString configsavename, uint32_t configsavevalue)
+int Editor::PopupDialog(wxString title, wxString text, long style)
 {
-	return PopupDialog(root, title, text, style, configsavename, configsavevalue);
+	return PopupDialog(root, title, text, style);
 }
 
 void Editor::ListDialog(wxWindow* parent, wxString title, const wxArrayString& param_items)
@@ -2272,8 +2018,8 @@ void Editor::moveSelection(const Position& offset)
 			}
 
 			if(copy.getFlag(BANK)){
-				copy.houseId     = newTile.houseId;
-				copy.flags       = newTile.flags;
+				copy.houseId    = newTile.houseId;
+				copy.flags      = newTile.flags;
 				newTile.houseId = 0;
 				newTile.flags   = 0;
 				borderize = true;
@@ -2636,8 +2382,7 @@ void Editor::drawInternal(Position offset, bool alt, bool dodraw)
 		}
 
 		if(dodraw) {
-			int param = !brush->isCreature() ? GetBrushSize() : 0;
-			brush->draw(&map, &newTile, &param);
+			brush->draw(&map, &newTile);
 		} else {
 			brush->undraw(&map, &newTile);
 		}

@@ -56,11 +56,4 @@ class WaypointBrush;
 class FlagBrush;
 class EraserBrush;
 
-// TODO(fusion): Remove these??
-#include <vector>
-#include <unordered_set>
-typedef std::vector<uint32_t> HouseExitList;
-typedef std::unordered_set<Tile*> TileSet;
-typedef std::vector<Brush*> BrushVector;
-
 #endif //RME_FORWARD_H_
