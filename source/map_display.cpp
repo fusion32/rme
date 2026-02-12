@@ -593,6 +593,7 @@ void MapCanvas::OnMouseLeftDoubleClick(wxMouseEvent& event)
 		if(dialog->ShowModal() != 0){
 			Action *action = g_editor.actionQueue.createAction(ACTION_CHANGE_PROPERTIES);
 			action->changeTile(std::move(newTile));
+			action->commit();
 		}
 
 		dialog->Destroy();
@@ -1727,6 +1728,7 @@ void MapCanvas::OnBrowseTile(wxCommandEvent& WXUNUSED(event))
 	if(w->ShowModal() != 0) {
 		Action *action = g_editor.actionQueue.createAction(ACTION_DELETE_TILES);
 		action->changeTile(std::move(newTile));
+		action->commit();
 		g_editor.updateActions();
 	}
 
