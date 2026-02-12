@@ -79,7 +79,7 @@ public:
 
 	virtual std::string getName() const = 0;
 	virtual void setName(const std::string& newName) {
-		ASSERT(_MSG("setName attempted on nameless brush!"));
+		ASSERT(!"Brush::setName attempted on nameless brush!");
 	}
 
 	virtual int getLookID() const = 0;

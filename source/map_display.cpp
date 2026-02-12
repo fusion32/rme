@@ -47,7 +47,6 @@
 #include "carpet_brush.h"
 #include "table_brush.h"
 
-
 BEGIN_EVENT_TABLE(MapCanvas, wxGLCanvas)
 	EVT_KEY_DOWN(MapCanvas::OnKeyDown)
 	EVT_KEY_DOWN(MapCanvas::OnKeyUp)
@@ -190,7 +189,12 @@ void MapCanvas::OnPaint(wxPaintEvent& event)
 	SetCurrent(g_editor.GetGLContext(this));
 
 	if(g_editor.IsRenderingEnabled()) {
-		DrawingOptions& options = drawer->getOptions();
+		// NOTE(fusion): Make sure the map window is always adjusted with the
+		// lastest size of the map. It only has side effects if the map size
+		// has actually changed so it should be OK to be called multiple times.
+		GetMapWindow()->FitToMap();
+
+		DrawingOptions &options = drawer->getOptions();
 		if(screenshot_buffer) {
 			options.SetIngame();
 		} else {
@@ -1926,6 +1930,7 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event))
 	if(w->ShowModal() != 0) {
 		Action *action = g_editor.actionQueue.createAction(ACTION_CHANGE_PROPERTIES);
 		action->changeTile(std::move(newTile));
+		action->commit();
 	}
 
 	w->Destroy();

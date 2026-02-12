@@ -22,10 +22,37 @@
 #include "map_display.h"
 #include "editor.h"
 
-MapWindow::MapWindow(wxWindow* parent) :
-	wxPanel(parent, PANE_MAIN),
-	replaceItemsDialog(nullptr)
-{
+BEGIN_EVENT_TABLE(MapWindow, wxPanel)
+	EVT_SIZE(MapWindow::OnSize)
+
+	EVT_COMMAND_SCROLL_TOP(MAP_WINDOW_HSCROLL, MapWindow::OnScroll)
+	EVT_COMMAND_SCROLL_BOTTOM(MAP_WINDOW_HSCROLL, MapWindow::OnScroll)
+	EVT_COMMAND_SCROLL_THUMBTRACK(MAP_WINDOW_HSCROLL, MapWindow::OnScroll)
+	EVT_COMMAND_SCROLL_LINEUP(MAP_WINDOW_HSCROLL, MapWindow::OnScrollLineUp)
+	EVT_COMMAND_SCROLL_LINEDOWN(MAP_WINDOW_HSCROLL, MapWindow::OnScrollLineDown)
+	EVT_COMMAND_SCROLL_PAGEUP(MAP_WINDOW_HSCROLL, MapWindow::OnScrollPageUp)
+	EVT_COMMAND_SCROLL_PAGEDOWN(MAP_WINDOW_HSCROLL, MapWindow::OnScrollPageDown)
+
+	EVT_COMMAND_SCROLL_TOP(MAP_WINDOW_VSCROLL, MapWindow::OnScroll)
+	EVT_COMMAND_SCROLL_BOTTOM(MAP_WINDOW_VSCROLL, MapWindow::OnScroll)
+	EVT_COMMAND_SCROLL_THUMBTRACK(MAP_WINDOW_VSCROLL, MapWindow::OnScroll)
+	EVT_COMMAND_SCROLL_LINEUP(MAP_WINDOW_VSCROLL, MapWindow::OnScrollLineUp)
+	EVT_COMMAND_SCROLL_LINEDOWN(MAP_WINDOW_VSCROLL, MapWindow::OnScrollLineDown)
+	EVT_COMMAND_SCROLL_PAGEUP(MAP_WINDOW_VSCROLL, MapWindow::OnScrollPageUp)
+	EVT_COMMAND_SCROLL_PAGEDOWN(MAP_WINDOW_VSCROLL, MapWindow::OnScrollPageDown)
+
+	EVT_BUTTON(MAP_WINDOW_GEM, MapWindow::OnGem)
+END_EVENT_TABLE()
+
+BEGIN_EVENT_TABLE(MapScrollBar, wxScrollBar)
+	EVT_KEY_DOWN(MapScrollBar::OnKey)
+	EVT_KEY_UP(MapScrollBar::OnKey)
+	EVT_CHAR(MapScrollBar::OnKey)
+	EVT_SET_FOCUS(MapScrollBar::OnFocus)
+	EVT_MOUSEWHEEL(MapScrollBar::OnWheel)
+END_EVENT_TABLE()
+
+MapWindow::MapWindow(wxWindow* parent) : wxPanel(parent, PANE_MAIN) {
 	canvas = newd MapCanvas(this);
 	vScroll = newd MapScrollBar(this, MAP_WINDOW_VSCROLL, wxVERTICAL, canvas);
 	hScroll = newd MapScrollBar(this, MAP_WINDOW_HSCROLL, wxHORIZONTAL, canvas);
@@ -71,27 +98,6 @@ void MapWindow::OnReplaceItemsDialogClose(wxCloseEvent& event)
 	}
 }
 
-void MapWindow::SetSize(int x, int y, bool center)
-{
-	if(x == 0 || y == 0) return;
-
-	int windowSizeX;
-	int windowSizeY;
-
-	canvas->GetSize(&windowSizeX, &windowSizeY);
-
-	hScroll->SetScrollbar(center ? (x - windowSizeX)/2 : hScroll->GetThumbPosition(), windowSizeX / x,  x, windowSizeX / x);
-	vScroll->SetScrollbar(center ? (y - windowSizeY)/2 : vScroll->GetThumbPosition(), windowSizeY / y,  y, windowSizeX / y);
-	//wxPanel::SetSize(x, y);
-}
-
-void MapWindow::UpdateScrollbars(int nx, int ny)
-{
-	// nx and ny are size of this window
-	hScroll->SetScrollbar(hScroll->GetThumbPosition(), nx / std::max(1, hScroll->GetRange()), std::max(1, hScroll->GetRange()), 96);
-	vScroll->SetScrollbar(vScroll->GetThumbPosition(), ny / std::max(1, vScroll->GetRange()), std::max(1, vScroll->GetRange()), 96);
-}
-
 void MapWindow::UpdateDialogs(bool show)
 {
 	if(replaceItemsDialog)
@@ -110,13 +116,6 @@ void MapWindow::GetViewSize(int* x, int* y)
 	canvas->GetSize(x, y);
 	*x *= canvas->GetContentScaleFactor();
 	*y *= canvas->GetContentScaleFactor();
-}
-
-void MapWindow::FitToMap()
-{
-	SetSize(g_editor.map.getWidth() * rme::TileSize,
-			g_editor.map.getHeight() * rme::TileSize,
-			true);
 }
 
 Position MapWindow::GetScreenCenterPosition()
@@ -141,11 +140,9 @@ void MapWindow::SetScreenCenterPosition(const Position& position, bool showIndic
 		y -= (rme::MapGroundLayer - z) * rme::TileSize;
 	}
 
-	const Position& center = GetScreenCenterPosition();
-	if(previous_position != center) {
-		previous_position.x = center.x;
-		previous_position.y = center.y;
-		previous_position.z = center.z;
+	Position center = GetScreenCenterPosition();
+	if(previousPosition != center) {
+		previousPosition = center;
 	}
 
 	Scroll(x, y, true);
@@ -159,7 +156,7 @@ void MapWindow::SetScreenCenterPosition(const Position& position, bool showIndic
 
 void MapWindow::GoToPreviousCenterPosition()
 {
-	SetScreenCenterPosition(previous_position, true);
+	SetScreenCenterPosition(previousPosition, true);
 }
 
 void MapWindow::Scroll(int x, int y, bool center)
@@ -169,10 +166,10 @@ void MapWindow::Scroll(int x, int y, bool center)
 	y -= minPos.y * rme::TileSize;
 
 	if(center) {
-		int windowSizeX, windowSizeY;
-		canvas->GetSize(&windowSizeX, &windowSizeY);
-		x -= int((windowSizeX * g_editor.GetCurrentZoom()) / 2.0);
-		y -= int((windowSizeY * g_editor.GetCurrentZoom()) / 2.0);
+		int windowWidth, windowHeight;
+		GetSize(&windowWidth, &windowHeight);
+		x -= int((windowWidth * g_editor.GetCurrentZoom()) / 2.0);
+		y -= int((windowHeight * g_editor.GetCurrentZoom()) / 2.0);
 	}
 
 	hScroll->SetThumbPosition(x);
@@ -187,14 +184,28 @@ void MapWindow::ScrollRelative(int x, int y)
 	g_editor.UpdateMinimap();
 }
 
+void MapWindow::FitToMap(){
+	int mapWidth = g_editor.map.getWidth() * rme::TileSize;
+	int mapHeight = g_editor.map.getWidth() * rme::TileSize;
+	if(mapWidth != currentMapWidth || mapHeight != currentMapHeight){
+		currentMapWidth = mapWidth;
+		currentMapHeight = mapHeight;
+		hScroll->SetScrollbar(hScroll->GetThumbPosition(), rme::TileSize, mapWidth, rme::TileSize - 1);
+		vScroll->SetScrollbar(vScroll->GetThumbPosition(), rme::TileSize, mapHeight, rme::TileSize - 1);
+	}
+}
+
 void MapWindow::OnGem(wxCommandEvent& WXUNUSED(event))
 {
 	g_editor.SwitchMode();
 }
 
-void MapWindow::OnSize(wxSizeEvent& event)
+void MapWindow::OnSize(wxSizeEvent &event)
 {
-	UpdateScrollbars(event.GetSize().GetWidth(), event.GetSize().GetHeight());
+	int newWidth = event.GetSize().GetWidth();
+	int newHeight = event.GetSize().GetHeight();
+	hScroll->SetScrollbar(hScroll->GetThumbPosition(), newWidth / std::max(1, hScroll->GetRange()), std::max(1, hScroll->GetRange()), 96);
+	vScroll->SetScrollbar(vScroll->GetThumbPosition(), newHeight / std::max(1, vScroll->GetRange()), std::max(1, vScroll->GetRange()), 96);
 	event.Skip();
 }
 

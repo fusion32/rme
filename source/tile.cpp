@@ -193,8 +193,8 @@ Item *Tile::popSelectedItems()
 	while(*it != NULL){
 		if((*it)->isSelected()){
 			*tail = (*it);			// insert into result list
-			(*it) = (*it)->next;	// remove from tile list (don't need to advance)
-			tail = &(*tail)->next;  // advance result list
+			*it   = (*it)->next;	// remove from tile list (don't need to advance)
+			tail  = &(*tail)->next; // advance result list
 			*tail = NULL;			// make sure we don't cross reference
 		}else{
 			it = &(*it)->next;      // advance tile list

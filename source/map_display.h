@@ -94,6 +94,7 @@ public:
 	void MouseToMap(int* map_x, int* map_y) { ScreenToMap(cursor_x, cursor_y, map_x, map_y); }
 	void GetScreenCenter(int* map_x, int* map_y);
 
+	bool isPasting() const;
 	void StartPasting();
 	void EndPasting();
 	void EnterSelectionMode();
@@ -142,7 +143,6 @@ private:
 	bool dragging;
 	bool boundbox_selection;
 	bool screendragging;
-	bool isPasting() const;
 	bool drawing;
 	bool dragging_draw;
 

@@ -75,11 +75,10 @@ _Ret_bytecap_(_Size) inline void* __CRTDECL operator new[](size_t _Size, const c
 #include "ext/pugixml.hpp"
 
 #include <assert.h>
-#define _MSG(msg) !bool(msg)
 #ifdef __DEBUG__
-#   define ASSERT assert
+#   define ASSERT(expr) assert(expr)
 #else
-#   define ASSERT(...)
+#   define ASSERT(expr) (void)(expr)
 #endif
 
 #ifdef _WIN32

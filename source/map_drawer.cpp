@@ -1034,15 +1034,15 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Tile* tile, const Item*
 		red *= 0.5f; green *= 0.5f; blue *= 0.5f;
 	}
 
-	// Ugly hacks. :)
-	if(type.typeId == 459 && !options.ingame) {
+	// TODO(fusion): There is probably a better way to handle this?
+	if(!options.ingame && type.getLookId() == 469){
 		glDisable(GL_TEXTURE_2D);
-		glBlitSquare(draw_x, draw_y, red, green, 0.0f, alpha * 0.67f);
+		glBlitSquare(draw_x, draw_y, red, green, 0, alpha * 0.67f);
 		glEnable(GL_TEXTURE_2D);
 		return;
-	} else if(type.typeId == 460 && !options.ingame) {
+	}else if(!options.ingame && type.getLookId() == 470){
 		glDisable(GL_TEXTURE_2D);
-		glBlitSquare(draw_x, draw_y, red, 0.0f, 0.0f, alpha * 0.67f);
+		glBlitSquare(draw_x, draw_y, red, 0, 0, alpha * 0.67f);
 		glEnable(GL_TEXTURE_2D);
 		return;
 	}
@@ -1143,12 +1143,13 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Position& pos, const It
 		red *= 0.5f; blue *= 0.5f; green *= 0.5f;
 	}
 
-	if(type.typeId == 459 && !options.ingame) { // Ugly hack yes?
+	// TODO(fusion): There is probably a better way to handle this?
+	if(!options.ingame && type.getLookId() == 469){
 		glDisable(GL_TEXTURE_2D);
 		glBlitSquare(draw_x, draw_y, red, green, 0, alpha * 0.67f);
 		glEnable(GL_TEXTURE_2D);
 		return;
-	} else if(type.typeId == 460 && !options.ingame) { // Ugly hack yes?
+	}else if(!options.ingame && type.getLookId() == 470){
 		glDisable(GL_TEXTURE_2D);
 		glBlitSquare(draw_x, draw_y, red, 0, 0, alpha * 0.67f);
 		glEnable(GL_TEXTURE_2D);

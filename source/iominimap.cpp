@@ -106,7 +106,7 @@ bool IOMinimap::saveOtmm(const wxFileName& file)
 
 				unsigned long len = blockSize;
 				int ret = compress2(buffer.data(), &len, (uint8_t*)&block.getTiles(), blockSize, COMPRESS_LEVEL);
-				assert(ret == Z_OK);
+				ASSERT(ret == Z_OK);
 				writer.addU16(len);
 				writer.addRAW(buffer.data(), len);
 			}
