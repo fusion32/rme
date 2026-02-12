@@ -19,60 +19,48 @@
 #define RME_APPLICATION_H_
 
 #include "editor.h"
-#include "main_toolbar.h"
-#include "action.h"
-#include "settings.h"
 
-#include "map_display.h"
-#include "welcome_dialog.h"
-
-class MainFrame;
-class MapWindow;
 class wxEventLoopBase;
-class wxSingleInstanceChecker;
+
+wxDECLARE_EVENT(EVT_UPDATE_MENUS, wxCommandEvent);
+wxDECLARE_EVENT(EVT_UPDATE_ACTIONS, wxCommandEvent);
 
 class Application : public wxApp
 {
 public:
-	~Application();
-	virtual bool OnInit();
-    virtual void OnEventLoopEnter(wxEventLoopBase* loop);
-	virtual void MacOpenFiles(const wxArrayString& fileNames);
-	virtual int OnExit();
+	~Application() override;
+	bool OnInit() override;
+	int OnExit() override;
+	void OnFatalException() override;
+	void OnEventLoopEnter(wxEventLoopBase *loop) override;
+#ifdef __WXMAC__
+	void MacOpenFiles(const wxArrayString &fileNames) override;
+#endif
+
+	void FixVersionDiscrapencies();
 	void Unload();
 
 private:
-    bool m_startup;
-    wxString m_file_to_open;
-	void FixVersionDiscrapencies();
-	virtual void OnFatalException();
+    wxString file_to_open;
 };
-
-class MainMenuBar;
 
 class MainFrame : public wxFrame
 {
 public:
-	MainFrame(const wxString& title,
-		const wxPoint& pos, const wxSize& size);
-	~MainFrame();
+	MainFrame(const wxString& title, const wxPoint& pos, const wxSize& size);
 
+	~MainFrame() override;
+	void PrepareDC(wxDC& dc) override;
+#ifdef __WXMSW__
+	bool MSWTranslateMessage(WXMSG *msg) override;
+#endif
+
+	void OnIdle(wxIdleEvent& event);
+	void OnExit(wxCloseEvent& event);
 	void OnUpdateMenus(wxCommandEvent& event);
 	void OnUpdateActions(wxCommandEvent& event);
 	void UpdateFloorMenu();
 	void UpdateIndicatorsMenu();
-	void OnIdle(wxIdleEvent& event);
-	void OnExit(wxCloseEvent& event);
-
-#ifdef __WINDOWS__
-	virtual bool MSWTranslateMessage(WXMSG *msg);
-#endif
-
-	void PrepareDC(wxDC& dc);
-protected:
-
-	friend class Application;
-	friend class Editor;
 
 	DECLARE_EVENT_TABLE()
 };

@@ -15,12 +15,10 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
+#include "main.h"
 #include "action.h"
 #include "common.h"
-#include "main.h"
 #include "editor.h"
-
-#include <wx/display.h>
 
 #include "actions_history_window.h"
 #include "application.h"
@@ -39,22 +37,20 @@
 #include "minimap_window.h"
 #include "palette_window.h"
 #include "result_window.h"
-#include "sprites.h"
+#include "settings.h"
 #include "waypoint_brush.h"
 #include "welcome_dialog.h"
 
-#ifdef __WXOSX__
-#include <AGL/agl.h>
-#endif
+#include <wx/display.h>
 
-const wxEventType EVT_UPDATE_MENUS = wxNewEventType();
-const wxEventType EVT_UPDATE_ACTIONS = wxNewEventType();
+#ifdef __WXOSX__
+#	include <AGL/agl.h>
+#endif
 
 Editor g_editor;
 
 Editor::Editor()
 {
-	actionQueue = newd ActionQueue();
 	doodad_buffer_map = newd Map();
 }
 
@@ -209,7 +205,7 @@ bool Editor::IsProjectDirty(void) const {
 	// TODO(fusion): I'm not sure this is reliable since the action queue is
 	// limited to a number of entries. While probably unrealistic, it could be
 	// the case that real changes are pushed off by selects/deselects.
-	return actionQueue->hasChanges();
+	return actionQueue.hasChanges();
 }
 
 bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWarnings)
@@ -264,25 +260,10 @@ bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWar
 
 	{
 		ScopedLoadingBar loadingBar("Loading map...");
-		loadingBar.SetLoadScale(0, 98);
 		if(!map.load(dir, outError, outWarnings)){
 			outError = "Unable to load map: " + outError;
 			UnloadProject();
 			return false;
-		}
-
-		loadingBar.SetLoadScale(0, 100);
-
-		loadingBar.SetLoadDone(98, "Loading spawns...");
-		if(!map.loadSpawns(dir, outError, outWarnings)){
-			outWarnings.push_back(wxString() << "Unable to load spawns: " << outError);
-			outError.Clear();
-		}
-
-		loadingBar.SetLoadDone(99, "Loading houses...");
-		if(!map.loadHouses(dir, outError, outWarnings)){
-			outWarnings.push_back(wxString() << "Unable to load houses: " << outError);
-			outError.Clear();
 		}
 	}
 
@@ -308,6 +289,8 @@ void Editor::UnloadProject(void)
 	nolog_brush = NULL;
 	pz_brush = NULL;
 
+	selection.clear(NULL);
+	actionQueue.clear();
 	map.clear();
 	g_brushes.clear();
 	g_materials.clear();
@@ -927,13 +910,13 @@ void Editor::SetTitle(wxString title)
 void Editor::UpdateMenus()
 {
 	wxCommandEvent evt(EVT_UPDATE_MENUS);
-	root->AddPendingEvent(evt);
+	root->GetEventHandler()->AddPendingEvent(evt);
 }
 
 void Editor::UpdateActions()
 {
 	wxCommandEvent evt(EVT_UPDATE_ACTIONS);
-	root->AddPendingEvent(evt);
+	root->GetEventHandler()->AddPendingEvent(evt);
 }
 
 void Editor::RefreshActions()
@@ -1456,21 +1439,21 @@ void Editor::LoadHotkeys()
 
 bool Editor::canUndo() const
 {
-	return actionQueue->canUndo();
+	return actionQueue.canUndo();
 }
 
 bool Editor::canRedo() const
 {
-	return actionQueue->canRedo();
+	return actionQueue.canRedo();
 }
 
 void Editor::undo(int numActions /*= 1*/)
 {
-	if(numActions <= 0 || !actionQueue->canUndo())
+	if(numActions <= 0 || !actionQueue.canUndo())
 		return;
 
 	while(numActions > 0) {
-		if(!actionQueue->undo())
+		if(!actionQueue.undo())
 			break;
 		numActions -= 1;
 	}
@@ -1481,11 +1464,11 @@ void Editor::undo(int numActions /*= 1*/)
 
 void Editor::redo(int numActions /*= 1*/)
 {
-	if(numActions <= 0 || !actionQueue->canRedo())
+	if(numActions <= 0 || !actionQueue.canRedo())
 		return;
 
 	while(numActions > 0) {
-		if(!actionQueue->redo())
+		if(!actionQueue.redo())
 			break;
 		numActions -= 1;
 	}
@@ -1502,350 +1485,13 @@ void Editor::updateActions()
 
 void Editor::resetActionsTimer()
 {
-	actionQueue->resetTimer();
+	actionQueue.resetTimer();
 }
 
 void Editor::clearActions()
 {
-	actionQueue->clear();
+	actionQueue.clear();
 	UpdateActions();
-}
-
-bool Editor::importMiniMap(FileName filename, int import, int import_x_offset, int import_y_offset, int import_z_offset)
-{
-	return false;
-}
-
-bool Editor::importMap(FileName filename, int import_x_offset, int import_y_offset, int import_z_offset, ImportType house_import_type, ImportType spawn_import_type)
-{
-	return false;
-
-#if TODO
-	selection.clear();
-	actionQueue->clear();
-
-	Map imported_map;
-	bool loaded = imported_map.open(nstr(filename.GetFullPath()));
-
-	if(!loaded) {
-		PopupDialog("Error", "Error loading map!\n" + imported_map.getError(), wxOK | wxICON_INFORMATION);
-		return false;
-	}
-	ListDialog("Warning", imported_map.getWarnings());
-
-	Position offset(import_x_offset, import_y_offset, import_z_offset);
-
-	bool resizemap = false;
-	bool resize_asked = false;
-	int newsize_x = map.getWidth(), newsize_y = map.getHeight();
-	int discarded_tiles = 0;
-
-	CreateLoadBar("Merging maps...");
-
-	std::map<uint32_t, uint32_t> town_id_map;
-	std::map<uint32_t, uint32_t> house_id_map;
-
-	if(house_import_type != IMPORT_DONT) {
-		for(TownMap::iterator tit = imported_map.towns.begin(); tit != imported_map.towns.end();) {
-			Town* imported_town = tit->second;
-			Town* current_town = map.towns.getTown(imported_town->getID());
-
-			Position oldexit = imported_town->getTemplePosition();
-			Position newexit = oldexit + offset;
-			if(newexit.isValid()) {
-				imported_town->setTemplePosition(newexit);
-			}
-
-			switch(house_import_type) {
-				case IMPORT_MERGE: {
-					town_id_map[imported_town->getID()] = imported_town->getID();
-					if(current_town) {
-						++tit;
-						continue;
-					}
-					break;
-				}
-				case IMPORT_SMART_MERGE: {
-					if(current_town) {
-						// Compare and insert/merge depending on parameters
-						if(current_town->getName() == imported_town->getName() && current_town->getID() == imported_town->getID()) {
-							// Just add to map
-							town_id_map[imported_town->getID()] = current_town->getID();
-							++tit;
-							continue;
-						} else {
-							// Conflict! Find a newd id and replace old
-							uint32_t new_id = map.towns.getEmptyID();
-							imported_town->setID(new_id);
-							town_id_map[imported_town->getID()] = new_id;
-						}
-					} else {
-						town_id_map[imported_town->getID()] = imported_town->getID();
-					}
-					break;
-				}
-				case IMPORT_INSERT: {
-					// Find a newd id and replace old
-					uint32_t new_id = map.towns.getEmptyID();
-					imported_town->setID(new_id);
-					town_id_map[imported_town->getID()] = new_id;
-					break;
-				}
-				case IMPORT_DONT: {
-					++tit;
-					continue; // Should never happend..?
-					break; // Continue or break ?
-				}
-			}
-
-			map.towns.addTown(imported_town);
-
-#ifdef __VISUALC__ // C++0x compliance to some degree :)
-			tit = imported_map.towns.erase(tit);
-#else // Bulky, slow way
-			TownMap::iterator tmp_iter = tit;
-			++tmp_iter;
-			uint32_t next_key = 0;
-			if(tmp_iter != imported_map.towns.end()) {
-				next_key = tmp_iter->first;
-			}
-			imported_map.towns.erase(tit);
-			if(next_key != 0) {
-				tit = imported_map.towns.find(next_key);
-			} else {
-				tit = imported_map.towns.end();
-			}
-#endif
-		}
-
-		for(HouseMap::iterator hit = imported_map.houses.begin(); hit != imported_map.houses.end();) {
-			House* imported_house = hit->second;
-			House* current_house = map.houses.getHouse(imported_house->id);
-			imported_house->townid = town_id_map[imported_house->townid];
-
-			const Position& oldexit = imported_house->getExit();
-			imported_house->setExit(nullptr, Position()); // Reset it
-
-			switch(house_import_type) {
-				case IMPORT_MERGE: {
-					house_id_map[imported_house->id] = imported_house->id;
-					if(current_house) {
-						++hit;
-						Position newexit = oldexit + offset;
-						if(newexit.isValid()) current_house->setExit(&map, newexit);
-						continue;
-					}
-					break;
-				}
-				case IMPORT_SMART_MERGE: {
-					if(current_house) {
-						// Compare and insert/merge depending on parameters
-						if(current_house->name == imported_house->name && current_house->townid == imported_house->townid) {
-							// Just add to map
-							house_id_map[imported_house->id] = current_house->id;
-							++hit;
-							Position newexit = oldexit + offset;
-							if(newexit.isValid()) imported_house->setExit(&map, newexit);
-							continue;
-						} else {
-							// Conflict! Find a newd id and replace old
-							uint32_t new_id = map.houses.getEmptyID();
-							house_id_map[imported_house->id] = new_id;
-							imported_house->id = new_id;
-						}
-					} else {
-						house_id_map[imported_house->id] = imported_house->id;
-					}
-					break;
-				}
-				case IMPORT_INSERT: {
-					// Find a newd id and replace old
-					uint32_t new_id = map.houses.getEmptyID();
-					house_id_map[imported_house->id] = new_id;
-					imported_house->id = new_id;
-					break;
-				}
-				case IMPORT_DONT: {
-					++hit;
-					Position newexit = oldexit + offset;
-					if(newexit.isValid()) imported_house->setExit(&map, newexit);
-						continue; // Should never happend..?
-					break;
-				}
-			}
-
-			Position newexit = oldexit + offset;
-			if(newexit.isValid()) imported_house->setExit(&map, newexit);
-			map.houses.addHouse(imported_house);
-
-#ifdef __VISUALC__ // C++0x compliance to some degree :)
-			hit = imported_map.houses.erase(hit);
-#else // Bulky, slow way
-			HouseMap::iterator tmp_iter = hit;
-			++tmp_iter;
-			uint32_t next_key = 0;
-			if(tmp_iter != imported_map.houses.end()) {
-				next_key = tmp_iter->first;
-			}
-			imported_map.houses.erase(hit);
-			if(next_key != 0) {
-				hit = imported_map.houses.find(next_key);
-			} else {
-				hit = imported_map.houses.end();
-			}
-#endif
-		}
-	}
-
-	std::map<Position, Spawn*> spawn_map;
-	if(spawn_import_type != IMPORT_DONT) {
-		for(SpawnPositionList::iterator siter = imported_map.spawns.begin(); siter != imported_map.spawns.end();) {
-			Position old_spawn_pos = *siter;
-			Position new_spawn_pos = *siter + offset;
-			switch(spawn_import_type) {
-				case IMPORT_SMART_MERGE:
-				case IMPORT_INSERT:
-				case IMPORT_MERGE: {
-					Tile* imported_tile = imported_map.getTile(old_spawn_pos);
-					if(imported_tile) {
-						ASSERT(imported_tile->spawn);
-						spawn_map[new_spawn_pos] = imported_tile->spawn;
-
-						SpawnPositionList::iterator next = siter;
-						bool cont = true;
-						Position next_spawn;
-
-						++next;
-						if(next == imported_map.spawns.end())
-							cont = false;
-						else
-							next_spawn = *next;
-						imported_map.spawns.erase(siter);
-						if(cont)
-							siter = imported_map.spawns.find(next_spawn);
-						else
-							siter = imported_map.spawns.end();
-					}
-					break;
-				}
-				case IMPORT_DONT: {
-					++siter;
-					break;
-				}
-			}
-		}
-	}
-
-	// Plain merge of waypoints, very simple! :)
-	for(WaypointMap::iterator iter = imported_map.waypoints.begin(); iter != imported_map.waypoints.end(); ++iter) {
-		iter->second->pos += offset;
-	}
-
-	map.waypoints.waypoints.insert(imported_map.waypoints.begin(), imported_map.waypoints.end());
-	imported_map.waypoints.waypoints.clear();
-
-
-	uint64_t tiles_merged = 0;
-	uint64_t tiles_to_import = imported_map.tilecount;
-	for(MapIterator mit = imported_map.begin(); mit != imported_map.end(); ++mit) {
-		if(tiles_merged % 8092 == 0) {
-			SetLoadDone(int(100.0 * tiles_merged / tiles_to_import));
-		}
-		++tiles_merged;
-
-		Tile* import_tile = (*mit)->get();
-		Position new_pos = import_tile->getPosition() + offset;
-		if(!new_pos.isValid()) {
-			++discarded_tiles;
-			continue;
-		}
-
-		if(!resizemap && (new_pos.x > map.getWidth() || new_pos.y > map.getHeight())) {
-			if(resize_asked) {
-				++discarded_tiles;
-				continue;
-			} else {
-				resize_asked = true;
-				int ret = PopupDialog("Collision", "The imported tiles are outside the current map scope. Do you want to resize the map? (Else additional tiles will be removed)", wxYES | wxNO);
-
-				if(ret == wxID_YES) {
-					// ...
-					resizemap = true;
-				} else {
-					++discarded_tiles;
-					continue;
-				}
-			}
-		}
-
-		if(new_pos.x > newsize_x) {
-			newsize_x = new_pos.x;
-		}
-		if(new_pos.y > newsize_y) {
-			newsize_y = new_pos.y;
-		}
-
-		imported_map.setTile(import_tile->getPosition(), nullptr);
-		TileLocation* location = map.createTileL(new_pos);
-
-
-		// Check if we should update any houses
-		int new_houseid = house_id_map[import_tile->getHouseID()];
-		House* house = map.houses.getHouse(new_houseid);
-		if(import_tile->isHouseTile() && house_import_type != IMPORT_DONT && house) {
-			// We need to notify houses of the tile moving
-			house->removeTile(import_tile);
-			import_tile->setLocation(location);
-			house->addTile(import_tile);
-		} else {
-			import_tile->setLocation(location);
-		}
-
-		if(offset != Position(0,0,0)) {
-			for(Item *item = import_tile->items; item != NULL; item = item->next){
-				if(item->getFlag(TELEPORTABSOLUTE)){
-					Position pos = UnpackAbsoluteCoordinate(item->getAttribute(ABSTELEPORTDESTINATION));
-					item->setAttribute(ABSTELEPORTDESTINATION, PackAbsoluteCoordinate(pos + offset));
-				}
-			}
-		}
-
-		Tile* old_tile = map.getTile(new_pos);
-		if(old_tile) {
-			map.removeSpawn(old_tile);
-		}
-		import_tile->spawn = nullptr;
-
-		map.setTile(new_pos, import_tile, true);
-	}
-
-	for(std::map<Position, Spawn*>::iterator spawn_iter = spawn_map.begin(); spawn_iter != spawn_map.end(); ++spawn_iter) {
-		Position pos = spawn_iter->first;
-		TileLocation* location = map.createTileL(pos);
-		Tile* tile = location->get();
-		if(!tile) {
-			tile = map.allocator(location);
-			map.setTile(pos, tile);
-		} else if(tile->spawn) {
-			map.removeSpawnInternal(tile);
-			delete tile->spawn;
-		}
-		tile->spawn = spawn_iter->second;
-
-		map.addSpawn(tile);
-	}
-
-	DestroyLoadBar();
-
-	map.setWidth(newsize_x);
-	map.setHeight(newsize_y);
-	PopupDialog("Success", "Map imported successfully, " + i2ws(discarded_tiles) + " tiles were discarded as invalid.", wxOK);
-
-	RefreshPalettes();
-	FitViewToMap();
-
-	return true;
-#endif
 }
 
 void Editor::borderizeSelection()
@@ -1855,7 +1501,7 @@ void Editor::borderizeSelection()
 		return;
 	}
 
-	Action *action = actionQueue->createAction(ACTION_BORDERIZE);
+	Action *action = actionQueue.createAction(ACTION_BORDERIZE);
 	for(const Tile *tile : selection) {
 		Tile newTile; newTile.deepCopy(*tile);
 		newTile.borderize(&map);
@@ -1895,7 +1541,7 @@ void Editor::randomizeSelection()
 		return;
 	}
 
-	Action *action = actionQueue->createAction(ACTION_RANDOMIZE);
+	Action *action = actionQueue.createAction(ACTION_RANDOMIZE);
 	for(const Tile *tile: selection) {
 		GroundBrush *brush = tile->getGroundBrush();
 		if(brush && brush->isReRandomizable()){
@@ -1940,50 +1586,7 @@ void Editor::clearInvalidHouseTiles(bool showDialog)
 		CreateLoadBar("Clearing invalid house tiles...");
 	}
 
-#if TODO
-	Houses& houses = map.houses;
-
-	HouseMap::iterator iter = houses.begin();
-	while(iter != houses.end()) {
-		House* h = iter->second;
-		if(map.towns.getTown(h->townid) == nullptr) {
-#ifdef __VISUALC__ // C++0x compliance to some degree :)
-			iter = houses.erase(iter);
-#else // Bulky, slow way
-			HouseMap::iterator tmp_iter = iter;
-			++tmp_iter;
-			uint32_t next_key = 0;
-			if(tmp_iter != houses.end()) {
-				next_key = tmp_iter->first;
-			}
-			houses.erase(iter);
-			if(next_key != 0) {
-				iter = houses.find(next_key);
-			} else {
-				iter = houses.end();
-			}
-#endif
-		} else {
-			++iter;
-		}
-	}
-
-	uint64_t tiles_done = 0;
-	for(MapIterator map_iter = map.begin(); map_iter != map.end(); ++map_iter) {
-		if(showDialog && tiles_done % 4096 == 0) {
-			SetLoadDone(int(tiles_done / double(map.tilecount) * 100.0));
-		}
-
-		Tile* tile = (*map_iter)->get();
-		ASSERT(tile);
-		if(tile->isHouseTile()) {
-			if(houses.getHouse(tile->getHouseID()) == nullptr) {
-				tile->setHouse(nullptr);
-			}
-		}
-		++tiles_done;
-	}
-#endif
+	// TODO(fusion): See what happens.
 
 	if(showDialog) {
 		DestroyLoadBar();
@@ -2002,7 +1605,7 @@ void Editor::moveSelection(const Position& offset)
 		&& g_settings.getInteger(Config::BORDERIZE_DRAG);
 
 	std::vector<Tile> buffer;
-	ActionGroup *group = actionQueue->createGroup(ACTION_MOVE);
+	ActionGroup *group = actionQueue.createGroup(ACTION_MOVE);
 	{
 		// NOTE(fusion): Something similar to CopyBuffer::cut.
 		Action *action = group->createAction();
@@ -2165,7 +1768,7 @@ void Editor::destroySelection()
 	int numItems = 0;
 	std::vector<Position> tilesToBorderize;
 
-	ActionGroup *group = actionQueue->createGroup(ACTION_DELETE_TILES);
+	ActionGroup *group = actionQueue.createGroup(ACTION_DELETE_TILES);
 
 	{
 		Action *action = group->createAction();
@@ -2262,7 +1865,7 @@ void Editor::drawInternal(Position offset, bool alt, bool dodraw)
 	}
 
 	if(brush->isDoodad()) {
-		ActionGroup *group = actionQueue->createGroup(ACTION_DRAW, 2);
+		ActionGroup *group = actionQueue.createGroup(ACTION_DRAW, 2);
 		std::vector<Position> tilesToBorderize;
 		{
 			Action* action = group->createAction();
@@ -2353,7 +1956,7 @@ void Editor::drawInternal(Position offset, bool alt, bool dodraw)
 		addBatch(batch, 2);
 #endif
 	} else if(brush->isWall()) {
-		Action *action = actionQueue->createAction(dodraw ? ACTION_DRAW : ACTION_ERASE, 2);
+		Action *action = actionQueue.createAction(dodraw ? ACTION_DRAW : ACTION_ERASE, 2);
 
 		Tile newTile;
 		if(Tile *tile = map.getTile(offset)){
@@ -2372,7 +1975,7 @@ void Editor::drawInternal(Position offset, bool alt, bool dodraw)
 		action->changeTile(std::move(newTile));
 		action->commit();
 	} else if(brush->isCreature()) {
-		Action *action = actionQueue->createAction(dodraw ? ACTION_DRAW : ACTION_ERASE, 2);
+		Action *action = actionQueue.createAction(dodraw ? ACTION_DRAW : ACTION_ERASE, 2);
 
 		Tile newTile;
 		if(Tile *tile = map.getTile(offset)){
@@ -2406,7 +2009,7 @@ void Editor::drawInternal(const std::vector<Position> &tilesToDraw, bool alt, bo
 	}
 #endif
 
-	Action *action = actionQueue->createAction(dodraw ? ACTION_DRAW : ACTION_ERASE, 2);
+	Action *action = actionQueue.createAction(dodraw ? ACTION_DRAW : ACTION_ERASE, 2);
 	if(brush->isOptionalBorder()){
 		for(Position pos: tilesToDraw){
 			if(Tile *tile = map.getTile(pos)){
@@ -2459,7 +2062,7 @@ void Editor::drawInternal(const std::vector<Position> &tilesToDraw,
 
 	if(brush->isGround() || brush->isEraser()){
 		ActionType type = (dodraw && !brush->isEraser()) ? ACTION_DRAW : ACTION_ERASE;
-		ActionGroup *group = actionQueue->createGroup(type, 2);
+		ActionGroup *group = actionQueue.createGroup(type, 2);
 
 		{
 			Action *action = group->createAction();
@@ -2513,7 +2116,7 @@ void Editor::drawInternal(const std::vector<Position> &tilesToDraw,
 			action->commit();
 		}
 	}else if(brush->isTable() || brush->isCarpet()){
-		ActionGroup *group = actionQueue->createGroup(ACTION_DRAW, 2);
+		ActionGroup *group = actionQueue.createGroup(ACTION_DRAW, 2);
 
 		{
 			Action *action = group->createAction();
@@ -2555,7 +2158,7 @@ void Editor::drawInternal(const std::vector<Position> &tilesToDraw,
 			action->commit();
 		}
 	}else if(brush->isWall()){
-		ActionGroup *group = actionQueue->createGroup(ACTION_DRAW, 2);
+		ActionGroup *group = actionQueue.createGroup(ACTION_DRAW, 2);
 		if(alt && dodraw){
 			// NOTE(fusion): This branch is almost the same as the one below, except
 			// that we're using a map buffer, probably to avoid external walls from
@@ -2626,7 +2229,7 @@ void Editor::drawInternal(const std::vector<Position> &tilesToDraw,
 			}
 		}
 	}else if(brush->isDoor()){
-		ActionGroup *group = actionQueue->createGroup(ACTION_DRAW, 2);
+		ActionGroup *group = actionQueue.createGroup(ACTION_DRAW, 2);
 
 		{
 			Action *action = group->createAction();
@@ -2662,7 +2265,7 @@ void Editor::drawInternal(const std::vector<Position> &tilesToDraw,
 			action->commit();
 		}
 	}else{
-		Action *action = actionQueue->createAction(ACTION_DRAW, 2);
+		Action *action = actionQueue.createAction(ACTION_DRAW, 2);
 		for(Position pos: tilesToDraw){
 			if(Tile *tile = map.getTile(pos)) {
 				Tile newTile; newTile.deepCopy(*tile);

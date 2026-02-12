@@ -18,7 +18,6 @@
 #include "main.h"
 
 #include "brush.h"
-#include "sprites.h"
 #include "settings.h"
 #include "tile.h"
 

@@ -71,8 +71,6 @@ struct Tile {
 
 	void addItem(Item *item);
 	int addItems(Item *first);
-	void removeItem(int index);
-	void removeItem(Item *item);
 	void clearCreature(void);
 	void placeCreature(int raceId, int spawnRadius, int spawnAmount, int spawnInterval);
 	void removeCreature(void);

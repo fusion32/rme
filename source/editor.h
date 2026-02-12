@@ -55,23 +55,6 @@ class OldPropertiesWindow;
 class EditTownsDialog;
 class ItemButton;
 
-extern const wxEventType EVT_UPDATE_MENUS;
-extern const wxEventType EVT_UPDATE_ACTIONS;
-
-#define EVT_ON_UPDATE_MENUS(id, fn) \
-    DECLARE_EVENT_TABLE_ENTRY( \
-        EVT_UPDATE_MENUS, id, wxID_ANY, \
-        (wxObjectEventFunction)(wxEventFunction) wxStaticCastEvent(wxCommandEventFunction, &fn), \
-        (wxObject*) nullptr \
-    ),
-
-#define EVT_ON_UPDATE_ACTIONS(id, fn) \
-    DECLARE_EVENT_TABLE_ENTRY( \
-        EVT_UPDATE_ACTIONS, id, wxID_ANY, \
-        (wxObjectEventFunction)(wxEventFunction) wxStaticCastEvent(wxCommandEventFunction, &fn), \
-        (wxObject*) nullptr \
-    ),
-
 enum ImportType
 {
 	IMPORT_DONT,
@@ -300,9 +283,6 @@ public:
 	bool hasChanges() const;
 	void clearChanges();
 
-	bool importMap(FileName filename, int import_x_offset, int import_y_offset, int import_z_offset, ImportType house_import_type, ImportType spawn_import_type);
-	bool importMiniMap(FileName filename, int import, int import_x_offset, int import_y_offset, int import_z_offset);
-
 	bool canUndo() const;
 	bool canRedo() const;
 	void undo(int numActions = 1);
@@ -380,7 +360,7 @@ public:
 	Selection selection = {};
 	GraphicManager gfx = {};
 	CopyBuffer copybuffer = {};
-	ActionQueue *actionQueue = NULL;
+	ActionQueue actionQueue = {};
 	//==
 
 	WelcomeDialog *welcomeDialog = NULL;

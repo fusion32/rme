@@ -20,7 +20,6 @@
 
 #include "map_window.h"
 #include "map_display.h"
-#include "sprites.h"
 #include "editor.h"
 
 MapWindow::MapWindow(wxWindow* parent) :

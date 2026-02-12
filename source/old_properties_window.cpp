@@ -15,7 +15,6 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
-#include "items.h"
 #include "main.h"
 
 #include <wx/grid.h>
@@ -27,6 +26,7 @@
 #include "map.h"
 #include "editor.h"
 #include "creature.h"
+#include "settings.h"
 
 #include "application.h"
 #include "old_properties_window.h"
@@ -44,10 +44,10 @@ END_EVENT_TABLE()
 OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, const Tile* tile_parent, Item* item, wxPoint pos) :
 	ObjectPropertiesWindowBase(win_parent, "Item Properties", map, tile_parent, item, pos),
 	count_field(nullptr),
+	destination_field(nullptr),
 	splash_type_field(nullptr),
 	text_field(nullptr),
-	description_field(nullptr),
-	destination_field(nullptr)
+	description_field(nullptr)
 {
 	ASSERT(edit_item);
 
@@ -238,10 +238,10 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, const Tile* tile_parent, Creature* creature, wxPoint pos) :
 	ObjectPropertiesWindowBase(win_parent, "Creature Properties", map, tile_parent, creature, pos),
 	count_field(nullptr),
+	destination_field(nullptr),
 	splash_type_field(nullptr),
 	text_field(nullptr),
-	description_field(nullptr),
-	destination_field(nullptr)
+	description_field(nullptr)
 {
 	ASSERT(edit_creature);
 

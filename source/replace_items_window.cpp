@@ -320,11 +320,11 @@ void ReplaceItemsDialog::OnExecuteButtonClicked(wxCommandEvent& WXUNUSED(event))
 		ItemFinder finder;
 		finder.itemId = info.replaceId;
 		finder.maxCount = g_settings.getInteger(Config::REPLACE_SIZE);
-
-		g_editor.map.forEachItem(finder, selectionOnly);
+		finder.selectedOnly = selectionOnly;
+		g_editor.map.forEachItem(finder);
 
 		if(!finder.results.empty()){
-			Action *action = g_editor.actionQueue->createAction(ACTION_REPLACE_ITEMS);
+			Action *action = g_editor.actionQueue.createAction(ACTION_REPLACE_ITEMS);
 			for(const auto &[tile, item]: finder.results) {
 				// NOTE(fusion): Could happen if the item is inside some container?
 				int index = tile->getIndexOf(item);

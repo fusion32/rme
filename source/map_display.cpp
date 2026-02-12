@@ -15,16 +15,15 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
+#include "main.h"
 #include "action.h"
 #include "items.h"
-#include "main.h"
 
 #include <time.h>
 #include <wx/wfstream.h>
 
 #include "editor.h"
 #include "brush.h"
-#include "sprites.h"
 #include "map.h"
 #include "tile.h"
 #include "old_properties_window.h"
@@ -35,6 +34,7 @@
 #include "map_window.h"
 #include "application.h"
 #include "browse_tile_window.h"
+#include "settings.h"
 
 #include "doodad_brush.h"
 #include "house_exit_brush.h"
@@ -591,7 +591,7 @@ void MapCanvas::OnMouseLeftDoubleClick(wxMouseEvent& event)
 		}
 
 		if(dialog->ShowModal() != 0){
-			Action *action = g_editor.actionQueue->createAction(ACTION_CHANGE_PROPERTIES);
+			Action *action = g_editor.actionQueue.createAction(ACTION_CHANGE_PROPERTIES);
 			action->changeTile(std::move(newTile));
 		}
 
@@ -701,20 +701,22 @@ void MapCanvas::OnMouseActionClick(wxMouseEvent& event)
 					drag_start_y = mouse_map_y;
 					drag_start_z = floor;
 				} else {
-					selection.clear(NULL);
+					Action *action = g_editor.actionQueue.createAction(ACTION_SELECT);
+					selection.clear(action);
 					if(tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)){
-						selection.add(NULL, tile, tile->creature);
+						selection.add(action, tile, tile->creature);
 						dragging = true;
 						drag_start_x = mouse_map_x;
 						drag_start_y = mouse_map_y;
 						drag_start_z = floor;
 					}else if(Item *item = tile->getTopItem()){
-						selection.add(NULL, tile, item);
+						selection.add(action, tile, item);
 						dragging = true;
 						drag_start_x = mouse_map_x;
 						drag_start_y = mouse_map_y;
 						drag_start_z = floor;
 					}
+					action->commit();
 					selection.updateSelectionCount();
 				}
 			}
@@ -939,7 +941,7 @@ void MapCanvas::OnMouseActionRelease(wxMouseEvent& event)
 					// TODO(fusion): We could restore the threaded selection here
 					// if it turns out to be too slow. We could also iterate using
 					// sectors which should be faster than accessing tiles one by one.
-					Action *action = g_editor.actionQueue->createAction(ACTION_SELECT);
+					Action *action = g_editor.actionQueue.createAction(ACTION_SELECT);
 					for(int z = start_z; z <= end_z; z += 1){
 						for(int y = start_y; y <= end_y; y += 1)
 						for(int x = start_x; x <= end_x; x += 1){
@@ -1159,12 +1161,14 @@ void MapCanvas::OnMousePropertiesClick(wxMouseEvent& event)
 	} else if(tile->isSelected()) {
 		// Do nothing!
 	} else {
-		selection.clear(NULL);
+		Action *action = g_editor.actionQueue.createAction(ACTION_SELECT);
+		selection.clear(action);
 		if(tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
-			selection.add(NULL, tile, tile->creature);
+			selection.add(action, tile, tile->creature);
 		} else if(Item* item = tile->getTopItem()) {
-			selection.add(NULL, tile, item);
+			selection.add(action, tile, item);
 		}
+		action->commit();
 		selection.updateSelectionCount();
 	}
 
@@ -1269,7 +1273,7 @@ void MapCanvas::OnMousePropertiesRelease(wxMouseEvent& event)
 			// TODO(fusion): We could restore the threaded selection here
 			// if it turns out to be too slow. We could also iterate using
 			// sectors which should be faster than accessing tiles one by one.
-			Action *action = g_editor.actionQueue->createAction(ACTION_SELECT);
+			Action *action = g_editor.actionQueue.createAction(ACTION_SELECT);
 			for(int z = start_z; z <= end_z; z += 1){
 				for(int y = start_y; y <= end_y; y += 1)
 				for(int x = start_x; x <= end_x; x += 1){
@@ -1721,7 +1725,7 @@ void MapCanvas::OnBrowseTile(wxCommandEvent& WXUNUSED(event))
 	Tile newTile; newTile.deepCopy(*tile);
 	wxDialog* w = new BrowseTileWindow(g_editor.root, &newTile, wxPoint(cursor_x, cursor_y));
 	if(w->ShowModal() != 0) {
-		Action *action = g_editor.actionQueue->createAction(ACTION_DELETE_TILES);
+		Action *action = g_editor.actionQueue.createAction(ACTION_DELETE_TILES);
 		action->changeTile(std::move(newTile));
 		g_editor.updateActions();
 	}
@@ -1746,7 +1750,7 @@ void MapCanvas::OnRotateItem(wxCommandEvent& WXUNUSED(event))
 		return;
 	}
 
-	Action *action = g_editor.actionQueue->createAction(ACTION_ROTATE_ITEM);
+	Action *action = g_editor.actionQueue.createAction(ACTION_ROTATE_ITEM);
 	Tile newTile; newTile.deepCopy(*tile);
 	Item *newItem = newTile.getFirstSelectedItem();
 	ASSERT(newItem->getID() == item->getID());
@@ -1782,7 +1786,7 @@ void MapCanvas::OnCopyDestination(wxCommandEvent& WXUNUSED(event))
 void MapCanvas::OnSwitchDoor(wxCommandEvent& WXUNUSED(event))
 {
 	Tile *tile = g_editor.getSelection().getSelectedTile();
-	Action *action = g_editor.actionQueue->createAction(ACTION_SWITCHDOOR);
+	Action *action = g_editor.actionQueue.createAction(ACTION_SWITCHDOOR);
 	Tile newTile; newTile.deepCopy(*tile);
 	DoorBrush::switchDoor(newTile.getFirstSelectedItem());
 	action->changeTile(std::move(newTile));
@@ -1918,7 +1922,7 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event))
 	}
 
 	if(w->ShowModal() != 0) {
-		Action *action = g_editor.actionQueue->createAction(ACTION_CHANGE_PROPERTIES);
+		Action *action = g_editor.actionQueue.createAction(ACTION_CHANGE_PROPERTIES);
 		action->changeTile(std::move(newTile));
 	}
 
@@ -1992,9 +1996,6 @@ void MapCanvas::Reset()
 
 	last_mmb_click_x = -1;
 	last_mmb_click_y = -1;
-
-	g_editor.selection.clear(NULL);
-	g_editor.clearActions();
 }
 
 void MapPopupMenu::Update()

@@ -29,14 +29,11 @@
 #include "wall_brush.h"
 #include "waypoint_brush.h"
 
-#include "settings.h"
-
-#include "sprites.h"
-
 #include "item.h"
 #include "creature.h"
 #include "map.h"
 #include "editor.h"
+#include "settings.h"
 
 Brushes g_brushes;
 

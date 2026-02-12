@@ -20,135 +20,16 @@
 #define RME_MAIN_BAR_H_
 
 #include <wx/docview.h>
-
-namespace MenuBar
-{
-	struct Action;
-
-	enum ActionID {
-		NEW,
-		OPEN,
-		SAVE,
-		SAVE_AS,
-		GENERATE_MAP,
-		CLOSE,
-		IMPORT_MAP,
-		IMPORT_MONSTERS,
-		IMPORT_MINIMAP,
-		EXPORT_MINIMAP,
-		RELOAD_DATA,
-		RECENT_FILES,
-		PREFERENCES,
-		EXIT,
-		UNDO,
-		REDO,
-		FIND_ITEM,
-		REPLACE_ITEMS,
-		SEARCH_ON_MAP_EVERYTHING,
-		SEARCH_ON_MAP_CONTAINER,
-		SEARCH_ON_MAP_WRITEABLE,
-		SEARCH_ON_MAP_DUPLICATED_ITEMS,
-		SEARCH_ON_SELECTION_EVERYTHING,
-		SEARCH_ON_SELECTION_CONTAINER,
-		SEARCH_ON_SELECTION_WRITEABLE,
-		SEARCH_ON_SELECTION_ITEM,
-		SEARCH_ON_SELECTION_DUPLICATED_ITEMS,
-		REPLACE_ON_SELECTION_ITEMS,
-		REMOVE_ON_SELECTION_ITEM,
-		SELECT_MODE_COMPENSATE,
-		SELECT_MODE_CURRENT,
-		SELECT_MODE_LOWER,
-		SELECT_MODE_VISIBLE,
-		AUTOMAGIC,
-		BORDERIZE_SELECTION,
-		BORDERIZE_MAP,
-		RANDOMIZE_SELECTION,
-		RANDOMIZE_MAP,
-		GOTO_PREVIOUS_POSITION,
-		GOTO_POSITION,
-		JUMP_TO_BRUSH,
-		JUMP_TO_ITEM_BRUSH,
-		CLEAR_INVALID_HOUSES,
-		CLEAR_MODIFIED_STATE,
-		CUT,
-		COPY,
-		PASTE,
-		EDIT_TOWNS,
-		EDIT_ITEMS,
-		EDIT_MONSTERS,
-		MAP_CLEANUP,
-		MAP_REMOVE_ITEMS,
-		MAP_REMOVE_CORPSES,
-		MAP_REMOVE_UNREACHABLE_TILES,
-		MAP_CLEAN_HOUSE_ITEMS,
-		MAP_STATISTICS,
-		VIEW_TOOLBARS_BRUSHES,
-		VIEW_TOOLBARS_POSITION,
-		VIEW_TOOLBARS_SIZES,
-		VIEW_TOOLBARS_INDICATORS,
-		VIEW_TOOLBARS_STANDARD,
-		NEW_VIEW,
-		TOGGLE_FULLSCREEN,
-		ZOOM_IN,
-		ZOOM_OUT,
-		ZOOM_NORMAL,
-		SHOW_SHADE,
-		SHOW_ALL_FLOORS,
-		GHOST_ITEMS,
-		GHOST_HIGHER_FLOORS,
-		HIGHLIGHT_ITEMS,
-		SHOW_INGAME_BOX,
-		SHOW_LIGHTS,
-		SHOW_GRID,
-		SHOW_EXTRA,
-		SHOW_CREATURES,
-		SHOW_SPECIAL,
-		SHOW_AS_MINIMAP,
-		SHOW_ONLY_COLORS,
-		SHOW_ONLY_MODIFIED,
-		SHOW_HOUSES,
-		SHOW_PATHING,
-		SHOW_TOOLTIPS,
-		SHOW_PREVIEW,
-		SHOW_WALL_HOOKS,
-		SHOW_PICKUPABLES,
-		SHOW_MOVEABLES,
-		WIN_MINIMAP,
-		WIN_ACTIONS_HISTORY,
-		NEW_PALETTE,
-		TAKE_SCREENSHOT,
-		SELECT_TERRAIN,
-		SELECT_DOODAD,
-		SELECT_ITEM,
-		SELECT_CREATURE,
-		SELECT_HOUSE,
-		SELECT_WAYPOINT,
-		SELECT_RAW,
-		FLOOR_0,
-		FLOOR_1,
-		FLOOR_2,
-		FLOOR_3,
-		FLOOR_4,
-		FLOOR_5,
-		FLOOR_6,
-		FLOOR_7,
-		FLOOR_8,
-		FLOOR_9,
-		FLOOR_10,
-		FLOOR_11,
-		FLOOR_12,
-		FLOOR_13,
-		FLOOR_14,
-		FLOOR_15,
-		DEBUG_VIEW_DAT,
-		GOTO_WEBSITE,
-		ABOUT,
-	};
-}
+#include <wx/menu.h>
 
 class MainFrame;
 
-class MainMenuBar : public wxEvtHandler
+struct MenuBarAction {
+	int        id;
+	wxItemKind kind;
+};
+
+class MainMenuBar : public wxMenuBar //public wxEvtHandler
 {
 public:
 	MainMenuBar(MainFrame* frame);
@@ -164,9 +45,9 @@ public:
 	void UpdateIndicatorsMenu();
 
 	// Interface
-	void EnableItem(MenuBar::ActionID id, bool enable);
-	void CheckItem(MenuBar::ActionID id, bool enable);
-	bool IsItemChecked(MenuBar::ActionID id) const;
+	void EnableItem(int id, bool enable);
+	void CheckItem(int id, bool enable);
+	bool IsItemChecked(int id) const;
 
 	// Event handlers for all menu buttons
 	// File Menu
@@ -182,8 +63,6 @@ public:
 	// Import Menu
 	// Export Menu
 	void OnImportMap(wxCommandEvent& event);
-	void OnImportMonsterData(wxCommandEvent& event);
-	void OnImportMinimap(wxCommandEvent& event);
 	void OnExportMinimap(wxCommandEvent& event);
 	void OnReloadDataFiles(wxCommandEvent& event);
 
@@ -271,32 +150,16 @@ protected:
 	void SearchDuplicatedItems(bool selection);
 
 protected:
+
 	MainFrame* frame;
-	wxMenuBar* menubar;
 
 	// Used so that calling Check on menu items don't trigger events (avoids infinite recursion)
 	bool checking_programmaticly;
 
-	std::map<MenuBar::ActionID, std::list<wxMenuItem*> > items;
-	std::map<std::string, MenuBar::Action*> actions;
+	std::unordered_map<int, std::vector<wxMenuItem*>> menuItems;
+	std::unordered_map<std::string, MenuBarAction> actions;
 
-	DECLARE_EVENT_TABLE();
+	DECLARE_EVENT_TABLE()
 };
-
-namespace MenuBar
-{
-	struct Action
-	{
-		Action() : id(0), kind(wxITEM_NORMAL) {}
-		Action(std::string s, int id, wxItemKind kind, wxCommandEventFunction handler)
-			: id(id), setting(0), name(s), kind(kind), handler(handler) {}
-
-		int id;
-		int setting;
-		std::string name;
-		wxItemKind kind;
-		wxCommandEventFunction handler;
-	};
-}
 
 #endif

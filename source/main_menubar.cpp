@@ -30,6 +30,7 @@
 #include "items.h"
 #include "editor.h"
 #include "materials.h"
+#include "map_display.h"
 #include "map_window.h"
 
 //#include <wx/chartype.h>
@@ -37,13 +38,18 @@
 BEGIN_EVENT_TABLE(MainMenuBar, wxEvtHandler)
 END_EVENT_TABLE()
 
-MainMenuBar::MainMenuBar(MainFrame *frame) : frame(frame)
+MainMenuBar::MainMenuBar(MainFrame *frame) :
+	frame(frame),
+	checking_programmaticly(false)
 {
-	using namespace MenuBar;
-	checking_programmaticly = false;
+	frame->SetMenuBar(this);
 
-#define MAKE_ACTION(id, kind, handler) actions[#id] = new MenuBar::Action(#id, id, kind, wxCommandEventFunction(&MainMenuBar::handler))
-#define MAKE_SET_ACTION(id, kind, setting_, handler) actions[#id] = new MenuBar::Action(#id, id, kind, wxCommandEventFunction(&MainMenuBar::handler)); actions[#id].setting = setting_
+#define MAKE_ACTION(id, kind, handler)										\
+	do{																		\
+		actions[#id] = MenuBarAction{MENUBAR_ ## id, kind};					\
+		frame->Connect(MENUBAR_ ## id, wxEVT_COMMAND_MENU_SELECTED,			\
+				wxCommandEventHandler(MainMenuBar::handler), NULL, this);	\
+	}while(0)
 
 	MAKE_ACTION(NEW, wxITEM_NORMAL, OnNew);
 	MAKE_ACTION(OPEN, wxITEM_NORMAL, OnOpen);
@@ -52,8 +58,6 @@ MainMenuBar::MainMenuBar(MainFrame *frame) : frame(frame)
 	MAKE_ACTION(CLOSE, wxITEM_NORMAL, OnClose);
 
 	MAKE_ACTION(IMPORT_MAP, wxITEM_NORMAL, OnImportMap);
-	MAKE_ACTION(IMPORT_MONSTERS, wxITEM_NORMAL, OnImportMonsterData);
-	MAKE_ACTION(IMPORT_MINIMAP, wxITEM_NORMAL, OnImportMinimap);
 	MAKE_ACTION(EXPORT_MINIMAP, wxITEM_NORMAL, OnExportMinimap);
 
 	MAKE_ACTION(RELOAD_DATA, wxITEM_NORMAL, OnReloadDataFiles);
@@ -175,29 +179,7 @@ MainMenuBar::MainMenuBar(MainFrame *frame) : frame(frame)
 	MAKE_ACTION(GOTO_WEBSITE, wxITEM_NORMAL, OnGotoWebsite);
 	MAKE_ACTION(ABOUT, wxITEM_NORMAL, OnAbout);
 
-	// A deleter, this way the frame does not need
-	// to bother deleting us.
-	class CustomMenuBar : public wxMenuBar
-	{
-	public:
-		CustomMenuBar(MainMenuBar* mb) : mb(mb) {}
-		~CustomMenuBar()
-		{
-			delete mb;
-		}
-	private:
-		MainMenuBar* mb;
-	};
-
-	menubar = newd CustomMenuBar(this);
-	frame->SetMenuBar(menubar);
-
-	// Tie all events to this handler!
-
-	for(const auto &[_, action]: actions){
-		frame->Connect(MAIN_FRAME_MENU + action->id, wxEVT_COMMAND_MENU_SELECTED,
-			(wxObjectEventFunction)(wxEventFunction)(action->handler), nullptr, this);
-	}
+#undef MAKE_ACTION
 
 	for(size_t i = 0; i < 10; ++i) {
 		frame->Connect(g_editor.recentFiles.GetBaseId() + i, wxEVT_COMMAND_MENU_SELECTED,
@@ -207,11 +189,7 @@ MainMenuBar::MainMenuBar(MainFrame *frame) : frame(frame)
 
 MainMenuBar::~MainMenuBar()
 {
-	// Don't need to delete menubar, it's owned by the frame
-
-	for(std::map<std::string, MenuBar::Action*>::iterator ai = actions.begin(); ai != actions.end(); ++ai) {
-		delete ai->second;
-	}
+	// no-op
 }
 
 namespace OnMapRemoveItems
@@ -234,54 +212,47 @@ namespace OnMapRemoveItems
 	};
 }
 
-void MainMenuBar::EnableItem(MenuBar::ActionID id, bool enable)
+void MainMenuBar::EnableItem(int id, bool enable)
 {
-	std::map<MenuBar::ActionID, std::list<wxMenuItem*> >::iterator fi = items.find(id);
-	if(fi == items.end())
-		return;
-
-	std::list<wxMenuItem*>& li = fi->second;
-
-	for(std::list<wxMenuItem*>::iterator i = li.begin(); i !=li.end(); ++i)
-		(*i)->Enable(enable);
+	auto it = menuItems.find(id);
+	if(it != menuItems.end()){
+		for(wxMenuItem *menuItem: it->second){
+			menuItem->Enable(enable);
+		}
+	}
 }
 
-void MainMenuBar::CheckItem(MenuBar::ActionID id, bool enable)
+void MainMenuBar::CheckItem(int id, bool enable)
 {
-	std::map<MenuBar::ActionID, std::list<wxMenuItem*> >::iterator fi = items.find(id);
-	if(fi == items.end())
-		return;
-
-	std::list<wxMenuItem*>& li = fi->second;
-
-	checking_programmaticly = true;
-	for(std::list<wxMenuItem*>::iterator i = li.begin(); i !=li.end(); ++i)
-		(*i)->Check(enable);
-	checking_programmaticly = false;
+	auto it = menuItems.find(id);
+	if(it != menuItems.end()){
+		checking_programmaticly = true;
+		for(wxMenuItem *menuItem: it->second){
+			menuItem->Check(enable);
+		}
+		checking_programmaticly = false;
+	}
 }
 
-bool MainMenuBar::IsItemChecked(MenuBar::ActionID id) const
+bool MainMenuBar::IsItemChecked(int id) const
 {
-	std::map<MenuBar::ActionID, std::list<wxMenuItem*> >::const_iterator fi = items.find(id);
-	if(fi == items.end())
-		return false;
-
-	const std::list<wxMenuItem*>& li = fi->second;
-
-	for(std::list<wxMenuItem*>::const_iterator i = li.begin(); i !=li.end(); ++i)
-		if((*i)->IsChecked())
-			return true;
+	auto it = menuItems.find(id);
+	if(it != menuItems.end()){
+		for(wxMenuItem *menuItem: it->second){
+			if(menuItem->IsChecked()){
+				return true;
+			}
+		}
+	}
 
 	return false;
 }
 
 void MainMenuBar::Update()
 {
-	using namespace MenuBar;
 	// This updates all buttons and sets them to proper enabled/disabled state
-
 	bool enable = !g_editor.IsWelcomeDialogShown();
-	menubar->Enable(enable);
+	Enable(enable);
     if(!enable) {
         return;
 	}
@@ -290,76 +261,72 @@ void MainMenuBar::Update()
 	bool dirty  = g_editor.IsProjectDirty();
 	bool has_selection = g_editor.hasSelection();
 
-	EnableItem(UNDO, g_editor.canUndo());
-	EnableItem(REDO, g_editor.canRedo());
-	EnableItem(PASTE, g_editor.copybuffer.canPaste());
+	EnableItem(MENUBAR_UNDO, g_editor.canUndo());
+	EnableItem(MENUBAR_REDO, g_editor.canRedo());
+	EnableItem(MENUBAR_PASTE, g_editor.copybuffer.canPaste());
 
-	EnableItem(CLOSE, loaded);
-	EnableItem(SAVE, loaded && dirty);
-	EnableItem(SAVE_AS, loaded && dirty);
-	EnableItem(GENERATE_MAP, false);
+	EnableItem(MENUBAR_CLOSE, loaded);
+	EnableItem(MENUBAR_SAVE, loaded && dirty);
+	EnableItem(MENUBAR_SAVE_AS, loaded && dirty);
 
-	EnableItem(IMPORT_MAP, loaded);
-	EnableItem(IMPORT_MONSTERS, loaded);
-	EnableItem(IMPORT_MINIMAP, false);
-	EnableItem(EXPORT_MINIMAP, loaded);
+	EnableItem(MENUBAR_IMPORT_MAP, loaded);
+	EnableItem(MENUBAR_EXPORT_MINIMAP, loaded);
 
-	EnableItem(FIND_ITEM, loaded);
-	EnableItem(REPLACE_ITEMS, loaded);
-	EnableItem(SEARCH_ON_MAP_EVERYTHING, loaded);
-	EnableItem(SEARCH_ON_MAP_CONTAINER, loaded);
-	EnableItem(SEARCH_ON_MAP_WRITEABLE, loaded);
-	EnableItem(SEARCH_ON_MAP_DUPLICATED_ITEMS, loaded);
-	EnableItem(SEARCH_ON_SELECTION_EVERYTHING, has_selection && loaded);
-	EnableItem(SEARCH_ON_SELECTION_CONTAINER, has_selection && loaded);
-	EnableItem(SEARCH_ON_SELECTION_WRITEABLE, has_selection && loaded);
-	EnableItem(SEARCH_ON_SELECTION_DUPLICATED_ITEMS, has_selection && loaded);
-	EnableItem(SEARCH_ON_SELECTION_ITEM, has_selection && loaded);
-	EnableItem(REPLACE_ON_SELECTION_ITEMS, has_selection && loaded);
-	EnableItem(REMOVE_ON_SELECTION_ITEM, has_selection && loaded);
+	EnableItem(MENUBAR_FIND_ITEM, loaded);
+	EnableItem(MENUBAR_REPLACE_ITEMS, loaded);
+	EnableItem(MENUBAR_SEARCH_ON_MAP_EVERYTHING, loaded);
+	EnableItem(MENUBAR_SEARCH_ON_MAP_CONTAINER, loaded);
+	EnableItem(MENUBAR_SEARCH_ON_MAP_WRITEABLE, loaded);
+	EnableItem(MENUBAR_SEARCH_ON_MAP_DUPLICATED_ITEMS, loaded);
+	EnableItem(MENUBAR_SEARCH_ON_SELECTION_EVERYTHING, has_selection && loaded);
+	EnableItem(MENUBAR_SEARCH_ON_SELECTION_CONTAINER, has_selection && loaded);
+	EnableItem(MENUBAR_SEARCH_ON_SELECTION_WRITEABLE, has_selection && loaded);
+	EnableItem(MENUBAR_SEARCH_ON_SELECTION_DUPLICATED_ITEMS, has_selection && loaded);
+	EnableItem(MENUBAR_SEARCH_ON_SELECTION_ITEM, has_selection && loaded);
+	EnableItem(MENUBAR_REPLACE_ON_SELECTION_ITEMS, has_selection && loaded);
+	EnableItem(MENUBAR_REMOVE_ON_SELECTION_ITEM, has_selection && loaded);
 
-	EnableItem(CUT, loaded);
-	EnableItem(COPY, loaded);
+	EnableItem(MENUBAR_CUT, loaded);
+	EnableItem(MENUBAR_COPY, loaded);
 
-	EnableItem(BORDERIZE_SELECTION, loaded && has_selection);
-	EnableItem(BORDERIZE_MAP, loaded);
-	EnableItem(RANDOMIZE_SELECTION, loaded && has_selection);
-	EnableItem(RANDOMIZE_MAP, loaded);
+	EnableItem(MENUBAR_BORDERIZE_SELECTION, loaded && has_selection);
+	EnableItem(MENUBAR_BORDERIZE_MAP, loaded);
+	EnableItem(MENUBAR_RANDOMIZE_SELECTION, loaded && has_selection);
+	EnableItem(MENUBAR_RANDOMIZE_MAP, loaded);
 
-	EnableItem(GOTO_PREVIOUS_POSITION, loaded);
-	EnableItem(GOTO_POSITION, loaded);
-	EnableItem(JUMP_TO_BRUSH, loaded);
-	EnableItem(JUMP_TO_ITEM_BRUSH, loaded);
+	EnableItem(MENUBAR_GOTO_PREVIOUS_POSITION, loaded);
+	EnableItem(MENUBAR_GOTO_POSITION, loaded);
+	EnableItem(MENUBAR_JUMP_TO_BRUSH, loaded);
+	EnableItem(MENUBAR_JUMP_TO_ITEM_BRUSH, loaded);
 
-	EnableItem(MAP_REMOVE_ITEMS, loaded);
-	EnableItem(MAP_REMOVE_CORPSES, loaded);
-	EnableItem(MAP_REMOVE_UNREACHABLE_TILES, loaded);
-	EnableItem(CLEAR_INVALID_HOUSES, loaded);
-	EnableItem(CLEAR_MODIFIED_STATE, loaded);
+	EnableItem(MENUBAR_MAP_REMOVE_ITEMS, loaded);
+	EnableItem(MENUBAR_MAP_REMOVE_CORPSES, loaded);
+	EnableItem(MENUBAR_MAP_REMOVE_UNREACHABLE_TILES, loaded);
+	EnableItem(MENUBAR_CLEAR_INVALID_HOUSES, loaded);
+	EnableItem(MENUBAR_CLEAR_MODIFIED_STATE, loaded);
 
-	EnableItem(EDIT_TOWNS, loaded);
-	EnableItem(EDIT_ITEMS, false);
-	EnableItem(EDIT_MONSTERS, false);
+	EnableItem(MENUBAR_EDIT_TOWNS, loaded);
+	EnableItem(MENUBAR_EDIT_ITEMS, false);
+	EnableItem(MENUBAR_EDIT_MONSTERS, false);
 
-	EnableItem(MAP_CLEANUP, loaded);
-	EnableItem(MAP_STATISTICS, loaded);
+	EnableItem(MENUBAR_MAP_CLEANUP, loaded);
+	EnableItem(MENUBAR_MAP_STATISTICS, loaded);
 
-	EnableItem(NEW_VIEW, loaded);
-	EnableItem(ZOOM_IN, loaded);
-	EnableItem(ZOOM_OUT, loaded);
-	EnableItem(ZOOM_NORMAL, loaded);
+	EnableItem(MENUBAR_ZOOM_IN, loaded);
+	EnableItem(MENUBAR_ZOOM_OUT, loaded);
+	EnableItem(MENUBAR_ZOOM_NORMAL, loaded);
 
-	EnableItem(WIN_MINIMAP, loaded);
-	EnableItem(NEW_PALETTE, loaded);
-	EnableItem(SELECT_TERRAIN, loaded);
-	EnableItem(SELECT_DOODAD, loaded);
-	EnableItem(SELECT_ITEM, loaded);
-	EnableItem(SELECT_HOUSE, loaded);
-	EnableItem(SELECT_CREATURE, loaded);
-	EnableItem(SELECT_WAYPOINT, loaded);
-	EnableItem(SELECT_RAW, loaded);
+	EnableItem(MENUBAR_WIN_MINIMAP, loaded);
+	EnableItem(MENUBAR_NEW_PALETTE, loaded);
+	EnableItem(MENUBAR_SELECT_TERRAIN, loaded);
+	EnableItem(MENUBAR_SELECT_DOODAD, loaded);
+	EnableItem(MENUBAR_SELECT_ITEM, loaded);
+	EnableItem(MENUBAR_SELECT_HOUSE, loaded);
+	EnableItem(MENUBAR_SELECT_CREATURE, loaded);
+	EnableItem(MENUBAR_SELECT_WAYPOINT, loaded);
+	EnableItem(MENUBAR_SELECT_RAW, loaded);
 
-	EnableItem(DEBUG_VIEW_DAT, loaded);
+	EnableItem(MENUBAR_DEBUG_VIEW_DAT, loaded);
 
 	UpdateFloorMenu();
 	UpdateIndicatorsMenu();
@@ -367,111 +334,106 @@ void MainMenuBar::Update()
 
 void MainMenuBar::LoadValues()
 {
-	using namespace MenuBar;
+	CheckItem(MENUBAR_VIEW_TOOLBARS_BRUSHES, g_settings.getBoolean(Config::SHOW_TOOLBAR_BRUSHES));
+	CheckItem(MENUBAR_VIEW_TOOLBARS_POSITION, g_settings.getBoolean(Config::SHOW_TOOLBAR_POSITION));
+	CheckItem(MENUBAR_VIEW_TOOLBARS_SIZES, g_settings.getBoolean(Config::SHOW_TOOLBAR_SIZES));
+	CheckItem(MENUBAR_VIEW_TOOLBARS_INDICATORS, g_settings.getBoolean(Config::SHOW_TOOLBAR_INDICATORS));
+	CheckItem(MENUBAR_VIEW_TOOLBARS_STANDARD, g_settings.getBoolean(Config::SHOW_TOOLBAR_STANDARD));
 
-	CheckItem(VIEW_TOOLBARS_BRUSHES, g_settings.getBoolean(Config::SHOW_TOOLBAR_BRUSHES));
-	CheckItem(VIEW_TOOLBARS_POSITION, g_settings.getBoolean(Config::SHOW_TOOLBAR_POSITION));
-	CheckItem(VIEW_TOOLBARS_SIZES, g_settings.getBoolean(Config::SHOW_TOOLBAR_SIZES));
-	CheckItem(VIEW_TOOLBARS_INDICATORS, g_settings.getBoolean(Config::SHOW_TOOLBAR_INDICATORS));
-	CheckItem(VIEW_TOOLBARS_STANDARD, g_settings.getBoolean(Config::SHOW_TOOLBAR_STANDARD));
+	CheckItem(MENUBAR_SELECT_MODE_COMPENSATE, g_settings.getBoolean(Config::COMPENSATED_SELECT));
 
-	CheckItem(SELECT_MODE_COMPENSATE, g_settings.getBoolean(Config::COMPENSATED_SELECT));
-
-	if(IsItemChecked(MenuBar::SELECT_MODE_CURRENT))
+	if(IsItemChecked(MENUBAR_SELECT_MODE_CURRENT)){
 		g_settings.setInteger(Config::SELECTION_TYPE, SELECT_CURRENT_FLOOR);
-	else if(IsItemChecked(MenuBar::SELECT_MODE_LOWER))
+	}else if(IsItemChecked(MENUBAR_SELECT_MODE_LOWER)){
 		g_settings.setInteger(Config::SELECTION_TYPE, SELECT_ALL_FLOORS);
-	else if(IsItemChecked(MenuBar::SELECT_MODE_VISIBLE))
+	}else if(IsItemChecked(MENUBAR_SELECT_MODE_VISIBLE)){
 		g_settings.setInteger(Config::SELECTION_TYPE, SELECT_VISIBLE_FLOORS);
+	}
 
 	switch(g_settings.getInteger(Config::SELECTION_TYPE)) {
 		case SELECT_CURRENT_FLOOR:
-			CheckItem(SELECT_MODE_CURRENT, true);
+			CheckItem(MENUBAR_SELECT_MODE_CURRENT, true);
 			break;
 		case SELECT_ALL_FLOORS:
-			CheckItem(SELECT_MODE_LOWER, true);
+			CheckItem(MENUBAR_SELECT_MODE_LOWER, true);
 			break;
 		default:
 		case SELECT_VISIBLE_FLOORS:
-			CheckItem(SELECT_MODE_VISIBLE, true);
+			CheckItem(MENUBAR_SELECT_MODE_VISIBLE, true);
 			break;
 	}
 
-	CheckItem(AUTOMAGIC, g_settings.getBoolean(Config::USE_AUTOMAGIC));
+	CheckItem(MENUBAR_AUTOMAGIC, g_settings.getBoolean(Config::USE_AUTOMAGIC));
 
-	CheckItem(SHOW_SHADE, g_settings.getBoolean(Config::SHOW_SHADE));
-	CheckItem(SHOW_INGAME_BOX, g_settings.getBoolean(Config::SHOW_INGAME_BOX));
-	CheckItem(SHOW_LIGHTS, g_settings.getBoolean(Config::SHOW_LIGHTS));
-	CheckItem(SHOW_ALL_FLOORS, g_settings.getBoolean(Config::SHOW_ALL_FLOORS));
-	CheckItem(GHOST_ITEMS, g_settings.getBoolean(Config::TRANSPARENT_ITEMS));
-	CheckItem(GHOST_HIGHER_FLOORS, g_settings.getBoolean(Config::TRANSPARENT_FLOORS));
-	CheckItem(SHOW_EXTRA, !g_settings.getBoolean(Config::SHOW_EXTRA));
-	CheckItem(SHOW_GRID, g_settings.getBoolean(Config::SHOW_GRID));
-	CheckItem(HIGHLIGHT_ITEMS, g_settings.getBoolean(Config::HIGHLIGHT_ITEMS));
-	CheckItem(SHOW_CREATURES, g_settings.getBoolean(Config::SHOW_CREATURES));
-	CheckItem(SHOW_SPECIAL, g_settings.getBoolean(Config::SHOW_SPECIAL_TILES));
-	CheckItem(SHOW_AS_MINIMAP, g_settings.getBoolean(Config::SHOW_AS_MINIMAP));
-	CheckItem(SHOW_ONLY_COLORS, g_settings.getBoolean(Config::SHOW_ONLY_TILEFLAGS));
-	CheckItem(SHOW_ONLY_MODIFIED, g_settings.getBoolean(Config::SHOW_ONLY_MODIFIED_TILES));
-	CheckItem(SHOW_HOUSES, g_settings.getBoolean(Config::SHOW_HOUSES));
-	CheckItem(SHOW_PATHING, g_settings.getBoolean(Config::SHOW_BLOCKING));
-	CheckItem(SHOW_TOOLTIPS, g_settings.getBoolean(Config::SHOW_TOOLTIPS));
-	CheckItem(SHOW_PREVIEW, g_settings.getBoolean(Config::SHOW_PREVIEW));
-	CheckItem(SHOW_WALL_HOOKS, g_settings.getBoolean(Config::SHOW_WALL_HOOKS));
-	CheckItem(SHOW_PICKUPABLES, g_settings.getBoolean(Config::SHOW_PICKUPABLES));
-	CheckItem(SHOW_MOVEABLES, g_settings.getBoolean(Config::SHOW_MOVEABLES));
+	CheckItem(MENUBAR_SHOW_SHADE, g_settings.getBoolean(Config::SHOW_SHADE));
+	CheckItem(MENUBAR_SHOW_INGAME_BOX, g_settings.getBoolean(Config::SHOW_INGAME_BOX));
+	CheckItem(MENUBAR_SHOW_LIGHTS, g_settings.getBoolean(Config::SHOW_LIGHTS));
+	CheckItem(MENUBAR_SHOW_ALL_FLOORS, g_settings.getBoolean(Config::SHOW_ALL_FLOORS));
+	CheckItem(MENUBAR_GHOST_ITEMS, g_settings.getBoolean(Config::TRANSPARENT_ITEMS));
+	CheckItem(MENUBAR_GHOST_HIGHER_FLOORS, g_settings.getBoolean(Config::TRANSPARENT_FLOORS));
+	CheckItem(MENUBAR_SHOW_EXTRA, !g_settings.getBoolean(Config::SHOW_EXTRA));
+	CheckItem(MENUBAR_SHOW_GRID, g_settings.getBoolean(Config::SHOW_GRID));
+	CheckItem(MENUBAR_HIGHLIGHT_ITEMS, g_settings.getBoolean(Config::HIGHLIGHT_ITEMS));
+	CheckItem(MENUBAR_SHOW_CREATURES, g_settings.getBoolean(Config::SHOW_CREATURES));
+	CheckItem(MENUBAR_SHOW_SPECIAL, g_settings.getBoolean(Config::SHOW_SPECIAL_TILES));
+	CheckItem(MENUBAR_SHOW_AS_MINIMAP, g_settings.getBoolean(Config::SHOW_AS_MINIMAP));
+	CheckItem(MENUBAR_SHOW_ONLY_COLORS, g_settings.getBoolean(Config::SHOW_ONLY_TILEFLAGS));
+	CheckItem(MENUBAR_SHOW_ONLY_MODIFIED, g_settings.getBoolean(Config::SHOW_ONLY_MODIFIED_TILES));
+	CheckItem(MENUBAR_SHOW_HOUSES, g_settings.getBoolean(Config::SHOW_HOUSES));
+	CheckItem(MENUBAR_SHOW_PATHING, g_settings.getBoolean(Config::SHOW_BLOCKING));
+	CheckItem(MENUBAR_SHOW_TOOLTIPS, g_settings.getBoolean(Config::SHOW_TOOLTIPS));
+	CheckItem(MENUBAR_SHOW_PREVIEW, g_settings.getBoolean(Config::SHOW_PREVIEW));
+	CheckItem(MENUBAR_SHOW_WALL_HOOKS, g_settings.getBoolean(Config::SHOW_WALL_HOOKS));
+	CheckItem(MENUBAR_SHOW_PICKUPABLES, g_settings.getBoolean(Config::SHOW_PICKUPABLES));
+	CheckItem(MENUBAR_SHOW_MOVEABLES, g_settings.getBoolean(Config::SHOW_MOVEABLES));
 }
 
 void MainMenuBar::UpdateFloorMenu()
 {
-	using namespace MenuBar;
-
 	if(!g_editor.IsProjectOpen()) {
 		return;
 	}
 
 	for(int i = 0; i < rme::MapLayers; ++i)
-		CheckItem(static_cast<ActionID>(MenuBar::FLOOR_0 + i), false);
+		CheckItem(MENUBAR_FLOOR_0 + i, false);
 
-	CheckItem(static_cast<ActionID>(MenuBar::FLOOR_0 + g_editor.GetCurrentFloor()), true);
+	CheckItem(MENUBAR_FLOOR_0 + g_editor.GetCurrentFloor(), true);
 }
 
 void MainMenuBar::UpdateIndicatorsMenu()
 {
-	using namespace MenuBar;
-
 	if(!g_editor.IsProjectOpen()) {
 		return;
 	}
 
-	CheckItem(SHOW_WALL_HOOKS, g_settings.getBoolean(Config::SHOW_WALL_HOOKS));
-	CheckItem(SHOW_PICKUPABLES, g_settings.getBoolean(Config::SHOW_PICKUPABLES));
-	CheckItem(SHOW_MOVEABLES, g_settings.getBoolean(Config::SHOW_MOVEABLES));
+	CheckItem(MENUBAR_SHOW_WALL_HOOKS, g_settings.getBoolean(Config::SHOW_WALL_HOOKS));
+	CheckItem(MENUBAR_SHOW_PICKUPABLES, g_settings.getBoolean(Config::SHOW_PICKUPABLES));
+	CheckItem(MENUBAR_SHOW_MOVEABLES, g_settings.getBoolean(Config::SHOW_MOVEABLES));
 }
 
 void MainMenuBar::LoadDefault(void){
-	while(menubar->GetMenuCount() > 0){
-		menubar->Remove(0);
+	while(GetMenuCount() > 0){
+		Remove(0);
 	}
 
 	wxMenu *recentFiles = newd wxMenu;
 	g_editor.recentFiles.UseMenu(recentFiles);
 
 	wxMenu *fileMenu = newd wxMenu("File");
-	fileMenu->Append(MAIN_FRAME_MENU + MenuBar::OPEN,        "Open\tCtrl+O",  "Open project.");
-	fileMenu->Append(MAIN_FRAME_MENU + MenuBar::SAVE,        "Save\tCtrl+S",  "Save project.");
-	fileMenu->Append(MAIN_FRAME_MENU + MenuBar::CLOSE,       "Close\tCtrl+Q", "Close project.");
+	fileMenu->Append(MENUBAR_OPEN,        "Open\tCtrl+O",  "Open project.");
+	fileMenu->Append(MENUBAR_SAVE,        "Save\tCtrl+S",  "Save project.");
+	fileMenu->Append(MENUBAR_CLOSE,       "Close\tCtrl+Q", "Close project.");
 	fileMenu->AppendSeparator();
-	fileMenu->AppendSubMenu(recentFiles,                     "Recent Files",  "");
-	fileMenu->Append(MAIN_FRAME_MENU + MenuBar::PREFERENCES, "Preferences",   "Configure editor.");
-	fileMenu->Append(MAIN_FRAME_MENU + MenuBar::CLOSE,       "Exit",          "Close editor.");
+	fileMenu->AppendSubMenu(recentFiles,                   "Recent Files",  "");
+	fileMenu->Append(MENUBAR_PREFERENCES, "Preferences",   "Configure editor.");
+	fileMenu->Append(MENUBAR_CLOSE,       "Exit",          "Close editor.");
 
-	menubar->Append(fileMenu, "File");
+	Append(fileMenu, "File");
 
 	wxAcceleratorEntry accelerators[] = {
-		wxAcceleratorEntry(wxACCEL_CTRL, 'O', MAIN_FRAME_MENU + MenuBar::OPEN),
-		wxAcceleratorEntry(wxACCEL_CTRL, 'S', MAIN_FRAME_MENU + MenuBar::OPEN),
-		wxAcceleratorEntry(wxACCEL_CTRL, 'Q', MAIN_FRAME_MENU + MenuBar::OPEN),
+		wxAcceleratorEntry(wxACCEL_CTRL, 'O', MENUBAR_OPEN),
+		wxAcceleratorEntry(wxACCEL_CTRL, 'S', MENUBAR_SAVE),
+		wxAcceleratorEntry(wxACCEL_CTRL, 'Q', MENUBAR_CLOSE),
 	};
 
 	frame->SetAcceleratorTable(wxAcceleratorTable(
@@ -507,8 +469,8 @@ bool MainMenuBar::Load(const wxString &projectDir, wxString &outError, wxArraySt
 	}
 
 	// Clear the menu
-	while(menubar->GetMenuCount() > 0){
-		menubar->Remove(0);
+	while(GetMenuCount() > 0){
+		Remove(0);
 	}
 
 	// Load succeded
@@ -517,7 +479,7 @@ bool MainMenuBar::Load(const wxString &projectDir, wxString &outError, wxArraySt
 		// For each child node, load it
 		wxObject *i = LoadItem(menuNode, nullptr, outError, outWarnings, accelerators);
 		if (wxMenu *m = dynamic_cast<wxMenu*>(i)) {
-			menubar->Append(m, m->GetTitle());
+			Append(m, m->GetTitle());
 #ifdef __APPLE__
 			m->SetTitle(m->GetTitle());
 #else
@@ -597,21 +559,20 @@ wxObject *MainMenuBar::LoadItem(pugi::xml_node node, wxMenu *parent, wxString &o
 			if(entry.FromString(name)){
 				accelerators.push_back(wxAcceleratorEntry(
 						entry.GetFlags(), entry.GetKeyCode(),
-						MAIN_FRAME_MENU + it->second->id));
+						it->second.id));
 			}else{
 				outWarnings.push_back(wxString() << "Invalid hotkey for item '" << name << "'.");
 			}
 		}
 
 		wxMenuItem *menuItem = parent->Append(
-			MAIN_FRAME_MENU + it->second->id,	// ID
+			it->second.id,						// ID
 			name,								// Title of button
 			node.attribute("help").as_string(), // Help text
-			it->second->kind					// Kind of item
+			it->second.kind						// Kind of item
 		);
 
-		items[MenuBar::ActionID(it->second->id)].push_back(menuItem);
-
+		menuItems[it->second.id].push_back(menuItem);
 		return menuItem;
 	} else if(nodeTag == "separator") {
 		// We must have a parent when loading items
@@ -672,33 +633,6 @@ void MainMenuBar::OnImportMap(wxCommandEvent& WXUNUSED(event))
 	importmap->ShowModal();
 }
 
-void MainMenuBar::OnImportMonsterData(wxCommandEvent& WXUNUSED(event))
-{
-#if TODO
-	wxFileDialog dlg(g_editor.root, "Import monster/npc file", "","","*.xml", wxFD_OPEN | wxFD_MULTIPLE | wxFD_FILE_MUST_EXIST);
-	if(dlg.ShowModal() == wxID_OK) {
-		wxArrayString paths;
-		dlg.GetPaths(paths);
-		for(uint32_t i = 0; i < paths.GetCount(); ++i) {
-			wxString error;
-			wxArrayString warnings;
-			bool ok = g_creatures.importXMLFromOT(paths[i], error, warnings);
-			if(ok)
-				g_editor.ListDialog("Monster loader errors", warnings);
-			else
-				wxMessageBox("Error OT data file \"" + paths[i] + "\".\n" + error, "Error", wxOK | wxICON_INFORMATION, g_editor.root);
-		}
-	}
-#endif
-}
-
-void MainMenuBar::OnImportMinimap(wxCommandEvent& WXUNUSED(event))
-{
-	ASSERT(g_editor.IsProjectOpen());
-	//wxDialog* importmap = newd ImportMapWindow();
-	//importmap->ShowModal();
-}
-
 void MainMenuBar::OnExportMinimap(wxCommandEvent& WXUNUSED(event))
 {
 	if(!g_editor.IsProjectOpen()) {
@@ -753,11 +687,11 @@ namespace OnSearchForItem
 		double nextUpdate = 0.0;
 		int itemId = 0;
 		int maxCount = 0;
+		bool selectedOnly = false;
 		std::vector<std::pair<Tile*, Item*>> results;
 
 		bool limitReached() const { return results.size() >= (size_t)maxCount; }
-
-		void operator()(Tile* tile, Item* item, double progress)
+		bool operator()(Tile* tile, Item* item, double progress)
 		{
 			if(progress >= nextUpdate){
 				g_editor.SetLoadDone((int)(progress * 100.0));
@@ -765,10 +699,16 @@ namespace OnSearchForItem
 			}
 
 			if(results.size() >= (size_t)maxCount)
-				return;
+				return false;
+
+			if(selectedOnly && !item->isSelected()){
+				return false;
+			}
 
 			if(item->getID() == itemId)
 				results.push_back(std::make_pair(tile, item));
+
+			return true;
 		}
 	};
 }
@@ -784,9 +724,10 @@ void MainMenuBar::OnSearchForItem(wxCommandEvent& WXUNUSED(event))
 		OnSearchForItem::Finder finder;
 		finder.itemId = dialog.getResultID();
 		finder.maxCount = g_settings.getInteger(Config::REPLACE_SIZE);
+		finder.selectedOnly = false;
 
 		g_editor.CreateLoadBar("Searching map...");
-		g_editor.map.forEachItem(finder, false);
+		g_editor.map.forEachItem(finder);
 		g_editor.DestroyLoadBar();
 
 		if(finder.limitReached()) {
@@ -820,12 +761,12 @@ namespace OnSearchForStuff
 	{
 		// TODO(fusion): Relevant srv flags/attributes instead?
 		double nextUpdate = 0.0;
-		bool selectedOnly = false;
 		bool searchContainer = false;
 		bool searchWritable = false;
+		bool selectedOnly = false;
 		std::vector<std::pair<Tile*, Item*>> results;
 
-		void operator()(Tile *tile, Item *item, double progress)
+		bool operator()(Tile *tile, Item *item, double progress)
 		{
 			if(progress > nextUpdate){
 				g_editor.SetLoadDone((int)(progress * 100.0));
@@ -833,7 +774,7 @@ namespace OnSearchForStuff
 			}
 
 			if(selectedOnly && !item->isSelected()){
-				return;
+				return false;
 			}
 
 			bool add = false;
@@ -855,6 +796,8 @@ namespace OnSearchForStuff
 			if(add){
 				results.push_back(std::make_pair(tile, item));
 			}
+
+			return true;
 		}
 
 		wxString desc(Item* item)
@@ -928,9 +871,10 @@ void MainMenuBar::OnSearchForItemOnSelection(wxCommandEvent& WXUNUSED(event))
 		OnSearchForItem::Finder finder;
 		finder.itemId = dialog.getResultID();
 		finder.maxCount = g_settings.getInteger(Config::REPLACE_SIZE);
+		finder.selectedOnly = true;
 
 		g_editor.CreateLoadBar("Searching on selected area...");
-		g_editor.map.forEachItem(finder, true);
+		g_editor.map.forEachItem(finder);
 		g_editor.DestroyLoadBar();
 
 		if(finder.limitReached()) {
@@ -975,7 +919,6 @@ void MainMenuBar::OnRemoveItemOnSelection(wxCommandEvent& WXUNUSED(event))
 		condition.itemId = dialog.getResultID();
 		condition.selectedOnly = true;
 
-		g_editor.clearActions();
 		g_editor.CreateLoadBar("Searching item on selection to remove...");
 		int count = g_editor.map.removeItems(condition);
 		g_editor.DestroyLoadBar();
@@ -990,14 +933,15 @@ void MainMenuBar::OnRemoveItemOnSelection(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnSelectionTypeChange(wxCommandEvent& WXUNUSED(event))
 {
-	g_settings.setInteger(Config::COMPENSATED_SELECT, IsItemChecked(MenuBar::SELECT_MODE_COMPENSATE));
+	g_settings.setInteger(Config::COMPENSATED_SELECT, IsItemChecked(MENUBAR_SELECT_MODE_COMPENSATE));
 
-	if(IsItemChecked(MenuBar::SELECT_MODE_CURRENT))
+	if(IsItemChecked(MENUBAR_SELECT_MODE_CURRENT)){
 		g_settings.setInteger(Config::SELECTION_TYPE, SELECT_CURRENT_FLOOR);
-	else if(IsItemChecked(MenuBar::SELECT_MODE_LOWER))
+	}else if(IsItemChecked(MENUBAR_SELECT_MODE_LOWER)){
 		g_settings.setInteger(Config::SELECTION_TYPE, SELECT_ALL_FLOORS);
-	else if(IsItemChecked(MenuBar::SELECT_MODE_VISIBLE))
+	}else if(IsItemChecked(MENUBAR_SELECT_MODE_VISIBLE)){
 		g_settings.setInteger(Config::SELECTION_TYPE, SELECT_VISIBLE_FLOORS);
+	}
 }
 
 void MainMenuBar::OnCopy(wxCommandEvent& WXUNUSED(event))
@@ -1017,8 +961,8 @@ void MainMenuBar::OnPaste(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnToggleAutomagic(wxCommandEvent& WXUNUSED(event))
 {
-	g_settings.setInteger(Config::USE_AUTOMAGIC, IsItemChecked(MenuBar::AUTOMAGIC));
-	g_settings.setInteger(Config::BORDER_IS_GROUND, IsItemChecked(MenuBar::AUTOMAGIC));
+	g_settings.setInteger(Config::USE_AUTOMAGIC, IsItemChecked(MENUBAR_AUTOMAGIC));
+	g_settings.setInteger(Config::BORDER_IS_GROUND, IsItemChecked(MENUBAR_AUTOMAGIC));
 	if(g_settings.getInteger(Config::USE_AUTOMAGIC))
 		g_editor.SetStatusText("Automagic enabled.");
 	else
@@ -1130,9 +1074,6 @@ void MainMenuBar::OnMapRemoveItems(wxCommandEvent& WXUNUSED(event))
 		condition.itemId = dialog.getResultID();
 		condition.selectedOnly = false;
 
-		g_editor.selection.clear(NULL);
-		g_editor.clearActions();
-
 		g_editor.CreateLoadBar("Searching map for items to remove...");
 		int count = g_editor.map.removeItems(condition);
 		g_editor.DestroyLoadBar();
@@ -1154,9 +1095,6 @@ void MainMenuBar::OnMapRemoveCorpses(wxCommandEvent& WXUNUSED(event))
 	int ok = g_editor.PopupDialog("Remove Corpses", "Do you want to remove all corpses from the map?", wxYES | wxNO);
 
 	if(ok == wxID_YES) {
-		g_editor.selection.clear(NULL);
-		g_editor.clearActions();
-
 		g_editor.CreateLoadBar("Searching map for items to remove...");
 		int count = g_editor.map.removeItems(
 			[nextUpdate = 0.0](const Item *item, double progress) mutable {
@@ -1183,9 +1121,6 @@ void MainMenuBar::OnMapRemoveUnreachable(wxCommandEvent& WXUNUSED(event))
 	int ok = g_editor.PopupDialog("Remove Unreachable Tiles", "Do you want to remove all unreachable items from the map?", wxYES | wxNO);
 
 	if(ok == wxID_YES) {
-		g_editor.selection.clear(NULL);
-		g_editor.clearActions();
-
 		g_editor.CreateLoadBar("Searching map for tiles to remove...");
 		int removed = g_editor.map.clearTiles(
 			[nextUpdate = 0.0](const Tile *tile, double progress) mutable {
@@ -1484,32 +1419,27 @@ void MainMenuBar::OnMapCleanup(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnToolbars(wxCommandEvent& event)
 {
-	using namespace MenuBar;
-
-	ActionID id = static_cast<ActionID>(event.GetId() - (wxID_HIGHEST + 1));
-	switch (id) {
-		case VIEW_TOOLBARS_BRUSHES:
+	switch(event.GetId()){
+		case MENUBAR_VIEW_TOOLBARS_BRUSHES:
 			g_editor.ShowToolbar(TOOLBAR_BRUSHES, event.IsChecked());
 			g_settings.setInteger(Config::SHOW_TOOLBAR_BRUSHES, event.IsChecked());
 			break;
-		case VIEW_TOOLBARS_POSITION:
+		case MENUBAR_VIEW_TOOLBARS_POSITION:
 			g_editor.ShowToolbar(TOOLBAR_POSITION, event.IsChecked());
 			g_settings.setInteger(Config::SHOW_TOOLBAR_POSITION, event.IsChecked());
 			break;
-		case VIEW_TOOLBARS_SIZES:
+		case MENUBAR_VIEW_TOOLBARS_SIZES:
 			g_editor.ShowToolbar(TOOLBAR_SIZES, event.IsChecked());
 			g_settings.setInteger(Config::SHOW_TOOLBAR_SIZES, event.IsChecked());
 			break;
-		case VIEW_TOOLBARS_INDICATORS:
+		case MENUBAR_VIEW_TOOLBARS_INDICATORS:
 			g_editor.ShowToolbar(TOOLBAR_INDICATORS, event.IsChecked());
 			g_settings.setInteger(Config::SHOW_TOOLBAR_INDICATORS, event.IsChecked());
 			break;
-		case VIEW_TOOLBARS_STANDARD:
+		case MENUBAR_VIEW_TOOLBARS_STANDARD:
 			g_editor.ShowToolbar(TOOLBAR_STANDARD, event.IsChecked());
 			g_settings.setInteger(Config::SHOW_TOOLBAR_STANDARD, event.IsChecked());
 			break;
-	    default:
-	        break;
 	}
 }
 
@@ -1550,37 +1480,37 @@ void MainMenuBar::OnZoomNormal(wxCommandEvent& event)
 
 void MainMenuBar::OnChangeViewSettings(wxCommandEvent& event)
 {
-	g_settings.setInteger(Config::SHOW_ALL_FLOORS, IsItemChecked(MenuBar::SHOW_ALL_FLOORS));
-	if(IsItemChecked(MenuBar::SHOW_ALL_FLOORS)) {
-		EnableItem(MenuBar::SELECT_MODE_VISIBLE, true);
-		EnableItem(MenuBar::SELECT_MODE_LOWER, true);
+	g_settings.setInteger(Config::SHOW_ALL_FLOORS, IsItemChecked(MENUBAR_SHOW_ALL_FLOORS));
+	if(IsItemChecked(MENUBAR_SHOW_ALL_FLOORS)) {
+		EnableItem(MENUBAR_SELECT_MODE_VISIBLE, true);
+		EnableItem(MENUBAR_SELECT_MODE_LOWER, true);
 	} else {
-		EnableItem(MenuBar::SELECT_MODE_VISIBLE, false);
-		EnableItem(MenuBar::SELECT_MODE_LOWER, false);
-		CheckItem(MenuBar::SELECT_MODE_CURRENT, true);
+		EnableItem(MENUBAR_SELECT_MODE_VISIBLE, false);
+		EnableItem(MENUBAR_SELECT_MODE_LOWER, false);
+		CheckItem(MENUBAR_SELECT_MODE_CURRENT, true);
 		g_settings.setInteger(Config::SELECTION_TYPE, SELECT_CURRENT_FLOOR);
 	}
-	g_settings.setInteger(Config::TRANSPARENT_FLOORS, IsItemChecked(MenuBar::GHOST_HIGHER_FLOORS));
-	g_settings.setInteger(Config::TRANSPARENT_ITEMS, IsItemChecked(MenuBar::GHOST_ITEMS));
-	g_settings.setInteger(Config::SHOW_INGAME_BOX, IsItemChecked(MenuBar::SHOW_INGAME_BOX));
-	g_settings.setInteger(Config::SHOW_LIGHTS, IsItemChecked(MenuBar::SHOW_LIGHTS));
-	g_settings.setInteger(Config::SHOW_GRID, IsItemChecked(MenuBar::SHOW_GRID));
-	g_settings.setInteger(Config::SHOW_EXTRA, !IsItemChecked(MenuBar::SHOW_EXTRA));
+	g_settings.setInteger(Config::TRANSPARENT_FLOORS, IsItemChecked(MENUBAR_GHOST_HIGHER_FLOORS));
+	g_settings.setInteger(Config::TRANSPARENT_ITEMS, IsItemChecked(MENUBAR_GHOST_ITEMS));
+	g_settings.setInteger(Config::SHOW_INGAME_BOX, IsItemChecked(MENUBAR_SHOW_INGAME_BOX));
+	g_settings.setInteger(Config::SHOW_LIGHTS, IsItemChecked(MENUBAR_SHOW_LIGHTS));
+	g_settings.setInteger(Config::SHOW_GRID, IsItemChecked(MENUBAR_SHOW_GRID));
+	g_settings.setInteger(Config::SHOW_EXTRA, !IsItemChecked(MENUBAR_SHOW_EXTRA));
 
-	g_settings.setInteger(Config::SHOW_SHADE, IsItemChecked(MenuBar::SHOW_SHADE));
-	g_settings.setInteger(Config::SHOW_SPECIAL_TILES, IsItemChecked(MenuBar::SHOW_SPECIAL));
-	g_settings.setInteger(Config::SHOW_AS_MINIMAP, IsItemChecked(MenuBar::SHOW_AS_MINIMAP));
-	g_settings.setInteger(Config::SHOW_ONLY_TILEFLAGS, IsItemChecked(MenuBar::SHOW_ONLY_COLORS));
-	g_settings.setInteger(Config::SHOW_ONLY_MODIFIED_TILES, IsItemChecked(MenuBar::SHOW_ONLY_MODIFIED));
-	g_settings.setInteger(Config::SHOW_CREATURES, IsItemChecked(MenuBar::SHOW_CREATURES));
-	g_settings.setInteger(Config::SHOW_HOUSES, IsItemChecked(MenuBar::SHOW_HOUSES));
-	g_settings.setInteger(Config::HIGHLIGHT_ITEMS, IsItemChecked(MenuBar::HIGHLIGHT_ITEMS));
-	g_settings.setInteger(Config::SHOW_BLOCKING, IsItemChecked(MenuBar::SHOW_PATHING));
-	g_settings.setInteger(Config::SHOW_TOOLTIPS, IsItemChecked(MenuBar::SHOW_TOOLTIPS));
-	g_settings.setInteger(Config::SHOW_PREVIEW, IsItemChecked(MenuBar::SHOW_PREVIEW));
-	g_settings.setInteger(Config::SHOW_WALL_HOOKS, IsItemChecked(MenuBar::SHOW_WALL_HOOKS));
-	g_settings.setInteger(Config::SHOW_PICKUPABLES, IsItemChecked(MenuBar::SHOW_PICKUPABLES));
-	g_settings.setInteger(Config::SHOW_MOVEABLES, IsItemChecked(MenuBar::SHOW_MOVEABLES));
+	g_settings.setInteger(Config::SHOW_SHADE, IsItemChecked(MENUBAR_SHOW_SHADE));
+	g_settings.setInteger(Config::SHOW_SPECIAL_TILES, IsItemChecked(MENUBAR_SHOW_SPECIAL));
+	g_settings.setInteger(Config::SHOW_AS_MINIMAP, IsItemChecked(MENUBAR_SHOW_AS_MINIMAP));
+	g_settings.setInteger(Config::SHOW_ONLY_TILEFLAGS, IsItemChecked(MENUBAR_SHOW_ONLY_COLORS));
+	g_settings.setInteger(Config::SHOW_ONLY_MODIFIED_TILES, IsItemChecked(MENUBAR_SHOW_ONLY_MODIFIED));
+	g_settings.setInteger(Config::SHOW_CREATURES, IsItemChecked(MENUBAR_SHOW_CREATURES));
+	g_settings.setInteger(Config::SHOW_HOUSES, IsItemChecked(MENUBAR_SHOW_HOUSES));
+	g_settings.setInteger(Config::HIGHLIGHT_ITEMS, IsItemChecked(MENUBAR_HIGHLIGHT_ITEMS));
+	g_settings.setInteger(Config::SHOW_BLOCKING, IsItemChecked(MENUBAR_SHOW_PATHING));
+	g_settings.setInteger(Config::SHOW_TOOLTIPS, IsItemChecked(MENUBAR_SHOW_TOOLTIPS));
+	g_settings.setInteger(Config::SHOW_PREVIEW, IsItemChecked(MENUBAR_SHOW_PREVIEW));
+	g_settings.setInteger(Config::SHOW_WALL_HOOKS, IsItemChecked(MENUBAR_SHOW_WALL_HOOKS));
+	g_settings.setInteger(Config::SHOW_PICKUPABLES, IsItemChecked(MENUBAR_SHOW_PICKUPABLES));
+	g_settings.setInteger(Config::SHOW_MOVEABLES, IsItemChecked(MENUBAR_SHOW_MOVEABLES));
 
 	g_editor.RefreshView();
 	g_editor.toolbar->UpdateIndicators();
@@ -1593,7 +1523,7 @@ void MainMenuBar::OnChangeFloor(wxCommandEvent& event)
 		return;
 
 	for(int i = 0; i < 16; ++i) {
-		if(IsItemChecked(MenuBar::ActionID(MenuBar::FLOOR_0 + i))) {
+		if(IsItemChecked(MENUBAR_FLOOR_0 + i)) {
 			g_editor.ChangeFloor(i);
 		}
 	}
@@ -1663,9 +1593,9 @@ void MainMenuBar::SearchItems(bool container, bool writable, bool onSelection/* 
 		g_editor.CreateLoadBar("Searching on map...");
 
 	OnSearchForStuff::Searcher searcher;
-	searcher.selectedOnly = onSelection;
 	searcher.searchContainer = container;
 	searcher.searchWritable = writable;
+	searcher.selectedOnly = onSelection;
 	g_editor.map.forEachItem(searcher);
 	searcher.sort();
 

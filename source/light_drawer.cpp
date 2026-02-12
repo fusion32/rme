@@ -36,14 +36,10 @@ LightDrawer::~LightDrawer()
 
 void LightDrawer::draw(int map_x, int map_y, int scroll_x, int scroll_y)
 {
-	constexpr int half_tile_size = rme::TileSize / 2;
-
 	for (int x = 0; x < rme::ClientMapWidth; ++x) {
 		for (int y = 0; y < rme::ClientMapHeight; ++y) {
 			int mx = (map_x + x);
 			int my = (map_y + y);
-			int px = (mx * rme::TileSize + half_tile_size);
-			int py = (my * rme::TileSize + half_tile_size);
 			int index = (y * rme::ClientMapWidth + x);
 			int color_index = index * rme::PixelFormatRGBA;
 

@@ -15,8 +15,8 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
-#include "common.h"
 #include "main.h"
+#include "common.h"
 
 #include "copybuffer.h"
 #include "editor.h"
@@ -103,7 +103,7 @@ void CopyBuffer::cut(int floor)
 	copyPos = Position(0xFFFF, 0xFFFF, floor);
 
 	std::vector<Position> tilesToBorderize;
-	ActionGroup *group = g_editor.actionQueue->createGroup(ACTION_CUT_TILES);
+	ActionGroup *group = g_editor.actionQueue.createGroup(ACTION_CUT_TILES);
 	{
 		Action *action = group->createAction();
 		for(Tile *tile: g_editor.getSelection()) {
@@ -184,7 +184,7 @@ void CopyBuffer::paste(const Position& toPosition)
 		return;
 	}
 
-	ActionGroup *group = g_editor.actionQueue->createGroup(ACTION_PASTE_TILES);
+	ActionGroup *group = g_editor.actionQueue.createGroup(ACTION_PASTE_TILES);
 	{
 		Action *action = group->createAction();
 		buffer->forEachTile(

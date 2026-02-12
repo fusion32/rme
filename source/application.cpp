@@ -18,35 +18,29 @@
 #include "main.h"
 
 #include "application.h"
-#include "sprites.h"
 #include "editor.h"
 #include "map_window.h"
-#include "common_windows.h"
-#include "palette_window.h"
-#include "preferences.h"
-#include "result_window.h"
-#include "minimap_window.h"
-#include "about_window.h"
 #include "main_menubar.h"
 #include "artprovider.h"
+#include "settings.h"
 
-#include "materials.h"
-#include "map.h"
-#include "creature.h"
-
+#include <wx/evtloop.h>
 #include <wx/snglinst.h>
 
 #if defined(__LINUX__) || defined(__WINDOWS__)
-#include <GL/glut.h>
+#	include <GL/glut.h>
 #endif
 
 #include "../brushes/icon/rme_icon.xpm"
 
+wxDEFINE_EVENT(EVT_UPDATE_MENUS, wxCommandEvent);
+wxDEFINE_EVENT(EVT_UPDATE_ACTIONS, wxCommandEvent);
+
 BEGIN_EVENT_TABLE(MainFrame, wxFrame)
 	EVT_IDLE(MainFrame::OnIdle)
 	EVT_CLOSE(MainFrame::OnExit)
-	EVT_ON_UPDATE_MENUS(wxID_ANY, MainFrame::OnUpdateMenus)
-	EVT_ON_UPDATE_ACTIONS(wxID_ANY, MainFrame::OnUpdateActions)
+	EVT_COMMAND(wxID_ANY, EVT_UPDATE_MENUS, MainFrame::OnUpdateMenus)
+	EVT_COMMAND(wxID_ANY, EVT_UPDATE_ACTIONS, MainFrame::OnUpdateActions)
 END_EVENT_TABLE()
 
 BEGIN_EVENT_TABLE(MapWindow, wxPanel)
@@ -126,9 +120,9 @@ bool Application::OnInit()
 	//wxHandleFatalExceptions(true);
 #endif
 
-    m_file_to_open = wxEmptyString;
+    file_to_open = wxEmptyString;
 	if(argc == 2){
-		m_file_to_open = argv[1];
+		file_to_open = argv[1];
 	}
 
 	g_editor.root = newd MainFrame(__RME_APPLICATION_NAME__, wxDefaultPosition, wxSize(700, 500));
@@ -140,7 +134,7 @@ bool Application::OnInit()
     wxIcon icon(rme_icon);
     g_editor.root->SetIcon(icon);
 
-    if(g_settings.getInteger(Config::WELCOME_DIALOG) == 1 && m_file_to_open == wxEmptyString) {
+    if(g_settings.getInteger(Config::WELCOME_DIALOG) == 1 && file_to_open == wxEmptyString) {
         g_editor.ShowWelcomeDialog(icon);
     } else {
         g_editor.root->Show();
@@ -155,30 +149,34 @@ bool Application::OnInit()
 		g_settings.setInteger(Config::GOTO_WEBSITE_ON_BOOT, 0);
 	}
 
-    // Keep track of first event loop entry
-    m_startup = true;
 	return true;
 }
 
-void Application::OnEventLoopEnter(wxEventLoopBase* loop) {
-	// TODO(fusion): Is this flag even required?
-    if(!m_startup)
-        return;
-    m_startup = false;
-
-    if(m_file_to_open != wxEmptyString) {
-        g_editor.OpenProject(m_file_to_open);
-    } else if(!g_editor.IsWelcomeDialogShown()) {
-		g_editor.NewProject();
-    }
+int Application::OnExit()
+{
+	return 1;
 }
 
-void Application::MacOpenFiles(const wxArrayString& fileNames)
+void Application::OnFatalException()
+{
+	// no-op
+}
+
+void Application::OnEventLoopEnter(wxEventLoopBase *loop) {
+	if(loop->IsMain() && file_to_open != wxEmptyString){
+		g_editor.OpenProject(file_to_open);
+		file_to_open.Clear();
+	}
+}
+
+#ifdef __WXMAC__
+void Application::MacOpenFiles(const wxArrayString &fileNames)
 {
 	if(!fileNames.IsEmpty()) {
 		g_editor.OpenProject(fileNames.Item(0));
 	}
 }
+#endif
 
 void Application::FixVersionDiscrapencies()
 {
@@ -209,15 +207,6 @@ void Application::Unload()
 	g_settings.save(true);
 }
 
-int Application::OnExit()
-{
-	return 1;
-}
-
-void Application::OnFatalException()
-{
-	////
-}
 
 MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& size) :
 	wxFrame((wxFrame *)nullptr, -1, title, pos, size, wxDEFAULT_FRAME_STYLE)
@@ -251,21 +240,12 @@ MainFrame::~MainFrame(){
 	// no-op
 }
 
-void MainFrame::OnIdle(wxIdleEvent& event)
+void MainFrame::PrepareDC(wxDC& dc)
 {
-	////
-}
-
-void MainFrame::OnUpdateMenus(wxCommandEvent&)
-{
-	g_editor.UpdateMenubar();
-	g_editor.UpdateMinimap(true);
-}
-
-void MainFrame::OnUpdateActions(wxCommandEvent&)
-{
-	g_editor.toolbar->UpdateButtons();
-	g_editor.RefreshActions();
+	dc.SetLogicalOrigin(0, 0 );
+	dc.SetAxisOrientation(1, 0);
+	dc.SetUserScale(1.0, 1.0);
+	dc.SetMapMode(wxMM_TEXT);
 }
 
 #ifdef __WINDOWS__
@@ -282,6 +262,19 @@ bool MainFrame::MSWTranslateMessage(WXMSG *msg)
 }
 #endif
 
+
+void MainFrame::OnUpdateMenus(wxCommandEvent&)
+{
+	g_editor.UpdateMenubar();
+	g_editor.UpdateMinimap(true);
+}
+
+void MainFrame::OnUpdateActions(wxCommandEvent&)
+{
+	g_editor.toolbar->UpdateButtons();
+	g_editor.RefreshActions();
+}
+
 void MainFrame::UpdateFloorMenu()
 {
 	g_editor.menubar->UpdateFloorMenu();
@@ -290,6 +283,11 @@ void MainFrame::UpdateFloorMenu()
 void MainFrame::UpdateIndicatorsMenu()
 {
 	g_editor.menubar->UpdateIndicatorsMenu();
+}
+
+void MainFrame::OnIdle(wxIdleEvent& event)
+{
+	// no-op
 }
 
 void MainFrame::OnExit(wxCloseEvent& event)
@@ -306,10 +304,3 @@ void MainFrame::OnExit(wxCloseEvent& event)
 	app.ExitMainLoop();
 }
 
-void MainFrame::PrepareDC(wxDC& dc)
-{
-	dc.SetLogicalOrigin( 0, 0 );
-	dc.SetAxisOrientation( 1, 0);
-	dc.SetUserScale( 1.0, 1.0 );
-	dc.SetMapMode( wxMM_TEXT );
-}

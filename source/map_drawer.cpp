@@ -15,7 +15,6 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
-#include "items.h"
 #include "main.h"
 
 #ifdef __APPLE__
@@ -25,7 +24,6 @@
 #endif
 
 #include "editor.h"
-#include "sprites.h"
 #include "creature.h"
 #include "map_drawer.h"
 #include "map_display.h"
@@ -266,19 +264,9 @@ void MapDrawer::DrawShade(int map_z)
 
 void MapDrawer::DrawMap()
 {
-	int center_x = start_x + int(screensize_x * zoom / 64);
-	int center_y = start_y + int(screensize_y * zoom / 64);
-	int offset_y = 2;
-	int box_start_map_x = center_x - view_scroll_x;
-	int box_start_map_y = center_y - view_scroll_x + offset_y;
-	int box_end_map_x = center_x + rme::ClientMapWidth;
-	int box_end_map_y = center_y + rme::ClientMapHeight + offset_y;
-
-	Brush* brush = g_editor.GetCurrentBrush();
-
 	// The current house we're drawing
 	current_house_id = 0;
-	if(brush) {
+	if(Brush *brush = g_editor.GetCurrentBrush()) {
 		if(brush->isHouse())
 			current_house_id = brush->asHouse()->getHouseID();
 		else if(brush->isHouseExit())
@@ -1344,7 +1332,7 @@ void MapDrawer::WriteTooltip(const Item* item, std::ostringstream& stream)
 	if(!item || !ItemTypeExists(item->getID())) return;
 
 	// TODO(fusion): Relevant srv flags/attributes instead?
-#if 0
+#if TODO
 	if(...){ // check all flags
 		if(stream.tellp() > 0){
 			stream << "\n";
@@ -1370,7 +1358,7 @@ void MapDrawer::DrawTile(Tile *tile)
 	}
 
 	// TODO(fusion): Pass `animate` as a parameter to BlitItem.
-	bool animate = options.show_preview && zoom <= 2.0;
+	//bool animate = options.show_preview && zoom <= 2.0;
 	bool only_colors = options.isOnlyColors();
 	bool show_tooltips = options.isTooltips();
 	Position pos = tile->pos;

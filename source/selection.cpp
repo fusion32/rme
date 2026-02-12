@@ -65,7 +65,7 @@ void Selection::add(Action *action, Tile *tile, Item *item)
 		}
 
 		if(action == NULL){
-			action = g_editor.actionQueue->createAction(ACTION_SELECT, 1);
+			action = g_editor.actionQueue.createAction(ACTION_SELECT, 1);
 			action->changeTile(std::move(newTile));
 			action->commit();
 		}else{
@@ -83,7 +83,7 @@ void Selection::add(Action *action, Tile *tile, Creature *creature)
 		creature->deselect();
 
 		if(action == NULL){
-			action = g_editor.actionQueue->createAction(ACTION_SELECT, 1);
+			action = g_editor.actionQueue.createAction(ACTION_SELECT, 1);
 			action->changeTile(std::move(newTile));
 			action->commit();
 		}else{
@@ -98,7 +98,7 @@ void Selection::add(Action *action, Tile *tile)
 	newTile.select();
 
 	if(action == NULL){
-		action = g_editor.actionQueue->createAction(ACTION_SELECT, 1);
+		action = g_editor.actionQueue.createAction(ACTION_SELECT, 1);
 		action->changeTile(std::move(newTile));
 		action->commit();
 	}else{
@@ -121,7 +121,7 @@ void Selection::remove(Action *action, Tile *tile, Item *item)
 		}
 
 		if(action == NULL){
-			action = g_editor.actionQueue->createAction(ACTION_UNSELECT, 1);
+			action = g_editor.actionQueue.createAction(ACTION_UNSELECT, 1);
 			action->changeTile(std::move(newTile));
 			action->commit();
 		}else{
@@ -139,7 +139,7 @@ void Selection::remove(Action *action, Tile *tile, Creature *creature)
 		creature->select();
 
 		if(action == NULL){
-			action = g_editor.actionQueue->createAction(ACTION_UNSELECT, 1);
+			action = g_editor.actionQueue.createAction(ACTION_UNSELECT, 1);
 			action->changeTile(std::move(newTile));
 			action->commit();
 		}else{
@@ -154,7 +154,7 @@ void Selection::remove(Action *action, Tile *tile)
 	newTile.deselect();
 
 	if(action == NULL){
-		action = g_editor.actionQueue->createAction(ACTION_UNSELECT, 1);
+		action = g_editor.actionQueue.createAction(ACTION_UNSELECT, 1);
 		action->changeTile(std::move(newTile));
 		action->commit();
 	}else{
@@ -162,16 +162,19 @@ void Selection::remove(Action *action, Tile *tile)
 	}
 }
 
-void Selection::clear(ActionGroup *group)
+void Selection::clear(Action *action)
 {
-	Action *action = group ? group->createAction()
-			: g_editor.actionQueue->createAction(ACTION_UNSELECT);
-
-	for(Tile *tile: tiles){
-		remove(action, tile);
+	if(action == NULL){
+		action = g_editor.actionQueue.createAction(ACTION_UNSELECT);
+		for(Tile *tile: tiles){
+			remove(action, tile);
+		}
+		action->commit();
+	}else{
+		for(Tile *tile: tiles){
+			remove(action, tile);
+		}
 	}
-
-	action->commit();
 }
 
 void Selection::addInternal(Tile* tile)

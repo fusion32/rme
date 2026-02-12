@@ -66,11 +66,14 @@ void Action::commit(void)
 					g_editor.selection.removeInternal(tile);
 				}
 			}
-		}else if(ChangeHouseExit *v = std::get_if<ChangeHouseExit>(&change)){
+		}
+#if TODO
+		else if(ChangeHouseExit *v = std::get_if<ChangeHouseExit>(&change)){
 			// TODO(fusion): See how things move.
 		}else if(ChangeWaypoint *v = std::get_if<ChangeWaypoint>(&change)){
 			// TODO(fusion): See how things move.
 		}
+#endif
 	}
 	commited = true;
 }
@@ -92,11 +95,14 @@ void Action::undo(void)
 					g_editor.selection.removeInternal(tile);
 				}
 			}
-		}else if(ChangeHouseExit *v = std::get_if<ChangeHouseExit>(&change)){
+		}
+#if TODO
+		else if(ChangeHouseExit *v = std::get_if<ChangeHouseExit>(&change)){
 			// TODO(fusion): See how things move.
 		}else if(ChangeWaypoint *v = std::get_if<ChangeWaypoint>(&change)){
 			// TODO(fusion): See how things move.
 		}
+#endif
 	}
 	commited = false;
 }

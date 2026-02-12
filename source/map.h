@@ -115,20 +115,17 @@ struct Map {
 	void loadSector(SectorType type, MapSector *sector, Script *script);
 	bool loadSector(SectorType type, const wxFileName &filename, wxString &outError);
 	bool loadPatch(SectorType type, const wxFileName &filename, wxString &outError);
+	bool loadSpawns(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
+	bool loadHouses(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
 	bool load(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
 
 	bool saveSector(const wxString &dir, const MapSector *sector,
 					wxArrayString &outWarnings);
 	bool savePatch(const wxString &dir, const MapSector *sector,
 					int patchNumber, wxArrayString &outWarnings);
-	bool save(wxArrayString &outWarnings);
-
-
-	bool loadSpawns(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
 	bool saveSpawns(void);
-
-	bool loadHouses(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
 	bool saveHouses(void);
+	bool save(wxArrayString &outWarnings);
 
 	void clear(void);
 
@@ -193,37 +190,45 @@ struct Map {
 						int floor = rme::MapGroundLayer,
 						bool showDialog = false);
 
+	//   void f(Tile *tile, double progress)
 	template<typename F>
-	void forEachTile(F &&f, bool selectedOnly = false){
+	void forEachTile(F &&f){
 		int numProcessed = 0;
 		int numTiles = getTileCount();
 		for(auto &[sectorId, sector]: sectors){
 			for(Tile &tile: sector.tiles){
-				f(&tile, ((double)numProcessed / (double)numTiles));
+				double progress = (double)numProcessed / (double)numTiles;
+				f(&tile, progress);
 			}
 		}
 	}
 
+	// bool f(Tile *tile, Item *item, double progress)
+	// NOTE(fusion): The return value here is used to determine whether we should
+	// recurse when the item is a container (true) or skip it (false).
 	template<typename F>
-	void forEachItem(F &&f, bool selectedOnly = false){
+	void forEachItem(F &&f){
 		int numProcessed = 0;
 		int numTiles = getTileCount();
 		std::queue<Item*> containers;
 		for(auto &[sectorId, sector]: sectors){
 			for(Tile &tile: sector.tiles){
 				for(Item *item = tile.items; item != NULL; item = item->next){
-					if(selectedOnly && !item->isSelected()){
+					double progress = ((double)numProcessed / (double)numTiles);
+					if(!f(&tile, item, progress)){
 						continue;
 					}
 
-					f(&tile, item, ((double)numProcessed / (double)numTiles));
-					if(item->getFlag(CONTAINER) || item->getFlag(CHEST)) {
+					if(item->getFlag(CONTAINER) || item->getFlag(CHEST)){
 						containers.push(item);
 						while(!containers.empty()){
 							Item *container = containers.front();
 							containers.pop();
 							for(Item *inner = container->content; inner != NULL; inner = inner->next){
-								f(&tile, inner, ((double)numProcessed / (double)numTiles));
+								if(!f(&tile, inner, progress)){
+									continue;
+								}
+
 								if(inner->getFlag(CONTAINER) || inner->getFlag(CHEST)){
 									containers.push(inner);
 								}
@@ -236,6 +241,7 @@ struct Map {
 		}
 	}
 
+	// bool predicate(Tile *tile, double progress)
 	template<typename Pred>
 	int clearTiles(Pred &&predicate){
 		int numCleared = 0;
@@ -253,6 +259,7 @@ struct Map {
 		return numCleared;
 	}
 
+	// bool predicate(const Item *item, double progress);
 	template<typename Pred>
 	int removeItems(Pred &&predicate){
 		int numRemoved = 0;

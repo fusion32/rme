@@ -15,16 +15,13 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
-#include "items.h"
 #include "main.h"
 
-#include "sprites.h"
 #include "graphics.h"
 #include "artprovider.h"
 #include "filehandle.h"
 #include "settings.h"
 #include "editor.h"
-#include "otml.h"
 #include "creature.h"
 
 #include <wx/mstream.h>
@@ -94,6 +91,70 @@ static uint32_t TemplateOutfitLookupTable[] = {
 	0x007F00, 0x007F2A, 0x007F55, 0x007F7F, 0x00547F, 0x002A7F,
 	0x00007F, 0x2A007F, 0x54007F, 0x7F007F, 0x7F0055, 0x7F002A,
 	0x7F0000,
+};
+
+static const char* selection_marker_xpm16x16[] = {
+	// columns rows colors chars-per-pixel
+	"16 16 2 1",
+	"  c None",
+	". c #000080",
+	// pixels
+	" . . . . . . . .",
+	". . . . . . . . ",
+	" . . . . . . . .",
+	". . . . . . . . ",
+	" . . . . . . . .",
+	". . . . . . . . ",
+	" . . . . . . . .",
+	". . . . . . . . ",
+	" . . . . . . . .",
+	". . . . . . . . ",
+	" . . . . . . . .",
+	". . . . . . . . ",
+	" . . . . . . . .",
+	". . . . . . . . ",
+	" . . . . . . . .",
+	". . . . . . . . "
+};
+
+static const char* selection_marker_xpm32x32[] = {
+	// columns rows colors chars-per-pixel
+	"32 32 2 1",
+	"  c None",
+	". c #000080",
+	// pixels
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . ",
+	" . . . . . . . . . . . . . . . .",
+	". . . . . . . . . . . . . . . . "
 };
 
 GraphicManager::GraphicManager() :
@@ -209,7 +270,7 @@ GameSprite* GraphicManager::getEditorSprite(int id)
 }
 
 #define loadPNGFile(name) _wxGetBitmapFromMemory(name, sizeof(name))
-inline wxBitmap* _wxGetBitmapFromMemory(const unsigned char* data, int length)
+static wxBitmap* _wxGetBitmapFromMemory(const unsigned char* data, int length)
 {
 	wxMemoryInputStream is(data, length);
 	wxImage img(is, "image/png");
@@ -402,7 +463,7 @@ bool GraphicManager::loadSpriteMetadata(const wxString &projectDir, wxString &ou
 	uint32_t datSignature;
 	file.getU32(datSignature);
 
-	uint16_t maxItemId, maxCreatureId, dummy;
+	uint16_t maxItemId, maxCreatureId;
 	file.getU16(maxItemId);
 	file.getU16(maxCreatureId);
 	file.skip(2); // max effect id, unused
@@ -817,7 +878,7 @@ int GameSprite::getIndex(int width, int height, int layer, int pattern_x, int pa
 
 GLuint GameSprite::getHardwareID(int _x, int _y, int _layer, int _count, int _pattern_x, int _pattern_y, int _pattern_z, int _frame)
 {
-	uint32_t v;
+	int v;
 	if(_count >= 0 && height <= 1 && width <= 1) {
 		v = _count;
 	} else {
@@ -857,7 +918,7 @@ GameSprite::TemplateImage* GameSprite::getTemplateImage(int sprite_index, const 
 
 GLuint GameSprite::getHardwareID(int _x, int _y, int _dir, int _addon, int _pattern_z, const Outfit& _outfit, int _frame)
 {
-	uint32_t v = getIndex(_x, _y, 0, _dir, _addon, _pattern_z, _frame);
+	int v = getIndex(_x, _y, 0, _dir, _addon, _pattern_z, _frame);
 	if(v >= numsprites) {
 		if(numsprites == 1) {
 			v = 0;

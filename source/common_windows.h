@@ -69,7 +69,7 @@ protected:
 	wxChoice* house_options;
 	wxChoice* spawn_options;
 
-	DECLARE_EVENT_TABLE();
+	DECLARE_EVENT_TABLE()
 };
 
 /**
@@ -99,7 +99,7 @@ protected:
 	wxSpinCtrl* floor_number;
 	wxButton* ok_button;
 
-	DECLARE_EVENT_TABLE();
+	DECLARE_EVENT_TABLE()
 };
 
 /**
@@ -220,7 +220,7 @@ public:
 protected:
 	PositionCtrl* posctrl;
 
-	DECLARE_EVENT_TABLE();
+	DECLARE_EVENT_TABLE()
 };
 
 /**
@@ -283,7 +283,7 @@ protected:
 	wxButton* remove_button;
 	wxButton* select_position_button;
 
-	DECLARE_EVENT_TABLE();
+	DECLARE_EVENT_TABLE()
 };
 
 #endif

@@ -7,8 +7,17 @@ find_package(ZLIB REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(wxWidgets COMPONENTS base core aui gl adv REQUIRED)
 
-if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
-	add_compile_options(-Wno-deprecated-enum-enum-conversion)
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU|Clang")
+	add_compile_options(
+		-Werror
+		-Wall
+		-Wpedantic
+		-Wextra
+		-Wno-unused-parameter
+	)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	# TODO(fusion): Enable MSVC warnings.
+	#add_compile_options(-W3 -WX)
 endif ()
 
 include(${wxWidgets_USE_FILE})

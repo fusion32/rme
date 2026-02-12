@@ -76,7 +76,7 @@ std::string FileHandle::getErrorMessage()
 
 FileReadHandle::FileReadHandle(const std::string& name) : file_size(0)
 {
-#if defined __VISUALC__ && defined _UNICODE
+#ifdef __WXMSW__
 	file = _wfopen(string2wstring(name).c_str(), L"rb");
 #else
 	file = fopen(name.c_str(), "rb");
@@ -234,7 +234,7 @@ BinaryNode* MemoryNodeFileReadHandle::getRootNode()
 DiskNodeFileReadHandle::DiskNodeFileReadHandle(const std::string& name, const std::vector<std::string>& acceptable_identifiers) :
 	file_size(0)
 {
-#if defined __VISUALC__ && defined _UNICODE
+#ifdef __WXMSW__
 	file = _wfopen(string2wstring(name).c_str(), L"rb");
 #else
 	file = fopen(name.c_str(), "rb");
@@ -502,7 +502,7 @@ void BinaryNode::load()
 
 FileWriteHandle::FileWriteHandle(const std::string& name)
 {
-#if defined __VISUALC__ && defined _UNICODE
+#ifdef __WXMSW__
 	file = _wfopen(string2wstring(name).c_str(), L"wb");
 #else
 	file = fopen(name.c_str(), "wb");
@@ -571,7 +571,7 @@ void FileWriteHandle::flush()
 
 DiskNodeFileWriteHandle::DiskNodeFileWriteHandle(const std::string& name, const std::string& identifier)
 {
-#if defined __VISUALC__ && defined _UNICODE
+#ifdef __WXMSW__
 	file = _wfopen(string2wstring(name).c_str(), L"wb");
 #else
 	file = fopen(name.c_str(), "wb");

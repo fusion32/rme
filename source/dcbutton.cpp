@@ -20,7 +20,6 @@
 #include "settings.h"
 
 #include "dcbutton.h"
-#include "sprites.h"
 #include "editor.h"
 
 BEGIN_EVENT_TABLE(DCButton, wxPanel)

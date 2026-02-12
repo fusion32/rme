@@ -20,6 +20,7 @@
 #include "materials.h"
 #include "brush.h"
 #include "editor.h"
+#include "settings.h"
 
 #include "items.h"
 #include "map.h"
@@ -131,24 +132,10 @@ void ImportMapWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 			return;
 		}
 
-		ImportType spawn_import_type = IMPORT_DONT;
-		ImportType house_import_type = IMPORT_DONT;
-
-		switch(spawn_options->GetSelection()) {
-			case 0: spawn_import_type = IMPORT_MERGE; break;
-			case 1: spawn_import_type = IMPORT_DONT; break;
-		}
-
-		switch(house_options->GetSelection()) {
-			case 0: house_import_type = IMPORT_SMART_MERGE; break;
-			case 1: house_import_type = IMPORT_MERGE; break;
-			case 2: house_import_type = IMPORT_INSERT; break;
-			case 3: house_import_type = IMPORT_DONT; break;
-		}
-
 		EndModal(1);
 
-		g_editor.importMap(fn, x_offset_ctrl->GetValue(), y_offset_ctrl->GetValue(), z_offset_ctrl->GetValue(), house_import_type, spawn_import_type);
+		// TODO(fusion): Have a different way to import sectors? Spawn and house
+		// data would not accompany.
 	}
 }
 
@@ -387,49 +374,28 @@ FindDialog::~FindDialog() = default;
 
 void FindDialog::OnKeyDown(wxKeyEvent& event)
 {
-	int w, h;
-	item_list->GetSize(&w, &h);
-	size_t amount = 1;
+	int h, delta;
+	item_list->GetSize(NULL, &h);
+	switch(event.GetKeyCode()){
+		case WXK_PAGEUP:	delta = -(h / 32 + 1); break;
+		case WXK_PAGEDOWN:	delta = +(h / 32 + 1); break;
+		case WXK_UP:		delta = -1; break;
+		case WXK_DOWN:		delta = +1; break;
+		default:			event.Skip(); return;
+	}
 
-	switch(event.GetKeyCode()) {
-		case WXK_PAGEUP:
-			amount = h / 32 + 1;
-			[[fallthrough]];
-		case WXK_UP: {
-			if(item_list->GetItemCount() > 0) {
-				ssize_t n = item_list->GetSelection();
-				if(n == wxNOT_FOUND)
-					n = 0;
-				else if(n != amount && n - amount < n) // latter is needed for unsigned overflow
-					n -= amount;
-				else
-					n = 0;
-				item_list->SetSelection(n);
+	int itemCount = item_list->GetItemCount();
+	if(itemCount > 0){
+		int selection = item_list->GetSelection();
+		if(selection != wxNOT_FOUND){
+			selection = (selection + delta) % itemCount;
+			if(selection < 0){
+				selection += itemCount;
 			}
-			break;
+		}else{
+			selection = 0;
 		}
-
-		case WXK_PAGEDOWN:
-			amount = h / 32 + 1;
-			[[fallthrough]];
-		case WXK_DOWN: {
-			if(item_list->GetItemCount() > 0) {
-				ssize_t n = item_list->GetSelection();
-				size_t itemcount = item_list->GetItemCount();
-				if(n == wxNOT_FOUND)
-					n = 0;
-				else if(static_cast<uint32_t>(n) < itemcount - amount && itemcount - amount < itemcount)
-					n += amount;
-				else
-					n = item_list->GetItemCount() - 1;
-
-				item_list->SetSelection(n);
-			}
-			break;
-		}
-		default:
-			event.Skip();
-			break;
+		item_list->SetSelection(selection);
 	}
 }
 
@@ -716,22 +682,22 @@ void SortableListBox::Sort() {
 }
 
 void SortableListBox::DoSort() {
-	size_t count = GetCount();
+	int count = (int)GetCount();
 	int selection = GetSelection();
 	wxClientDataType dataType = GetClientDataType();
 
 	wxArrayString stringList;
 	wxArrayPtrVoid dataList;
 
-	for(size_t i = 0; i < count; ++i) {
+	for(int i = 0; i < count; ++i) {
 		stringList.Add(GetString(i));
 		if(dataType == wxClientData_Void)
 			dataList.Add(GetClientData(i));
 	}
 
 	//Insertion sort
-	for(size_t i = 0; i < count; ++i) {
-		size_t j = i;
+	for(int i = 0; i < count; ++i) {
+		int j = i;
 		while(j > 0 && stringList[j].CmpNoCase(stringList[j - 1]) < 0) {
 
 			wxString tmpString = stringList[j];
@@ -756,7 +722,7 @@ void SortableListBox::DoSort() {
 
 	Freeze();
 	Clear();
-	for(size_t i = 0; i < count; ++i) {
+	for(int i = 0; i < count; ++i) {
 		if(dataType == wxClientData_Void)
 			Append(stringList[i], dataList[i]);
 		else

@@ -84,17 +84,24 @@ private:
 
 struct ItemFinder
 {
-	int itemId = 0;
-	int maxCount = 0;
+	int itemId        = 0;
+	int maxCount      = 0;
+	bool selectedOnly = false;
 	std::vector<std::pair<Tile*, Item*>> results;
-	void operator()(Tile* tile, Item* item, double progress) {
+	bool operator()(Tile* tile, Item* item, double progress) {
 		if((int)results.size() > maxCount){
-			return;
+			return false;
+		}
+
+		if(selectedOnly && !item->isSelected()){
+			return false;
 		}
 
 		if(item->getID() == itemId) {
 			results.push_back(std::make_pair(tile, item));
 		}
+
+		return true;
 	}
 };
 

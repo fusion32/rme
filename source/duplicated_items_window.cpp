@@ -150,7 +150,7 @@ void DuplicatedItemsWindow::OnClickRemove(wxCommandEvent& WXUNUSED(event))
 	}
 
 	DuplicatedItem *data = reinterpret_cast<DuplicatedItem*>(items_list->GetClientData(index));
-	ActionGroup *group = g_editor.actionQueue->createGroup(ACTION_DELETE_TILES);
+	ActionGroup *group = g_editor.actionQueue.createGroup(ACTION_DELETE_TILES);
 	{
 		Action *action = group->createAction();
 		removeItem(data, action);
@@ -172,7 +172,7 @@ void DuplicatedItemsWindow::OnClickRemoveAll(wxCommandEvent& WXUNUSED(event))
 	}
 
 	g_editor.CreateLoadBar("Removing items...");
-	ActionGroup *group = g_editor.actionQueue->createGroup(ACTION_DELETE_TILES);
+	ActionGroup *group = g_editor.actionQueue.createGroup(ACTION_DELETE_TILES);
 	{
 		Action *action = group->createAction();
 		for(int i = 0; i < count; i += 1) {

@@ -28,16 +28,16 @@ class Selection
 public:
 	void getBounds(Position &minPos, Position &maxPos) const;
 
-	// IMPORTANT(fusion): Passing NULL for either action or group here is valid and
-	// will result in a separate action being created. It helps reducing boilerplate
-	// when selecting/deselecting single objects but shouldn't be overused otherwise.
+	// IMPORTANT(fusion): Passing a NULL action here is valid and will result
+	// in a separate action being created. It helps reducing boilerplate when
+	// selecting/deselecting single objects but shouldn't be overused otherwise.
 	void add(Action *action, Tile *tile, Item *item);
 	void add(Action *action, Tile *tile, Creature *creature);
 	void add(Action *action, Tile *tile);
 	void remove(Action *action, Tile *tile, Item *item);
 	void remove(Action *action, Tile *tile, Creature *creature);
 	void remove(Action *action, Tile *tile);
-	void clear(ActionGroup *group);
+	void clear(Action *group);
 
 	// The tile will be added to the list of selected tiles, however, the items on the tile won't be selected
 	void addInternal(Tile *tile);

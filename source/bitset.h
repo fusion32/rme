@@ -1,7 +1,7 @@
 #ifndef RME_BITSET_H_
 #define RME_BITSET_H_ 1
 
-#include "main.h"
+#include <stdint.h>
 
 template<int N>
 struct BitSet {

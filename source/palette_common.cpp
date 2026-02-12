@@ -19,7 +19,6 @@
 
 #include "palette_common.h"
 #include "brush.h"
-#include "sprites.h"
 #include "editor.h"
 #include "common_windows.h"
 #include "application.h"

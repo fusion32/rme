@@ -15,9 +15,8 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
-#include "brush_enums.h"
 #include "main.h"
-
+#include "brush_enums.h"
 #include "wall_brush.h"
 #include "map.h"
 
