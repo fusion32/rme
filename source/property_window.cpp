@@ -45,7 +45,7 @@ BEGIN_EVENT_TABLE(ContainerItemButton, ItemButton)
 	EVT_MENU(CONTAINER_POPUP_MENU_REMOVE, ContainerItemButton::OnRemoveItem)
 END_EVENT_TABLE()
 
-ContainerItemButton::ContainerItemButton(wxWindow* parent, bool large, int index, Item* item) :
+ContainerItemButton::ContainerItemButton(wxWindow *parent, bool large, int index, Item *item) :
 	ItemButton(parent, (large ? RENDER_SIZE_32x32 : RENDER_SIZE_16x16), (item ? item->getID() : 0)),
 	index(index),
 	item(item)
@@ -58,7 +58,7 @@ ContainerItemButton::~ContainerItemButton()
 	// no-op
 }
 
-void ContainerItemButton::OnMouseDoubleLeftClick(wxMouseEvent& WXUNUSED(event))
+void ContainerItemButton::OnMouseDoubleLeftClick(wxMouseEvent &WXUNUSED(event))
 {
 	wxCommandEvent dummy;
 	if(item){
@@ -68,7 +68,7 @@ void ContainerItemButton::OnMouseDoubleLeftClick(wxMouseEvent& WXUNUSED(event))
 	}
 }
 
-void ContainerItemButton::OnMouseRightRelease(wxMouseEvent& WXUNUSED(event))
+void ContainerItemButton::OnMouseRightRelease(wxMouseEvent &WXUNUSED(event))
 {
 	thread_local wxMenu *menu = NULL;
 	thread_local wxMenuItem *add = NULL;
@@ -141,7 +141,7 @@ void ContainerItemButton::OnInspectItem(wxCommandEvent &WXUNUSED(event))
 	}
 }
 
-void ContainerItemButton::OnRemoveItem(wxCommandEvent& WXUNUSED(event))
+void ContainerItemButton::OnRemoveItem(wxCommandEvent &WXUNUSED(event))
 {
 	ASSERT(item != NULL);
 	ItemPropertyWindow *parent = dynamic_cast<ItemPropertyWindow*>(GetParent());
@@ -192,10 +192,12 @@ static wxControl *IntAttrSpinCtrl(wxWindow *parent, const Item *item, ObjectInst
 			wxDefaultSize, wxSP_ARROW_KEYS, min, max, item->getAttribute(attr));
 }
 
-static wxControl *TextAttrCtrl(wxWindow *parent, const Item *item, ObjectInstanceAttribute attr, long style = 0)
+static wxControl *TextAttrCtrl(wxWindow *parent, const Item *item, ObjectInstanceAttribute attr, bool multiline)
 {
+	int height = (multiline ? 200 : -1);
+	long style = (multiline ? wxTE_MULTILINE : 0);
 	return newd wxTextCtrl(parent, wxID_ANY, item->getTextAttribute(attr),
-			wxDefaultPosition, wxDefaultSize, style);
+			wxDefaultPosition, wxSize(300, height), style);
 }
 
 static wxControl *LiquidAttrCtrl(wxWindow *parent, const Item *item, ObjectInstanceAttribute attr)
@@ -252,12 +254,12 @@ static wxControl *AttrCtrl(wxWindow *parent, const Item *item, ObjectInstanceAtt
 		}
 
 		case TEXTSTRING:{
-			ctrl = TextAttrCtrl(parent, item, attr, wxTE_MULTILINE);
+			ctrl = TextAttrCtrl(parent, item, attr, true);
 			break;
 		}
 
 		case EDITOR:{
-			ctrl = TextAttrCtrl(parent, item, attr);
+			ctrl = TextAttrCtrl(parent, item, attr, false);
 			break;
 		}
 
@@ -341,7 +343,7 @@ BEGIN_EVENT_TABLE(ItemPropertyWindow, wxDialog)
 	EVT_BUTTON(wxID_CANCEL, ItemPropertyWindow::OnClickCancel)
 END_EVENT_TABLE()
 
-ItemPropertyWindow::ItemPropertyWindow(wxWindow* parent, Item *item, wxPoint pos) :
+ItemPropertyWindow::ItemPropertyWindow(wxWindow *parent, Item *item, wxPoint pos) :
 	wxDialog(parent, wxID_ANY, "Item Properties", pos, wxSize(600, 400), wxCAPTION | wxCLOSE_BOX | wxRESIZE_BORDER),
 	item(item)
 {
@@ -378,6 +380,7 @@ ItemPropertyWindow::ItemPropertyWindow(wxWindow* parent, Item *item, wxPoint pos
 
 			{
 				wxSizerFlags textFlags = wxSizerFlags(0).CenterVertical();
+
 				wxFlexGridSizer *gridSizer = newd wxFlexGridSizer(2, 5, 20);
 				gridSizer->AddGrowableCol(1);
 
@@ -456,17 +459,19 @@ ItemPropertyWindow::~ItemPropertyWindow()
 	// no-op
 }
 
-void ItemPropertyWindow::OnFocusChange(wxFocusEvent& event)
+void ItemPropertyWindow::OnFocusChange(wxFocusEvent &event)
 {
-	wxWindow* win = event.GetWindow();
-	if(wxSpinCtrl* spin = dynamic_cast<wxSpinCtrl*>(win))
+	wxWindow *win = event.GetWindow();
+	if(wxSpinCtrl *spin = dynamic_cast<wxSpinCtrl*>(win)){
 		spin->SetSelection(-1, -1);
-	else if(wxTextCtrl* text = dynamic_cast<wxTextCtrl*>(win))
+	}else if(wxTextCtrl *text = dynamic_cast<wxTextCtrl*>(win)){
 		text->SetSelection(-1, -1);
+	}
 }
 
-void ItemPropertyWindow::OnClickOk(wxCommandEvent& WXUNUSED(event))
+void ItemPropertyWindow::OnClickOk(wxCommandEvent &WXUNUSED(event))
 {
+	ASSERT(item != NULL);
 	for(int attr = 0; attr < NUM_INSTANCE_ATTRIBUTES; attr += 1){
 		int attrOffset = item->getAttributeOffset((ObjectInstanceAttribute)attr);
 		if(attrOffset < 0 || attrOffset >= NARRAY(attrCtrl) || attr == CONTENT){
@@ -486,13 +491,14 @@ void ItemPropertyWindow::OnClickOk(wxCommandEvent& WXUNUSED(event))
 	EndModal(1);
 }
 
-void ItemPropertyWindow::OnClickCancel(wxCommandEvent& WXUNUSED(event))
+void ItemPropertyWindow::OnClickCancel(wxCommandEvent &WXUNUSED(event))
 {
 	EndModal(0); // just close this window
 }
 
 void ItemPropertyWindow::Update()
 {
+	ASSERT(item != NULL);
 	if(item->getFlag(CONTAINER) || item->getFlag(CHEST)) {
 		int index = 0;
 		int capacity = (int)containerButtons.size();
@@ -513,7 +519,9 @@ void ItemPropertyWindow::Update()
 // CreaturePropertyWindow
 //==============================================================================
 BEGIN_EVENT_TABLE(CreaturePropertyWindow, wxDialog)
+	EVT_SET_FOCUS(ItemPropertyWindow::OnFocusChange)
 	EVT_BUTTON(wxID_OK, CreaturePropertyWindow::OnClickOk)
+	EVT_BUTTON(wxID_CANCEL, CreaturePropertyWindow::OnClickCancel)
 END_EVENT_TABLE()
 
 CreaturePropertyWindow::CreaturePropertyWindow(wxWindow *parent, Creature *creature, wxPoint pos) :
@@ -525,59 +533,39 @@ CreaturePropertyWindow::CreaturePropertyWindow(wxWindow *parent, Creature *creat
 	wxSizer *windowSizer = newd wxBoxSizer(wxVERTICAL);
 
 	{
-		wxFlexGridSizer *gridSizer = newd wxFlexGridSizer(2, 5, 10);
+		wxSizerFlags textFlags = wxSizerFlags(0).CenterVertical();
 
-		gridSizer->Add(newd wxStaticText(this, wxID_ANY, "Name"));
-		gridSizer->Add(newd wxStaticText(this, wxID_ANY, creature->getName()));
+		wxFlexGridSizer *gridSizer = newd wxFlexGridSizer(2, 10, 20);
+		gridSizer->AddGrowableCol(1);
 
-		gridSizer->Add(newd wxStaticText(this, wxID_ANY, "Spawn Radius"));
-		gridSizer->Add(newd wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 10, 3600, creature->spawnInterval));
+		gridSizer->Add(newd wxStaticText(this, wxID_ANY, "Name"), textFlags);
+		gridSizer->Add(newd wxStaticText(this, wxID_ANY, creature->getName()), textFlags);
 
-		gridSizer->Add(newd wxStaticText(this, wxID_ANY, "Spawn Amount"));
-		gridSizer->Add(newd wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 10, 3600, creature->spawnAmount));
+		gridSizer->Add(newd wxStaticText(this, wxID_ANY, "Spawn Radius"), textFlags);
+		spawnRadiusCtrl = newd wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 50, creature->spawnRadius);
+		gridSizer->Add(spawnRadiusCtrl, wxSizerFlags(1).Expand());
 
-		gridSizer->Add(newd wxStaticText(this, wxID_ANY, "Spawn Interval"));
-		gridSizer->Add(newd wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 10, 3600, creature->spawnInterval));
+		gridSizer->Add(newd wxStaticText(this, wxID_ANY, "Spawn Amount"), textFlags);
+		spawnAmountCtrl = newd wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 50, creature->spawnAmount);
+		gridSizer->Add(spawnAmountCtrl, wxSizerFlags(1).Expand());
 
-		windowSizer->Add(gridSizer, wxSizerFlags().Expand());
+		gridSizer->Add(newd wxStaticText(this, wxID_ANY, "Spawn Interval"), textFlags);
+		spawnIntervalCtrl = newd wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 3600, creature->spawnInterval);
+		gridSizer->Add(spawnIntervalCtrl, wxSizerFlags(1).Expand());
+
+		windowSizer->Add(gridSizer, wxSizerFlags(1).Expand().Border(wxALL, 10));
 	}
 
 	{
 		wxSizer *buttonSizer = newd wxBoxSizer(wxHORIZONTAL);
+
 		buttonSizer->Add(newd wxButton(this, wxID_OK, "OK"));
 		buttonSizer->Add(newd wxButton(this, wxID_CANCEL, "Cancel"));
 
-		windowSizer->Add(buttonSizer, wxSizerFlags(0));
+		windowSizer->Add(buttonSizer, wxSizerFlags(0).Center().Border(wxALL, 10));
 	}
 
-#if 0
-	wxSizer *windowSizer = newd wxBoxSizer(wxVERTICAL);
-
-	wxSizer* boxsizer = newd wxStaticBoxSizer(wxVERTICAL, this, "Creature Properties");
-
-	wxFlexGridSizer* subsizer = newd wxFlexGridSizer(2, 10, 10);
-	subsizer->AddGrowableCol(1);
-
-	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Creature "));
-	subsizer->Add(newd wxStaticText(this, wxID_ANY, "\"" + wxstr(creature->getName()) + "\""), wxSizerFlags(1).Expand());
-
-	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Spawn interval"));
-	count_field = newd wxSpinCtrl(this, wxID_ANY, i2ws(creature->spawnInterval), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 10, 3600, creature->spawnInterval);
-	// count_field->SetSelection(-1, -1);
-	subsizer->Add(count_field, wxSizerFlags(1).Expand());
-
-	boxsizer->Add(subsizer, wxSizerFlags(1).Expand());
-
-	topsizer->Add(boxsizer, wxSizerFlags(3).Expand().Border(wxALL, 20));
-
-	wxSizer* std_sizer = newd wxBoxSizer(wxHORIZONTAL);
-	std_sizer->Add(newd wxButton(this, wxID_OK, "OK"), wxSizerFlags(1).Center());
-	std_sizer->Add(newd wxButton(this, wxID_CANCEL, "Cancel"), wxSizerFlags(1).Center());
-	topsizer->Add(std_sizer, wxSizerFlags(0).Center().Border(wxLEFT | wxRIGHT | wxBOTTOM, 20));
-#endif
-
 	SetSizerAndFit(windowSizer);
-	Centre(wxBOTH);
 }
 
 CreaturePropertyWindow::~CreaturePropertyWindow(void)
@@ -585,8 +573,25 @@ CreaturePropertyWindow::~CreaturePropertyWindow(void)
 	// no-op
 }
 
+void CreaturePropertyWindow::OnFocusChange(wxFocusEvent &event)
+{
+	wxWindow *win = event.GetWindow();
+	if(wxSpinCtrl *spin = dynamic_cast<wxSpinCtrl*>(win)){
+		spin->SetSelection(-1, -1);
+	}
+}
+
 void CreaturePropertyWindow::OnClickOk(wxCommandEvent &event)
 {
-	// TODO
+	ASSERT(creature != NULL);
+	creature->spawnRadius = spawnRadiusCtrl->GetValue();
+	creature->spawnAmount = spawnAmountCtrl->GetValue();
+	creature->spawnInterval = spawnIntervalCtrl->GetValue();
+	EndModal(1);
+}
+
+void CreaturePropertyWindow::OnClickCancel(wxCommandEvent &event)
+{
+	EndModal(0); // just close this window
 }
 

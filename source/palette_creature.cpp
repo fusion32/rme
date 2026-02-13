@@ -67,7 +67,7 @@ CreaturePalettePanel::CreaturePalettePanel(wxWindow* parent, wxWindowID id) :
 		grid->Add(spawn_radius_spin, 0, wxEXPAND);
 
 		grid->Add(newd wxStaticText(this, wxID_ANY, "Amount"), 0, wxALIGN_CENTER);
-		spawn_amount_spin = newd wxSpinCtrl(this, PALETTE_CREATURE_SPAWN_AMOUNT, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 20, spawnAmount);
+		spawn_amount_spin = newd wxSpinCtrl(this, PALETTE_CREATURE_SPAWN_AMOUNT, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 50, spawnAmount);
 		grid->Add(spawn_amount_spin, 0, wxEXPAND);
 
 		grid->Add(newd wxStaticText(this, wxID_ANY, "Interval"), 0, wxALIGN_CENTER);

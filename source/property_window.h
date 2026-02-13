@@ -23,7 +23,7 @@
 
 class ContainerItemButton : public ItemButton {
 public:
-	ContainerItemButton(wxWindow *parent, bool large, int index, Item* item);
+	ContainerItemButton(wxWindow *parent, bool large, int index, Item *item);
 	~ContainerItemButton(void) override;
 	void OnMouseDoubleLeftClick(wxMouseEvent &event);
 	void OnMouseRightRelease(wxMouseEvent &event);
@@ -61,15 +61,18 @@ protected:
 
 class CreaturePropertyWindow: public wxDialog {
 public:
-	CreaturePropertyWindow(wxWindow *parent, Creature* creature, wxPoint pos = wxDefaultPosition);
+	CreaturePropertyWindow(wxWindow *parent, Creature *creature, wxPoint pos = wxDefaultPosition);
 	~CreaturePropertyWindow(void) override;
+
+	void OnFocusChange(wxFocusEvent &event);
 	void OnClickOk(wxCommandEvent &event);
+	void OnClickCancel(wxCommandEvent &event);
 
 protected:
 	Creature *creature;
-	wxSpinCtrl *spawn_radius;
-	wxSpinCtrl *spawn_amount;
-	wxSpinCtrl *spawn_interval;
+	wxSpinCtrl *spawnRadiusCtrl;
+	wxSpinCtrl *spawnAmountCtrl;
+	wxSpinCtrl *spawnIntervalCtrl;
 	DECLARE_EVENT_TABLE()
 };
 

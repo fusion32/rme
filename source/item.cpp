@@ -234,7 +234,7 @@ Item *Item::deepCopy(void) const {
 		int textString = getAttribute(TEXTSTRING);
 		if(textString != 0){
 			textString = DupTextAttribute(textString);
-			result->setAttribute(EDITOR, textString);
+			result->setAttribute(TEXTSTRING, textString);
 		}
 
 		int editor = getAttribute(EDITOR);
