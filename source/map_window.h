@@ -36,7 +36,6 @@ public:
 	virtual ~MapWindow();
 
 	// Event handlers
-	void OnFitMap(wxCommandEvent &event);
 	void OnSize(wxSizeEvent& event);
 	void OnScroll(wxScrollEvent& event);
 	void OnScrollLineDown(wxScrollEvent& event);

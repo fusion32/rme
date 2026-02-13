@@ -449,18 +449,6 @@
 		<borderitem edge="dse" item="443" />
 	</border>
 
-	<border id="50"> -- invisible border --
-	
-		<borderitem edge="n" item="0" />
-		<borderitem edge="e" item="0" />
-		<borderitem edge="s" item="0" />
-		<borderitem edge="w" item="0" />
-		<borderitem edge="cnw" item="0" />
-		<borderitem edge="cne" item="0" />
-		<borderitem edge="csw" item="0" />
-		<borderitem edge="cse" item="0" />
-	</border>
-
 	<border id="51"> -- partial mountain gravel border --
 		<borderitem edge="e" item="1083" />
 		<borderitem edge="s" item="1084" />

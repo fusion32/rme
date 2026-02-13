@@ -734,36 +734,6 @@ void SortableListBox::DoSort() {
 }
 
 // ============================================================================
-// Object properties base
-
-ObjectPropertiesWindowBase::ObjectPropertiesWindowBase(wxWindow* parent, wxString title, const Map* map, const Tile* tile, Item* item, wxPoint position /* = wxDefaultPosition */) :
-wxDialog(parent, wxID_ANY, title,
-	position, wxSize(600, 400), wxCAPTION | wxCLOSE_BOX | wxRESIZE_BORDER),
-	edit_map(map),
-	edit_tile(tile),
-	edit_item(item),
-	edit_creature(nullptr)
-{
-	////
-}
-
-ObjectPropertiesWindowBase::ObjectPropertiesWindowBase(wxWindow* parent, wxString title, const Map* map, const Tile* tile, Creature* creature, wxPoint position /* = wxDefaultPosition */) :
-wxDialog(parent, wxID_ANY, title,
-	position, wxSize(600, 400), wxCAPTION | wxCLOSE_BOX | wxRESIZE_BORDER),
-	edit_map(map),
-	edit_tile(tile),
-	edit_item(nullptr),
-	edit_creature(creature)
-{
-	////
-}
-
-Item* ObjectPropertiesWindowBase::getItemBeingEdited()
-{
-	return edit_item;
-}
-
-// ============================================================================
 // Edit Towns Dialog
 
 BEGIN_EVENT_TABLE(EditTownsDialog, wxDialog)
@@ -815,10 +785,12 @@ EditTownsDialog::EditTownsDialog(wxWindow* parent) :
 	sizer->Add(tmpsizer, 0, wxEXPAND | wxALL, 10);
 
 	// Temple position
-	temple_position = newd PositionCtrl(this, "Temple Position", 0, 0, 0, map.getWidth(), map.getHeight());
+	tmpsizer = newd wxStaticBoxSizer(wxHORIZONTAL, this, "Temple Position");
+	temple_position = newd PositionCtrl(this, map.getMinPosition(), map.getMaxPosition(), Position(0, 0, 0));
 	select_position_button = newd wxButton(this, EDIT_TOWNS_SELECT_TEMPLE, "Go To");
-	temple_position->Add(select_position_button, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
-	sizer->Add(temple_position, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
+	tmpsizer->Add(temple_position, 0, wxEXPAND | wxLEFT | wxRIGHT, 5);
+	tmpsizer->Add(select_position_button, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
+	sizer->Add(tmpsizer, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
 
 	// OK/Cancel buttons
 	tmpsizer = newd wxBoxSizer(wxHORIZONTAL);
@@ -1105,7 +1077,7 @@ GotoPositionDialog::GotoPositionDialog(wxWindow* parent) :
 	// create topsizer
 	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
 
-	posctrl = newd PositionCtrl(this, "Destination", map.getWidth() / 2, map.getHeight() / 2, rme::MapGroundLayer, map.getWidth(), map.getHeight());
+	posctrl = newd PositionCtrl(this, map.getMinPosition(), map.getMaxPosition(), map.getCenterPosition());
 	sizer->Add(posctrl, 0, wxTOP | wxLEFT | wxRIGHT, 20);
 
 	// OK/Cancel buttons

@@ -23,34 +23,29 @@
 
 #include "const.h"
 
-class Position
-{
-public:
-	// We use int since it's the native machine type and can be several times faster than
-	// the other integer types in most cases, also, the position may be negative in some
-	// cases
+struct Position {
 	int x, y, z;
 
 	Position() : x(0), y(0), z(0) {}
 	Position(int x, int y, int z) : x(x), y(y), z(z) {}
 
-	bool operator<(const Position& other) const noexcept {
+	bool operator<(const Position &other) const noexcept {
 		return z < other.z && y < other.y && x < other.x;
 	}
 
-	bool operator>(const Position& other) const noexcept {
+	bool operator>(const Position &other) const noexcept {
 		return z > other.z && y > other.y && x > other.x;
 	}
 
-	Position operator-(const Position& other) const noexcept {
+	Position operator-(const Position &other) const noexcept {
 		return Position(x - other.x, y - other.y, z - other.z);
 	}
 
-	Position operator+(const Position& other) const noexcept {
+	Position operator+(const Position &other) const noexcept {
 		return Position(x + other.x, y + other.y, z + other.z);
 	}
 
-	Position& operator+=(const Position& other) {
+	Position &operator+=(const Position &other) {
 		*this = *this + other;
 		return *this;
 	}
@@ -72,38 +67,20 @@ public:
 	}
 };
 
-inline std::ostream& operator<<(std::ostream& os, const Position& pos) {
-	os << pos.x << ':' << pos.y << ':' << pos.z;
-	return os;
+inline std::ostream &operator<<(std::ostream &os, const Position &pos) {
+	return os << "(" << pos.x << "," << pos.y << "," << pos.z << ")";
 }
 
-inline std::istream& operator>>(std::istream& is, Position& pos) {
-	char a, b;
-	int x, y, z;
-	is >> x;
-	if(!is) return is;
-	is >> a;
-	if(!is || a != ':') return is;
-	is >> y;
-	if(!is) return is;
-	is >> b;
-	if(!is || b != ':') return is;
-	is >> z;
-	if(!is) return is;
-
-	pos.x = x;
-	pos.y = y;
-	pos.z = z;
-
+inline std::istream &operator>>(std::istream &is, Position &pos) {
+	char ch;
+	is >> ch; if(ch != '(') return is;
+	is >> pos.x;
+	is >> ch; if(ch != ',') return is;
+	is >> pos.y;
+	is >> ch; if(ch != ',') return is;
+	is >> pos.z;
+	is >> ch; if(ch != ')') return is;
 	return is;
-}
-
-inline Position abs(Position position){
-	return Position(
-		std::abs(position.x),
-		std::abs(position.y),
-		std::abs(position.z)
-	);
 }
 
 inline int PackAbsoluteCoordinate(Position pos){

@@ -51,7 +51,8 @@ class DuplicatedItemsWindow;
 class MinimapWindow;
 class ActionsHistoryWindow;
 class PaletteWindow;
-class OldPropertiesWindow;
+class ItemPropertyWindow;
+class CreaturePropertyWindow;
 class EditTownsDialog;
 class ItemButton;
 
@@ -357,10 +358,10 @@ public:
 	//==
 	// TODO(fusion): Probably just turn these into their own globals?
 	Map map = {};
-	Selection selection = {};
 	GraphicManager gfx = {};
 	CopyBuffer copybuffer = {};
 	ActionQueue actionQueue = {};
+	Selection selection = {};
 	//==
 
 	WelcomeDialog *welcomeDialog = NULL;

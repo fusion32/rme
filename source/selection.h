@@ -37,7 +37,7 @@ public:
 	void remove(Action *action, Tile *tile, Item *item);
 	void remove(Action *action, Tile *tile, Creature *creature);
 	void remove(Action *action, Tile *tile);
-	void clear(Action *group);
+	void clear(Action *action);
 
 	// The tile will be added to the list of selected tiles, however, the items on the tile won't be selected
 	void addInternal(Tile *tile);

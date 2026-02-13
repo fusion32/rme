@@ -20,10 +20,12 @@
 
 #include "definitions.h"
 
+#include <stdio.h>
+#include <string.h>
 #include <stdexcept>
 #include <string>
 #include <stack>
-#include <stdio.h>
+#include <vector>
 
 enum FileHandleError {
 	FILE_NO_ERROR,
@@ -85,7 +87,7 @@ public:
 
 	virtual void close();
 	size_t size() { return file_size; }
-	
+
 protected:
 	size_t file_size;
 

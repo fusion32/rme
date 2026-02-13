@@ -27,21 +27,8 @@ BEGIN_EVENT_TABLE(DCButton, wxPanel)
 	EVT_LEFT_DOWN(DCButton::OnClick)
 END_EVENT_TABLE()
 
-IMPLEMENT_DYNAMIC_CLASS(DCButton, wxPanel)
-
-DCButton::DCButton() :
-	wxPanel(nullptr, wxID_ANY, wxDefaultPosition, wxSize(36, 36)),
-	type(DC_BTN_NORMAL),
-	state(false),
-	size(RENDER_SIZE_16x16),
-	sprite(nullptr),
-	overlay(nullptr)
-{
-	SetSprite(0);
-}
-
 DCButton::DCButton(wxWindow* parent, wxWindowID id, wxPoint pos, int type, RenderSize sz, int sprite_id) :
-	wxPanel(parent, id, pos, (sz == RENDER_SIZE_64x64? wxSize(68, 68) : sz == RENDER_SIZE_32x32? wxSize(36, 36) : wxSize(20, 20))),
+	wxPanel(parent, id, pos, (sz == RENDER_SIZE_32x32 ? wxSize(36, 36) : wxSize(20, 20))),
 	type(type),
 	state(false),
 	size(sz),
@@ -51,7 +38,7 @@ DCButton::DCButton(wxWindow* parent, wxWindowID id, wxPoint pos, int type, Rende
 	SetSprite(sprite_id);
 }
 
-DCButton::~DCButton()
+DCButton::~DCButton(void)
 {
 	////
 }
@@ -88,7 +75,7 @@ void DCButton::SetValue(bool val)
 	}
 }
 
-bool DCButton::GetValue() const
+bool DCButton::GetValue(void) const
 {
 	ASSERT(type == DC_BTN_TOGGLE);
 	return state;
@@ -112,63 +99,50 @@ void DCButton::OnPaint(wxPaintEvent& event)
 	if(light_shadow_pen.get() == nullptr)   light_shadow_pen.reset(newd wxPen(wxColor(0x80,0x80,0x80), 1, wxPENSTYLE_SOLID));
 	if(shadow_pen.get() == nullptr)         shadow_pen.reset(newd wxPen(wxColor(0x40,0x40,0x40), 1, wxPENSTYLE_SOLID));
 
-	int size_x = 20, size_y = 20;
-
-	if(size == RENDER_SIZE_16x16) {
-		size_x = 20;
-		size_y = 20;
-	} else if(size == RENDER_SIZE_32x32) {
-		size_x = 36;
-		size_y = 36;
-	}
+	int size_x, size_y;
+	GetClientSize(&size_x, &size_y);
 
 	pdc.SetBrush(*wxBLACK);
-	pdc.DrawRectangle(0,0,size_x,size_y);
+	pdc.DrawRectangle(0, 0, size_x, size_y);
 	if(type == DC_BTN_TOGGLE && GetValue()) {
 		pdc.SetPen(*shadow_pen);
-		pdc.DrawLine(0 ,0 ,size_x-1,0 );
-		pdc.DrawLine(0 ,1 ,0 ,size_y-1);
+		pdc.DrawLine(0, 0, size_x-1, 0);
+		pdc.DrawLine(0, 1, 0, size_y-1);
 		pdc.SetPen(*light_shadow_pen);
-		pdc.DrawLine(1 ,1 ,size_x-2,1 );
-		pdc.DrawLine(1 ,2 ,1 ,size_y-2);
+		pdc.DrawLine(1, 1, size_x-2, 1);
+		pdc.DrawLine(1, 2, 1, size_y-2);
 		pdc.SetPen(*dark_highlight_pen);
-		pdc.DrawLine(size_x-2,1 ,size_x-2,size_y-2);
-		pdc.DrawLine(1 ,size_y-2,size_x-1,size_y-2);
+		pdc.DrawLine(size_x-2, 1, size_x-2, size_y-2);
+		pdc.DrawLine(1, size_y-2, size_x-1, size_y-2);
 		pdc.SetPen(*highlight_pen);
-		pdc.DrawLine(size_x-1,0 ,size_x-1,size_y-1);
-		pdc.DrawLine(0 ,size_y-1,size_y,size_y-1);
+		pdc.DrawLine(size_x-1, 0, size_x-1, size_y-1);
+		pdc.DrawLine(0, size_y-1, size_y, size_y-1);
 	} else {
 		pdc.SetPen(*highlight_pen);
-		pdc.DrawLine(0 ,0 ,size_x-1,0 );
-		pdc.DrawLine(0 ,1 ,0 ,size_y-1);
+		pdc.DrawLine(0, 0, size_x-1, 0);
+		pdc.DrawLine(0, 1, 0, size_y-1);
 		pdc.SetPen(*dark_highlight_pen);
-		pdc.DrawLine(1 ,1 ,size_x-2,1 );
-		pdc.DrawLine(1 ,2 ,1 ,size_y-2);
+		pdc.DrawLine(1, 1, size_x-2, 1);
+		pdc.DrawLine(1, 2, 1, size_y-2);
 		pdc.SetPen(*light_shadow_pen);
-		pdc.DrawLine(size_x-2,1 ,size_x-2,size_y-2);
-		pdc.DrawLine(1 ,size_y-2,size_x-1,size_y-2);
+		pdc.DrawLine(size_x-2, 1, size_x-2, size_y-2);
+		pdc.DrawLine(1, size_y-2, size_x-1, size_y-2);
 		pdc.SetPen(*shadow_pen);
-		pdc.DrawLine(size_x-1,0 ,size_x-1,size_y-1);
-		pdc.DrawLine(0 ,size_y-1,size_y,size_y-1);
+		pdc.DrawLine(size_x-1, 0, size_x-1, size_y-1);
+		pdc.DrawLine(0, size_y-1, size_y, size_y-1);
 	}
 
 	if(sprite) {
 		if(size == RENDER_SIZE_16x16) {
-			// Draw the picture!
 			sprite->DrawTo(&pdc, SPRITE_SIZE_16x16, 2, 2);
-
 			if(overlay && type == DC_BTN_TOGGLE && GetValue()) {
 				overlay->DrawTo(&pdc, SPRITE_SIZE_16x16, 2, 2);
 			}
 		} else if(size == RENDER_SIZE_32x32) {
-			// Draw the picture!
 			sprite->DrawTo(&pdc, SPRITE_SIZE_32x32, 2, 2);
-
 			if(overlay && type == DC_BTN_TOGGLE && GetValue()) {
 				overlay->DrawTo(&pdc, SPRITE_SIZE_32x32, 2, 2);
 			}
-		} else if(size == RENDER_SIZE_64x64) {
-			////
 		}
 	}
 }

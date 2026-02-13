@@ -26,8 +26,7 @@
 #include "brush.h"
 #include "map.h"
 #include "tile.h"
-#include "old_properties_window.h"
-#include "properties_window.h"
+#include "property_window.h"
 #include "palette_window.h"
 #include "map_display.h"
 #include "map_drawer.h"
@@ -587,9 +586,9 @@ void MapCanvas::OnMouseLeftDoubleClick(wxMouseEvent& event)
 		wxDialog* dialog = nullptr;
 		Tile newTile; newTile.deepCopy(*tile);
 		if(newTile.creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
-			dialog = newd OldPropertiesWindow(g_editor.root, &map, &newTile, newTile.creature);
+			dialog = newd CreaturePropertyWindow(g_editor.root, newTile.creature);
 		} else if(Item *topItem = newTile.getTopItem()) {
-			dialog = newd OldPropertiesWindow(g_editor.root, &map, &newTile, topItem);
+			dialog = newd ItemPropertyWindow(g_editor.root, topItem);
 		} else {
 			return;
 		}
@@ -1920,9 +1919,9 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event))
 	wxDialog* w = nullptr;
 	Tile newTile; newTile.deepCopy(*tile);
 	if(newTile.creature && g_settings.getInteger(Config::SHOW_CREATURES)){
-		w = newd OldPropertiesWindow(g_editor.root, &g_editor.map, &newTile, newTile.creature);
+		w = newd CreaturePropertyWindow(g_editor.root, newTile.creature);
 	}else if(Item *item = newTile.getLastSelectedItem()){
-		w = newd OldPropertiesWindow(g_editor.root, &g_editor.map, &newTile, item);
+		w = newd ItemPropertyWindow(g_editor.root, item);
 	}else{
 		return;
 	}

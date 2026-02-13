@@ -268,7 +268,7 @@ void FindItemDialog::RefreshContentsInternal()
 	SearchMode selection = (SearchMode)options_radio_box->GetSelection();
 	bool found_search_results = false;
 
-	if(selection == SearchMode::TypeID) {
+	if(selection == SearchMode::TypeID){
 		int typeId = type_id_spin->GetValue();
 		const ItemType &type = GetItemType(typeId);
 		if(type.typeId != 0 && type.raw_brush
@@ -276,8 +276,7 @@ void FindItemDialog::RefreshContentsInternal()
 			found_search_results = true;
 			items_list->AddBrush(type.raw_brush);
 		}
-	}
-	else if(selection == SearchMode::Names) {
+	}else if(selection == SearchMode::Names){
 		std::string search_string = as_lower_str(nstr(name_text_input->GetValue()));
 		if(search_string.size() >= 2) {
 			for(int typeId = GetMinItemTypeId();
@@ -301,8 +300,7 @@ void FindItemDialog::RefreshContentsInternal()
 				items_list->AddBrush(raw_brush);
 			}
 		}
-	}
-	else if(selection == SearchMode::Types) {
+	}else if(selection == SearchMode::Types){
 		for(int typeId = GetMinItemTypeId();
 				typeId <= GetMaxItemTypeId();
 				typeId += 1){
@@ -330,8 +328,7 @@ void FindItemDialog::RefreshContentsInternal()
 			found_search_results = true;
 			items_list->AddBrush(raw_brush);
 		}
-	}
-	else if(selection == SearchMode::Properties) {
+	}else if(selection == SearchMode::Properties){
 		bool has_selected = (unpassable->GetValue() ||
 			unmovable->GetValue() ||
 			block_missiles->GetValue() ||

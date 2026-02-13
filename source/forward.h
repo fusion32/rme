@@ -31,7 +31,6 @@ struct Tile;
 
 class CopyBuffer;
 class House;
-class Selection;
 class Tileset;
 class Town;
 class Waypoint;

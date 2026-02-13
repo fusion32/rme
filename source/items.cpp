@@ -404,10 +404,7 @@ int GetLiquidColor(int liquidType){
 }
 
 int GetMinItemTypeId(void){
-	// NOTE(fusion): This is not the minimum item type id but rather the minimum
-	// object type id, which happens to also be in the objects.srv file so we need
-	// to allow these [0, 99] object types to avoid any errors while loading.
-	return 0;
+	return 100;
 }
 
 int GetMaxItemTypeId(void){
@@ -472,7 +469,7 @@ bool LoadItemTypes(const wxString &projectDir, wxString &outError, wxArrayString
 		}
 	}
 
-	int typeId = -1;
+	ItemType *itemType = NULL;
 	std::string ident;
 	Script script(filename.mb_str());
 	while(true){
@@ -484,9 +481,8 @@ bool LoadItemTypes(const wxString &projectDir, wxString &outError, wxArrayString
 		ident = script.getIdentifier();
 		script.readSymbol('=');
 		if(ident == "typeid"){
-			typeId = script.readNumber();
-			GetOrCreateItemType(typeId);
-		}else if(ItemType *itemType = GetMutableItemType(typeId)){
+			itemType = GetOrCreateItemType(script.readNumber());
+		}else if(itemType != NULL){
 			if(ident == "name"){
 				itemType->name = script.readString();
 			}else if(ident == "description"){

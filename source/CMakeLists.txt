@@ -11,7 +11,6 @@ ${CMAKE_CURRENT_LIST_DIR}/carpet_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/common.h
 ${CMAKE_CURRENT_LIST_DIR}/common_windows.h
 ${CMAKE_CURRENT_LIST_DIR}/const.h
-${CMAKE_CURRENT_LIST_DIR}/container_properties_window.h
 ${CMAKE_CURRENT_LIST_DIR}/copybuffer.h
 ${CMAKE_CURRENT_LIST_DIR}/creature_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/creature.h
@@ -43,8 +42,7 @@ ${CMAKE_CURRENT_LIST_DIR}/map_window.h
 ${CMAKE_CURRENT_LIST_DIR}/materials.h
 ${CMAKE_CURRENT_LIST_DIR}/minimap_window.h
 ${CMAKE_CURRENT_LIST_DIR}/mt_rand.h
-${CMAKE_CURRENT_LIST_DIR}/numbertextctrl.h
-${CMAKE_CURRENT_LIST_DIR}/old_properties_window.h
+${CMAKE_CURRENT_LIST_DIR}/numberctrl.h
 ${CMAKE_CURRENT_LIST_DIR}/palette_brushlist.h
 ${CMAKE_CURRENT_LIST_DIR}/palette_common.h
 ${CMAKE_CURRENT_LIST_DIR}/palette_creature.h
@@ -55,7 +53,7 @@ ${CMAKE_CURRENT_LIST_DIR}/pngfiles.h
 ${CMAKE_CURRENT_LIST_DIR}/position.h
 ${CMAKE_CURRENT_LIST_DIR}/positionctrl.h
 ${CMAKE_CURRENT_LIST_DIR}/preferences.h
-${CMAKE_CURRENT_LIST_DIR}/properties_window.h
+${CMAKE_CURRENT_LIST_DIR}/property_window.h
 ${CMAKE_CURRENT_LIST_DIR}/raw_brush.h
 ${CMAKE_CURRENT_LIST_DIR}/replace_items_window.h
 ${CMAKE_CURRENT_LIST_DIR}/result_window.h
@@ -88,7 +86,6 @@ ${CMAKE_CURRENT_LIST_DIR}/positionctrl.cpp
 ${CMAKE_CURRENT_LIST_DIR}/carpet_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/common.cpp
 ${CMAKE_CURRENT_LIST_DIR}/common_windows.cpp
-${CMAKE_CURRENT_LIST_DIR}/container_properties_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/copybuffer.cpp
 ${CMAKE_CURRENT_LIST_DIR}/creature_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/creature.cpp
@@ -119,8 +116,7 @@ ${CMAKE_CURRENT_LIST_DIR}/materials.cpp
 ${CMAKE_CURRENT_LIST_DIR}/minimap_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/mkpch.cpp
 ${CMAKE_CURRENT_LIST_DIR}/mt_rand.cpp
-${CMAKE_CURRENT_LIST_DIR}/numbertextctrl.cpp
-${CMAKE_CURRENT_LIST_DIR}/old_properties_window.cpp
+${CMAKE_CURRENT_LIST_DIR}/numberctrl.cpp
 ${CMAKE_CURRENT_LIST_DIR}/palette_brushlist.cpp
 ${CMAKE_CURRENT_LIST_DIR}/palette_common.cpp
 ${CMAKE_CURRENT_LIST_DIR}/palette_creature.cpp
@@ -129,7 +125,7 @@ ${CMAKE_CURRENT_LIST_DIR}/palette_waypoints.cpp
 ${CMAKE_CURRENT_LIST_DIR}/palette_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/pngfiles.cpp
 ${CMAKE_CURRENT_LIST_DIR}/preferences.cpp
-${CMAKE_CURRENT_LIST_DIR}/properties_window.cpp
+${CMAKE_CURRENT_LIST_DIR}/property_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/raw_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/replace_items_window.cpp
 ${CMAKE_CURRENT_LIST_DIR}/result_window.cpp

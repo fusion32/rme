@@ -17,29 +17,32 @@
 
 #include "main.h"
 #include "positionctrl.h"
-#include "numbertextctrl.h"
+#include "numberctrl.h"
 #include "position.h"
 
-PositionCtrl::PositionCtrl(wxWindow* parent, const wxString& label, int x, int y, int z,
-	int maxx /*= rme::MapMaxWidth*/, int maxy /*= rme::MapMaxHeight*/, int maxz /*= rme::MapMaxLayer*/) :
-wxStaticBoxSizer(wxHORIZONTAL, parent, label)
+PositionCtrl::PositionCtrl(wxWindow* parent, Position min, Position max, Position pos)
+	: wxControl()
 {
-	x_field = newd NumberTextCtrl(parent, wxID_ANY, x, 0, maxx, wxTE_PROCESS_ENTER, "X", wxDefaultPosition, wxSize(60, 20));
+	wxSizer *sizer = newd wxBoxSizer(wxHORIZONTAL);
+
+	x_field = newd NumberCtrl(parent, wxID_ANY, wxDefaultPosition, wxSize(60, 20), wxTE_PROCESS_ENTER, min.x, max.x, pos.x, "X");
 	x_field->Bind(wxEVT_TEXT_PASTE, &PositionCtrl::OnClipboardText, this);
-	Add(x_field, 2, wxEXPAND | wxLEFT | wxBOTTOM, 5);
+	sizer->Add(x_field, 2, wxEXPAND | wxLEFT | wxBOTTOM, 5);
 
-	y_field = newd NumberTextCtrl(parent, wxID_ANY, y, 0, maxy, wxTE_PROCESS_ENTER, "Y", wxDefaultPosition, wxSize(60, 20));
+	y_field = newd NumberCtrl(parent, wxID_ANY, wxDefaultPosition, wxSize(60, 20), wxTE_PROCESS_ENTER, min.y, max.y, pos.y, "Y");
 	y_field->Bind(wxEVT_TEXT_PASTE, &PositionCtrl::OnClipboardText, this);
-	Add(y_field, 2, wxEXPAND | wxLEFT | wxBOTTOM, 5);
+	sizer->Add(y_field, 2, wxEXPAND | wxLEFT | wxBOTTOM, 5);
 
-	z_field = newd NumberTextCtrl(parent, wxID_ANY, z, 0, maxz, wxTE_PROCESS_ENTER, "Z", wxDefaultPosition, wxSize(35, 20));
+	z_field = newd NumberCtrl(parent, wxID_ANY, wxDefaultPosition, wxSize(35, 20), wxTE_PROCESS_ENTER, min.z, max.z, pos.z, "Z");
 	z_field->Bind(wxEVT_TEXT_PASTE, &PositionCtrl::OnClipboardText, this);
-	Add(z_field, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
+	sizer->Add(z_field, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
+
+	SetSizerAndFit(sizer);
 }
 
 PositionCtrl::~PositionCtrl()
 {
-	////
+	// no-op
 }
 
 Position PositionCtrl::GetPosition() const
@@ -60,7 +63,9 @@ void PositionCtrl::SetPosition(Position pos)
 
 bool PositionCtrl::Enable(bool enable)
 {
-	return (x_field->Enable(enable) && y_field->Enable(enable) && z_field->Enable(enable));
+	return (x_field->Enable(enable)
+		&& y_field->Enable(enable)
+		&& z_field->Enable(enable));
 }
 
 void PositionCtrl::OnClipboardText(wxClipboardTextEvent& evt)

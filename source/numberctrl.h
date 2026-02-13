@@ -15,37 +15,37 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
-#ifndef _RME_NUMBER_TEXT_CTRL_H_
-#define _RME_NUMBER_TEXT_CTRL_H_
+#ifndef RME_NUMBERCTRL_H_
+#define RME_NUMBERCTRL_H_
 
-// Text ctrl that only allows number input
-class NumberTextCtrl : public wxTextCtrl
-{
+class NumberCtrl : public wxTextCtrl {
 public:
-	NumberTextCtrl(wxWindow* parent, wxWindowID id = wxID_ANY,
-		long value = 0, long minvalue = 0, long maxvalue = 100,
-		const wxPoint& pos = wxDefaultPosition, const wxSize& sz = wxDefaultSize,
-		long style = 0, const wxString& name = wxTextCtrlNameStr);
-	NumberTextCtrl(wxWindow* parent, wxWindowID id = wxID_ANY,
-		long value = 0, long minvalue = 0, long maxvalue = 100,
-		long style = 0, const wxString& name = wxTextCtrlNameStr,
-		const wxPoint& pos = wxDefaultPosition, const wxSize& sz = wxDefaultSize);
-	~NumberTextCtrl();
+	NumberCtrl(wxWindow *parent,
+			wxWindowID id = wxID_ANY,
+			const wxPoint &pos = wxDefaultPosition,
+			const wxSize &sz = wxDefaultSize,
+			long style = 0,
+			int minValue = 0,
+			int maxValue = 100,
+			int value = 0,
+			const wxString &name = wxTextCtrlNameStr);
 
-	void OnKillFocus(wxFocusEvent&);
-	void OnTextEnter(wxCommandEvent&);
+	~NumberCtrl(void) override;
 
-	long GetIntValue();
-	void SetIntValue(long value);
+	void OnKillFocus(wxFocusEvent &event);
+	void OnTextEnter(wxCommandEvent &event);
 
-	void SetMinValue(long value);
-	void SetMaxValue(long value);
+	int GetIntValue();
+	void SetIntValue(int value);
+	void SetRange(int minValue_, int maxValue_);
 
 protected:
 	void CheckRange();
 
-	long minval, maxval, lastval;
-	DECLARE_EVENT_TABLE();
+	int minValue = 0;
+	int maxValue = 0;
+
+	DECLARE_EVENT_TABLE()
 };
 
-#endif
+#endif //RME_NUMBERCTRL_H_

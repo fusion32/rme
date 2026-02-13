@@ -559,7 +559,8 @@ bool Map::savePatch(const wxString &dir, const MapSector *sector,
 
 	script.writeText("# Tibia - graphical Multi-User-Dungeon");
 	script.writeLn();
-	script.writeText("# Patch data for sector:");
+	script.writeText("# Patch File");
+	script.writeLn();
 	script.writeLn();
 	script.writeText("Sector ");
 	script.writeNumber(sectorX);

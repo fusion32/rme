@@ -745,7 +745,6 @@ BrushButton::BrushButton(wxWindow* parent, Brush* _brush, RenderSize sz, uint32_
 	ItemToggleButton(parent, sz, uint16_t(0), id),
 	brush(_brush)
 {
-	ASSERT(sz != RENDER_SIZE_64x64);
 	ASSERT(brush);
 	SetSprite(brush->getLookID());
 	SetToolTip(wxstr(brush->getName()));

@@ -30,25 +30,24 @@ enum {
 enum RenderSize {
 	RENDER_SIZE_16x16,
 	RENDER_SIZE_32x32,
-	RENDER_SIZE_64x64,
 };
 
 class DCButton : public wxPanel
 {
 public:
-	DCButton();
-	DCButton(wxWindow* parent, wxWindowID id, wxPoint pos, int type, RenderSize sz, int sprite_id);
-	virtual ~DCButton();
+	DCButton(wxWindow *parent, wxWindowID id, wxPoint pos, int type, RenderSize sz, int sprite_id);
+	~DCButton(void) override;
 
 	void SetValue(bool val);
-	bool GetValue() const;
+	bool GetValue(void) const;
 
 	void SetSprite(int id);
 
-	void OnPaint(wxPaintEvent&);
-	void OnClick(wxMouseEvent&);
+	void OnPaint(wxPaintEvent &event);
+	void OnClick(wxMouseEvent &event);
+
 protected:
-	void SetOverlay(Sprite* espr);
+	void SetOverlay(Sprite *espr);
 
 	int type;
 	bool state; // pressed/unpressed
@@ -56,7 +55,6 @@ protected:
 	Sprite* sprite;
 	Sprite* overlay;
 
-	DECLARE_DYNAMIC_CLASS(DCButton)
 	DECLARE_EVENT_TABLE()
 };
 

@@ -23,7 +23,7 @@
 #include <wx/aui/auibar.h>
 
 #include "wxids.h"
-#include "numbertextctrl.h"
+#include "numberctrl.h"
 
 class MainToolBar : public wxEvtHandler
 {
@@ -59,9 +59,9 @@ private:
 	wxAuiToolBar* standard_toolbar;
 	wxAuiToolBar* brushes_toolbar;
 	wxAuiToolBar* position_toolbar;
-	NumberTextCtrl* x_control;
-	NumberTextCtrl* y_control;
-	NumberTextCtrl* z_control;
+	NumberCtrl* x_control;
+	NumberCtrl* y_control;
+	NumberCtrl* z_control;
 	wxButton* go_button;
 	wxAuiToolBar* sizes_toolbar;
 	wxAuiToolBar* indicators_toolbar;

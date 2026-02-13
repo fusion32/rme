@@ -876,16 +876,11 @@ int GameSprite::getIndex(int width, int height, int layer, int pattern_x, int pa
 		this->width + width;
 }
 
-GLuint GameSprite::getHardwareID(int _x, int _y, int _layer, int _count, int _pattern_x, int _pattern_y, int _pattern_z, int _frame)
+GLuint GameSprite::getHardwareID(int _x, int _y, int _layer, int _pattern_x, int _pattern_y, int _pattern_z, int _frame)
 {
-	int v;
-	if(_count >= 0 && height <= 1 && width <= 1) {
-		v = _count;
-	} else {
-		v = ((((((_frame)*pattern_y+_pattern_y)*pattern_x+_pattern_x)*layers+_layer)*height+_y)*width+_x);
-	}
+	int v = ((((((_frame)*pattern_y+_pattern_y)*pattern_x+_pattern_x)*layers+_layer)*height+_y)*width+_x);
 	if(v >= numsprites) {
-		if(numsprites == 1) {
+		if(numsprites <= 1) {
 			v = 0;
 		} else {
 			v %= numsprites;

@@ -41,7 +41,7 @@ struct Item {
 	bool isValidID() const { return ItemTypeExists(typeId); }
 	const ItemType &getItemType() const noexcept { return GetItemType(typeId); }
 	const std::string &getName() const { return getItemType().name; }
-	//const std::string &getDescription() const { return getItemType().description; }
+	const std::string &getDescription() const { return getItemType().description; }
 	bool getFlag(ObjectFlag flag) const;
 	int getAttribute(ObjectTypeAttribute attr) const;
 	int getAttributeOffset(ObjectInstanceAttribute attr) const;

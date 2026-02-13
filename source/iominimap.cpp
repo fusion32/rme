@@ -251,7 +251,7 @@ bool IOMinimap::exportSelection(const std::string& directory, const std::string&
 	int min_z = rme::MapMaxLayer + 1;
 	int max_x = 0, max_y = 0, max_z = 0;
 
-	const Selection &selection = g_editor.getSelection();
+	const Selection &selection = g_editor.selection;
 	const auto &tiles = selection.getTiles();
 
 	for(Tile *tile: tiles) {

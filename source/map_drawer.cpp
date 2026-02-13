@@ -1063,16 +1063,16 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Tile* tile, const Item*
 	draw_x -= sprite->getDrawHeight();
 	draw_y -= sprite->getDrawHeight();
 
-	int subtype = -1;
-
 	int pattern_x = 0;
 	int pattern_y = 0;
 	int pattern_z = pos.z % sprite->pattern_z;
-
-	if (type.getFlag(LIQUIDPOOL)) {
-		subtype = item->getAttribute(POOLLIQUIDTYPE);
-	} else if(type.getFlag(LIQUIDCONTAINER)) {
-		subtype = item->getAttribute(CONTAINERLIQUIDTYPE);
+	if (type.getFlag(LIQUIDPOOL) || type.getFlag(LIQUIDCONTAINER)){
+		int liquidType = type.getFlag(LIQUIDPOOL)
+				? item->getAttribute(POOLLIQUIDTYPE)
+				: item->getAttribute(CONTAINERLIQUIDTYPE);
+		int liquidColor = GetLiquidColor(liquidType);
+		pattern_x = (liquidColor % (int)sprite->pattern_x);
+		pattern_y = (liquidColor / (int)sprite->pattern_x);
 	} else if(type.getFlag(HANG)) {
 		if(tile->getFlag(HOOKSOUTH)) {
 			pattern_x = 1;
@@ -1118,7 +1118,6 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Tile* tile, const Item*
 		for(int cy = 0; cy != sprite->height; cy++) {
 			for(int cf = 0; cf != sprite->layers; cf++) {
 				int texnum = sprite->getHardwareID(cx,cy,cf,
-					subtype,
 					pattern_x,
 					pattern_y,
 					pattern_z,
@@ -1170,16 +1169,17 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Position& pos, const It
 	draw_x -= sprite->getDrawHeight();
 	draw_y -= sprite->getDrawHeight();
 
-	int subtype = -1;
 
 	int pattern_x = 0;
 	int pattern_y = 0;
 	int pattern_z = pos.z % sprite->pattern_z;
-
-	if (type.getFlag(LIQUIDPOOL)){
-		subtype = item->getAttribute(POOLLIQUIDTYPE);
-	} else if (type.getFlag(LIQUIDCONTAINER)) {
-		subtype = item->getAttribute(CONTAINERLIQUIDTYPE);
+	if (type.getFlag(LIQUIDPOOL) || type.getFlag(LIQUIDCONTAINER)){
+		int liquidType = type.getFlag(LIQUIDPOOL)
+				? item->getAttribute(POOLLIQUIDTYPE)
+				: item->getAttribute(CONTAINERLIQUIDTYPE);
+		int liquidColor = GetLiquidColor(liquidType);
+		pattern_x = (liquidColor % (int)sprite->pattern_x);
+		pattern_y = (liquidColor / (int)sprite->pattern_x);
 	} else if(type.getFlag(CUMULATIVE) && sprite->pattern_x == 4 && sprite->pattern_y == 2) {
 		int count = item->getAttribute(AMOUNT);
 		if(count <= 0) {
@@ -1219,7 +1219,6 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Position& pos, const It
 		for(int cy = 0; cy != sprite->height; ++cy) {
 			for(int cf = 0; cf != sprite->layers; ++cf) {
 				int texnum = sprite->getHardwareID(cx,cy,cf,
-					subtype,
 					pattern_x,
 					pattern_y,
 					pattern_z,
@@ -1251,7 +1250,7 @@ void MapDrawer::BlitSpriteType(int screenx, int screeny, uint32_t spriteid, floa
 	for(int cx = 0; cx != sprite->width; ++cx) {
 		for(int cy = 0; cy != sprite->height; ++cy) {
 			for(int cf = 0; cf != sprite->layers; ++cf) {
-				int texnum = sprite->getHardwareID(cx,cy,cf,-1,0,0,0, frame);
+				int texnum = sprite->getHardwareID(cx,cy,cf,0,0,0, frame);
 				glBlitTexture(screenx - cx * rme::TileSize, screeny - cy * rme::TileSize, texnum, red, green, blue, alpha);
 			}
 		}
@@ -1269,7 +1268,7 @@ void MapDrawer::BlitSpriteType(int screenx, int screeny, GameSprite* sprite, flo
 	for(int cx = 0; cx != sprite->width; ++cx) {
 		for(int cy = 0; cy != sprite->height; ++cy) {
 			for(int cf = 0; cf != sprite->layers; ++cf) {
-				int texnum = sprite->getHardwareID(cx,cy,cf,-1,0,0,0, frame);
+				int texnum = sprite->getHardwareID(cx,cy,cf,0,0,0, frame);
 				glBlitTexture(screenx - cx * rme::TileSize, screeny - cy * rme::TileSize, texnum, red, green, blue, alpha);
 			}
 		}
@@ -1293,7 +1292,7 @@ void MapDrawer::BlitCreature(int screenx, int screeny, const Outfit& outfit, Dir
 			if(GameSprite* mountSpr = g_editor.gfx.getCreatureSprite(outfit.lookMount)) {
 				for(int cx = 0; cx != mountSpr->width; ++cx) {
 					for(int cy = 0; cy != mountSpr->height; ++cy) {
-						int texnum = mountSpr->getHardwareID(cx, cy, 0, 0, (int)dir, 0, 0, 0);
+						int texnum = mountSpr->getHardwareID(cx, cy, 0, (int)dir, 0, 0, 0);
 						glBlitTexture(screenx - cx * rme::TileSize, screeny - cy * rme::TileSize, texnum, red, green, blue, alpha);
 					}
 				}
@@ -1591,7 +1590,7 @@ void MapDrawer::DrawIndicator(int x, int y, int indicator, float red, float gree
 	if(sprite == nullptr)
 		return;
 
-	int textureId = sprite->getHardwareID(0,0,0,-1,0,0,0,0);
+	int textureId = sprite->getHardwareID(0,0,0,0,0,0,0);
 	glBlitTexture(x, y, textureId, red, green, blue, alpha, true);
 }
 

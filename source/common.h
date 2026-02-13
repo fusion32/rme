@@ -87,8 +87,7 @@ void SetWindowToolTip(wxWindow *a, const wxString &tooltip);
 void SetWindowToolTip(wxWindow *a, wxWindow *b, const wxString &tooltip);
 
 template<typename T>
-void VectorSortUnique(std::vector<T> &v)
-{
+void VectorSortUnique(std::vector<T> &v){
 	std::sort(v.begin(), v.end());
 	auto end = std::unique(v.begin(), v.end());
 	v.erase(end, v.end());

@@ -57,6 +57,10 @@ static int AddTextAttribute(const char *text){
 }
 
 static const char *GetTextAttribute(int ref){
+	if(ref == 0){
+		return NULL;
+	}
+
 	int curCapacity = (int)g_textAttributes.size();
 	int readIndex = ref - 1;
 	if(readIndex < 0 || readIndex >= curCapacity){

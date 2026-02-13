@@ -15,8 +15,8 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
-#ifndef RME_MAP_WINDOWS_H_
-#define RME_MAP_WINDOWS_H_
+#ifndef RME_COMMON_WINDOWS_H_
+#define RME_COMMON_WINDOWS_H_
 
 #include "main.h"
 
@@ -42,8 +42,8 @@ public:
 class ItemButton : public DCButton
 {
 public:
-	ItemButton(wxWindow* parent, RenderSize size, uint16_t lookid, wxWindowID id = wxID_ANY) :
-		DCButton(parent, id, wxDefaultPosition, DC_BTN_NORMAL, size, lookid) {}
+	ItemButton(wxWindow* parent, RenderSize size, uint16_t lookid, wxWindowID id = wxID_ANY)
+		: DCButton(parent, id, wxDefaultPosition, DC_BTN_NORMAL, size, lookid) {}
 	virtual ~ItemButton() {}
 };
 
@@ -221,33 +221,6 @@ protected:
 	PositionCtrl* posctrl;
 
 	DECLARE_EVENT_TABLE()
-};
-
-/**
- * Base for the item properties dialogs
- * There are two versions, one for otbmv4 maps and one for the old maps.
- * They are declared in old_properties_window / properties_window
- */
-class ObjectPropertiesWindowBase : public wxDialog
-{
-public:
-	ObjectPropertiesWindowBase(
-		wxWindow* parent, wxString title,
-		const Map* map, const Tile* tile, Item* item,
-		wxPoint position = wxDefaultPosition);
-	ObjectPropertiesWindowBase(
-		wxWindow* parent, wxString title,
-		const Map* map, const Tile* tile, Creature* creature,
-		wxPoint position = wxDefaultPosition);
-
-	Item* getItemBeingEdited();
-	Creature* getCreatureBeingEdited();
-
-protected:
-	const Map* edit_map;
-	const Tile* edit_tile;
-	Item* edit_item;
-	Creature* edit_creature;
 };
 
 /**

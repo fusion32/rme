@@ -18,14 +18,13 @@
 #ifndef _RME_POSITION_CTRL_H_
 #define _RME_POSITION_CTRL_H_
 
-#include "numbertextctrl.h"
+#include "numberctrl.h"
 #include "position.h"
 
-class PositionCtrl : public wxStaticBoxSizer
+class PositionCtrl : public wxControl
 {
 public:
-	PositionCtrl(wxWindow* parent, const wxString& label, int x, int y, int z,
-		int maxx = rme::MapMaxWidth, int maxy = rme::MapMaxHeight, int maxz = rme::MapMaxLayer);
+	PositionCtrl(wxWindow *parent, Position minPos, Position maxPos, Position pos);
 	~PositionCtrl();
 
 	long GetX() const { return x_field->GetIntValue(); }
@@ -33,19 +32,19 @@ public:
 	long GetZ() const { return z_field->GetIntValue(); }
 	Position GetPosition() const;
 
-	void SetX(long value) { x_field->SetIntValue(value); }
-	void SetY(long value) { y_field->SetIntValue(value); }
-	void SetZ(long value) { z_field->SetIntValue(value); }
+	void SetX(int value) { x_field->SetIntValue(value); }
+	void SetY(int value) { y_field->SetIntValue(value); }
+	void SetZ(int value) { z_field->SetIntValue(value); }
 	void SetPosition(Position pos);
 
 	bool Enable(bool enable = true);
 
-	void OnClipboardText(wxClipboardTextEvent&);
+	void OnClipboardText(wxClipboardTextEvent &event);
 
 protected:
-	NumberTextCtrl* x_field;
-	NumberTextCtrl* y_field;
-	NumberTextCtrl* z_field;
+	NumberCtrl* x_field;
+	NumberCtrl* y_field;
+	NumberCtrl* z_field;
 };
 
 #endif

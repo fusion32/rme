@@ -103,11 +103,11 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager)
 
 	position_toolbar = newd wxAuiToolBar(parent, TOOLBAR_POSITION, wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE | wxAUI_TB_HORZ_TEXT);
 	position_toolbar->SetToolBitmapSize(icon_size);
-	x_control = newd NumberTextCtrl(position_toolbar, wxID_ANY, 0, 0, rme::MapMaxWidth, wxTE_PROCESS_ENTER, "X", wxDefaultPosition, FROM_DIP(parent, wxSize(60, 20)));
+	x_control = newd NumberCtrl(position_toolbar, wxID_ANY, wxDefaultPosition, FROM_DIP(parent, wxSize(60, 20)), wxTE_PROCESS_ENTER, 0, rme::MapMaxWidth, 0, "X");
 	x_control->SetToolTip("X Coordinate");
-	y_control = newd NumberTextCtrl(position_toolbar, wxID_ANY, 0, 0, rme::MapMaxHeight, wxTE_PROCESS_ENTER, "Y", wxDefaultPosition, FROM_DIP(parent, wxSize(60, 20)));
+	y_control = newd NumberCtrl(position_toolbar, wxID_ANY, wxDefaultPosition, FROM_DIP(parent, wxSize(60, 20)), wxTE_PROCESS_ENTER, 0, rme::MapMaxHeight, 0, "Y");
 	y_control->SetToolTip("Y Coordinate");
-	z_control = newd NumberTextCtrl(position_toolbar, wxID_ANY, 0, 0, rme::MapMaxLayer, wxTE_PROCESS_ENTER, "Z", wxDefaultPosition, FROM_DIP(parent, wxSize(35, 20)));
+	z_control = newd NumberCtrl(position_toolbar, wxID_ANY, wxDefaultPosition, FROM_DIP(parent, wxSize(35, 20)), wxTE_PROCESS_ENTER, 0, rme::MapMaxLayer, 0, "Z");
 	z_control->SetToolTip("Z Coordinate");
 	go_button = newd wxButton(position_toolbar, TOOLBAR_POSITION_GO, wxEmptyString, wxDefaultPosition, FROM_DIP(parent, wxSize(22, 20)));
 	go_button->SetBitmap(go_bitmap);
@@ -228,8 +228,10 @@ void MainToolBar::UpdateButtons()
 	z_control->Enable(has_map);
 
 	if(has_map) {
-		x_control->SetMaxValue(g_editor.map.getWidth());
-		y_control->SetMaxValue(g_editor.map.getHeight());
+		Position minPos = g_editor.map.getMinPosition();
+		Position maxPos = g_editor.map.getMinPosition();
+		x_control->SetRange(minPos.x, maxPos.x);
+		y_control->SetRange(minPos.y, maxPos.y);
 	}
 
 	sizes_toolbar->EnableTool(TOOLBAR_SIZES_CIRCULAR, has_map);

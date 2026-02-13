@@ -52,7 +52,6 @@ void Selection::getBounds(Position &minPos, Position &maxPos) const
 
 void Selection::add(Action *action, Tile *tile, Item *item)
 {
-
 	ASSERT(tile->getIndexOf(item) != wxNOT_FOUND);
 	if(!item->isSelected()){
 		item->select();
