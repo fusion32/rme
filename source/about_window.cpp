@@ -233,22 +233,22 @@ void AboutWindow::OnClickOK(wxCommandEvent& WXUNUSED(event))
 
 void AboutWindow::OnClickLicense(wxCommandEvent& WXUNUSED(event))
 {
-	FileName path;
-	try {
-		path = wxStandardPaths::Get().GetExecutablePath();
-	} catch(std::bad_cast&) {
-		return;
-	}
-	path.SetFullName("COPYING.txt");
+	wxString gplText;
+	wxFileName path(GetExecDirectory(), "COPYING.txt");
 	std::ifstream gpl(path.GetFullPath().mb_str());
-
-	std::string gpl_str;
-	char ch;
-	while(gpl.get(ch)) {
-		gpl_str += ch;
+	while(gpl){
+		char buffer[4096] = {};
+		int count = (int)gpl.readsome(buffer, sizeof(buffer));
+		if(count > 0){
+			gplText.insert(gplText.end(), buffer, buffer + count);
+		}
 	}
 
-	g_editor.ShowTextBox(this, "License", wxstr(gpl_str.size()? gpl_str : "The COPYING.txt file is not available."));
+	if(!gplText.empty()){
+		g_editor.ShowTextBox(this, "Licence", gplText);
+	}else{
+		g_editor.ShowTextBox(this, "Licence", "The COPYING.txt file is not available.");
+	}
 }
 
 void AboutWindow::OnTetris(wxCommandEvent&)

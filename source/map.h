@@ -113,19 +113,17 @@ struct Map {
 
 
 	void loadSector(SectorType type, MapSector *sector, Script *script);
-	bool loadSector(SectorType type, const wxFileName &filename, wxString &outError);
-	bool loadPatch(SectorType type, const wxFileName &filename, wxString &outError);
-	bool loadSpawns(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
-	bool loadHouses(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
-	bool load(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
+	bool loadSector(SectorType type, const wxFileName &filename);
+	bool loadPatch(SectorType type, const wxFileName &filename);
+	bool loadSpawns(const wxString &projectDir);
+	bool loadHouses(const wxString &projectDir);
+	bool load(const wxString &projectDir);
 
-	bool saveSector(const wxString &dir, const MapSector *sector,
-					wxArrayString &outWarnings);
-	bool savePatch(const wxString &dir, const MapSector *sector,
-					int patchNumber, wxArrayString &outWarnings);
+	bool saveSector(const wxString &dir, const MapSector *sector);
+	bool savePatch(const wxString &dir, const MapSector *sector, int patchNumber);
 	bool saveSpawns(void);
 	bool saveHouses(void);
-	bool save(wxArrayString &outWarnings);
+	bool save(void);
 
 	void clear(void);
 

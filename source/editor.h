@@ -29,6 +29,7 @@
 #include "main_toolbar.h"
 #include "map.h"
 #include "palette_window.h"
+#include "problems_window.h"
 #include "position.h"
 #include "selection.h"
 
@@ -166,6 +167,11 @@ public:
 	ActionsHistoryWindow* ShowActionsWindow();
 	void HideActionsWindow();
 
+	ProblemsWindow *ShowProblemsWindow();
+	void Notice(wxString message, ProblemSource source = {});
+	void Warning(wxString message, ProblemSource source = {});
+	void Error(wxString message, ProblemSource source = {});
+
 	// Minimap
 	void CreateMinimap();
 	void HideMinimap();
@@ -244,7 +250,7 @@ public:
 	bool IsProjectDirty(void) const;
 
 protected:
-	bool LoadProject(wxString dir, wxString &outError, wxArrayString &outWarnings);
+	bool LoadProject(wxString dir);
 	void UnloadProject(void);
 
 public:
@@ -355,14 +361,11 @@ public:
 	wxString projectDir = {};
 	wxFileHistory recentFiles = {};
 
-	//==
-	// TODO(fusion): Probably just turn these into their own globals?
 	Map map = {};
 	GraphicManager gfx = {};
 	CopyBuffer copybuffer = {};
 	ActionQueue actionQueue = {};
 	Selection selection = {};
-	//==
 
 	WelcomeDialog *welcomeDialog = NULL;
 	MainFrame *root = NULL;
@@ -371,10 +374,10 @@ public:
 	MainToolBar *toolbar = NULL;
 	MapWindow *mapWindow = NULL;
 	MinimapWindow *minimap = NULL;
-	DCButton *gem = NULL; // The small gem in the lower-right corner
 	SearchResultWindow *search_result_window = NULL;
 	DuplicatedItemsWindow *duplicated_items_window = NULL;
 	ActionsHistoryWindow *actions_history_window = NULL;
+	ProblemsWindow *problems_window = NULL;
 
 	Map *secondary_map = NULL; // A buffer map
 	Map *doodad_buffer_map = NULL; // The map in which doodads are temporarily stored

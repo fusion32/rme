@@ -32,9 +32,6 @@
 Settings g_settings;
 
 Settings::Settings() : store(Config::LAST)
-#ifdef __WINDOWS__
-			   , use_file_cfg(false)
-#endif
 {
 	setDefaults();
 }
@@ -46,7 +43,7 @@ Settings::~Settings()
 
 wxConfigBase& Settings::getConfigObject()
 {
-	return *dynamic_cast<wxConfigBase*>(wxConfig::Get());
+	return *wxConfig::Get();
 }
 
 bool Settings::getBoolean(uint32_t key) const
@@ -140,7 +137,7 @@ std::string Settings::DynamicValue::str()
 
 void Settings::IO(IOMode mode)
 {
-	wxConfigBase* conf = (mode == DEFAULT? nullptr : dynamic_cast<wxConfigBase*>(wxConfig::Get()));
+	wxConfigBase* conf = (mode == DEFAULT ? NULL : wxConfig::Get());
 
 	using namespace Config;
 #define section(s) if(conf) conf->SetPath("/" s)
@@ -315,8 +312,6 @@ void Settings::IO(IOMode mode)
 
 	section("");
 	Int(GOTO_WEBSITE_ON_BOOT, 0);
-	String(RECENT_EDITED_MAP_PATH, "");
-	String(RECENT_EDITED_MAP_POSITION, "");
 
 	Int(FIND_ITEM_MODE, 0);
 	Int(JUMP_TO_ITEM_MODE, 0);
@@ -330,72 +325,19 @@ void Settings::IO(IOMode mode)
 
 void Settings::load()
 {
-	wxConfigBase* conf;
-#ifdef __WINDOWS__
-	FileName filename("rme.cfg");
-	if(filename.FileExists()) { // Use local file if it exists
-		wxFileInputStream file(filename.GetFullPath());
-		conf = newd wxFileConfig(file);
-		use_file_cfg = true;
-		g_settings.setInteger(Config::INDIRECTORY_INSTALLATION, 1);
-	} else { // Use registry
-		conf = newd wxConfig("Remere's Map Editor", "Remere", "", "", wxCONFIG_USE_GLOBAL_FILE);
-		g_settings.setInteger(Config::INDIRECTORY_INSTALLATION, 0);
+	// TODO(fusion): We could probably do it the other way but this is a lot
+	// simpler. Maybe there is a way to force "~/.config" and "%APPDATA%/Roaming"
+	// but we could always do it manually.
+	if(!wxConfig::Get(false)){
+		wxConfig::Set(newd wxFileConfig("tibia-rme", "", "", "", wxCONFIG_USE_LOCAL_FILE));
 	}
-#else
-	FileName filename("./rme.cfg");
-	if(filename.FileExists()) { // Use local file if it exists
-		wxFileInputStream file(filename.GetFullPath());
-		conf = newd wxFileConfig(file);
-		g_settings.setInteger(Config::INDIRECTORY_INSTALLATION, 1);
-	} else { // Else use global (user-specific) conf
-		filename.Assign(wxStandardPaths::Get().GetUserConfigDir() + "/.rme/rme.cfg");
-		if(filename.FileExists()) {
-			wxFileInputStream file(filename.GetFullPath());
-			conf = newd wxFileConfig(file);
-		} else {
-			wxStringInputStream dummy("");
-			conf = newd wxFileConfig(dummy, wxConvAuto());
-		}
-		g_settings.setInteger(Config::INDIRECTORY_INSTALLATION, 0);
-	}
-#endif
-	wxConfig::Set(conf);
+
 	IO(LOAD);
 }
 
-void Settings::save(bool endoftheworld)
+void Settings::save()
 {
 	IO(SAVE);
-#ifdef __WINDOWS__
-	if(use_file_cfg) {
-		wxFileConfig* conf = dynamic_cast<wxFileConfig*>(wxConfig::Get());
-		if(!conf)
-			return;
-		FileName filename("rme.cfg");
-		wxFileOutputStream file(filename.GetFullPath());
-		conf->Save(file);
-	}
-#else
-	wxFileConfig* conf = dynamic_cast<wxFileConfig*>(wxConfig::Get());
-	if(!conf)
-		return;
-	FileName filename("./rme.cfg");
-	if(filename.FileExists()) { // Use local file if it exists
-		wxFileOutputStream file(filename.GetFullPath());
-		conf->Save(file);
-	} else { // Else use global (user-specific) conf
-		wxString path = wxStandardPaths::Get().GetUserConfigDir() + "/.rme/rme.cfg";
-		filename.Assign(path);
-		filename.Mkdir(0755, wxPATH_MKDIR_FULL);
-		wxFileOutputStream file(filename.GetFullPath());
-		conf->Save(file);
-	}
-#endif
-	if(endoftheworld) {
-		wxConfigBase* conf = dynamic_cast<wxConfigBase*>(wxConfig::Get());
-		wxConfig::Set(nullptr);
-		delete conf;
-	}
+	wxConfig::Get()->Flush();
 }
 

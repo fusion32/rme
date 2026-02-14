@@ -456,15 +456,15 @@ static ItemType *GetOrCreateItemType(uint16_t typeId){
 	return &g_itemTypes[typeId];
 }
 
-bool LoadItemTypes(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings){
+bool LoadItemTypes(const wxString &projectDir){
 	wxString filename;
 	{
 		wxPathList paths;
 		paths.Add(projectDir);
-		paths.Add(projectDir + "dat");
+		paths.Add(projectDir + "/dat");
 		filename = paths.FindValidPath("objects.srv");
 		if(filename.IsEmpty()){
-			outError << "Unable to locate objects.srv";
+			g_editor.Error("Unable to locate objects.srv");
 			return false;
 		}
 	}
@@ -546,7 +546,7 @@ bool LoadItemTypes(const wxString &projectDir, wxString &outError, wxArrayString
 	}
 
 	if(const char *error = script.getError()){
-		outError << error;
+		g_editor.Error(error);
 		return false;
 	}
 

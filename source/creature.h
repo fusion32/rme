@@ -70,7 +70,7 @@ int GetMinRaceId(void);
 int GetMaxRaceId(void);
 const CreatureType &GetCreatureType(int raceId);
 CreatureType *GetMutableCreatureType(int raceId);
-bool LoadCreatureTypes(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
+bool LoadCreatureTypes(const wxString &projectDir);
 void ClearCreatureTypes(void);
 
 #endif //RME_CREATURE_H_

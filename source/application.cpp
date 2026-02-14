@@ -174,7 +174,7 @@ void Application::Unload()
 	g_editor.SaveHotkeys();
 	g_editor.SavePerspective();
 	g_editor.SaveRecentFiles();
-	g_settings.save(true);
+	g_settings.save();
 }
 
 

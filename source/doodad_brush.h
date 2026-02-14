@@ -39,8 +39,8 @@ protected:
 	struct AlternativeBlock;
 
 public:
-	bool loadAlternative(pugi::xml_node node, wxArrayString& warnings, AlternativeBlock* which = nullptr);
-	virtual bool load(pugi::xml_node node, wxArrayString& warnings);
+	bool loadAlternative(pugi::xml_node node, AlternativeBlock* which = nullptr);
+	virtual bool load(pugi::xml_node node);
 
 	virtual bool canDraw(Map *map, const Position& position) const { return true; }
 	virtual void draw(Map *map, Tile* tile, void* parameter);

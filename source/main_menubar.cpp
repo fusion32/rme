@@ -145,6 +145,7 @@ MainMenuBar::MainMenuBar(MainFrame *frame) :
 	MAKE_ACTION(SHOW_PICKUPABLES, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_MOVEABLES, wxITEM_CHECK, OnChangeViewSettings);
 
+	MAKE_ACTION(WIN_PROBLEMS, wxITEM_NORMAL, OnProblemsWindow);
 	MAKE_ACTION(WIN_MINIMAP, wxITEM_NORMAL, OnMinimapWindow);
 	MAKE_ACTION(WIN_ACTIONS_HISTORY, wxITEM_NORMAL, OnActionsHistoryWindow);
 	MAKE_ACTION(NEW_PALETTE, wxITEM_NORMAL, OnNewPalette);
@@ -316,6 +317,7 @@ void MainMenuBar::Update()
 	EnableItem(MENUBAR_ZOOM_OUT, loaded);
 	EnableItem(MENUBAR_ZOOM_NORMAL, loaded);
 
+	EnableItem(MENUBAR_WIN_PROBLEMS, loaded);
 	EnableItem(MENUBAR_WIN_MINIMAP, loaded);
 	EnableItem(MENUBAR_NEW_PALETTE, loaded);
 	EnableItem(MENUBAR_SELECT_TERRAIN, loaded);
@@ -444,16 +446,16 @@ void MainMenuBar::LoadDefault(void){
 	LoadValues();
 }
 
-bool MainMenuBar::Load(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings)
+bool MainMenuBar::Load(const wxString &projectDir)
 {
 	wxString filename;
 	{
 		wxPathList paths;
 		paths.Add(projectDir);
-		paths.Add(projectDir + "editor");
+		paths.Add(projectDir + "/editor");
 		filename = paths.FindValidPath("menubar.xml");
 		if(filename.IsEmpty()){
-			outError << "Unable to locate menubar.xml";
+			g_editor.Error("Unable to locate menubar.xml");
 			return false;
 		}
 	}
@@ -462,13 +464,13 @@ bool MainMenuBar::Load(const wxString &projectDir, wxString &outError, wxArraySt
 	pugi::xml_document doc;
 	pugi::xml_parse_result result = doc.load_file(filename.mb_str());
 	if(!result) {
-		outError << "Unable to open " << filename << " for reading.";
+		g_editor.Error(wxString() << "Unable to open " << filename << " for reading.");
 		return false;
 	}
 
 	pugi::xml_node node = doc.child("menubar");
 	if(!node) {
-		outError << "Menu file " << filename << "is missing top-level menubar node.";
+		g_editor.Error(wxString() << "Menu file " << filename << "is missing top-level menubar node.");
 		return false;
 	}
 
@@ -481,7 +483,7 @@ bool MainMenuBar::Load(const wxString &projectDir, wxString &outError, wxArraySt
 	std::vector<wxAcceleratorEntry> accelerators;
 	for(pugi::xml_node menuNode: node.children()){
 		// For each child node, load it
-		wxObject *i = LoadItem(menuNode, nullptr, outError, outWarnings, accelerators);
+		wxObject *i = LoadItem(menuNode, nullptr, accelerators);
 		if (wxMenu *m = dynamic_cast<wxMenu*>(i)) {
 			Append(m, m->GetTitle());
 #ifdef __APPLE__
@@ -491,7 +493,7 @@ bool MainMenuBar::Load(const wxString &projectDir, wxString &outError, wxArraySt
 #endif
 		}else if(i){
 			delete i;
-			outWarnings.push_back(wxString() << filename << ": Only menus can be subitems of main menu");
+			g_editor.Warning(wxString() << filename << ": Only menus can be subitems of main menu");
 		}
 	}
 
@@ -504,8 +506,8 @@ bool MainMenuBar::Load(const wxString &projectDir, wxString &outError, wxArraySt
 	return true;
 }
 
-wxObject *MainMenuBar::LoadItem(pugi::xml_node node, wxMenu *parent, wxString &outError,
-		wxArrayString &outWarnings, std::vector<wxAcceleratorEntry> &accelerators){
+wxObject *MainMenuBar::LoadItem(pugi::xml_node node, wxMenu *parent,
+		std::vector<wxAcceleratorEntry> &accelerators){
 	std::string_view nodeTag = node.name();
 	if(nodeTag == "menu") {
 		if(!node.attribute("name")){
@@ -520,7 +522,7 @@ wxObject *MainMenuBar::LoadItem(pugi::xml_node node, wxMenu *parent, wxString &o
 			g_editor.recentFiles.UseMenu(menu);
 		} else {
 			for(pugi::xml_node menuNode: node.children()){
-				LoadItem(menuNode, menu, outError, outWarnings, accelerators);
+				LoadItem(menuNode, menu, accelerators);
 			}
 		}
 
@@ -550,7 +552,7 @@ wxObject *MainMenuBar::LoadItem(pugi::xml_node node, wxMenu *parent, wxString &o
 
 		auto it = actions.find(action);
 		if(it == actions.end()) {
-			outWarnings.push_back(wxString() << "Invalid action type '" << action << "'.");
+			g_editor.Warning(wxString() << "Invalid action type '" << action << "'.");
 			return nullptr;
 		}
 
@@ -565,7 +567,7 @@ wxObject *MainMenuBar::LoadItem(pugi::xml_node node, wxMenu *parent, wxString &o
 						entry.GetFlags(), entry.GetKeyCode(),
 						it->second.id));
 			}else{
-				outWarnings.push_back(wxString() << "Invalid hotkey for item '" << name << "'.");
+				g_editor.Warning(wxString() << "Invalid hotkey for item '" << name << "'.");
 			}
 		}
 
@@ -656,11 +658,7 @@ void MainMenuBar::OnDebugViewDat(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnReloadDataFiles(wxCommandEvent& WXUNUSED(event))
 {
-	wxString error;
-	wxArrayString warnings;
-	//g_editor.LoadVersion(error, warnings, true);
-	g_editor.PopupDialog("Error", error, wxOK);
-	g_editor.ListDialog("Warnings", warnings);
+	// TODO(fusion): Figure out what we want to do here?
 }
 
 void MainMenuBar::OnGotoWebsite(wxCommandEvent& WXUNUSED(event))
@@ -1531,6 +1529,11 @@ void MainMenuBar::OnChangeFloor(wxCommandEvent& event)
 			g_editor.ChangeFloor(i);
 		}
 	}
+}
+
+void MainMenuBar::OnProblemsWindow(wxCommandEvent& event)
+{
+	g_editor.ShowProblemsWindow();
 }
 
 void MainMenuBar::OnMinimapWindow(wxCommandEvent& event)

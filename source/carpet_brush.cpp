@@ -18,6 +18,7 @@
 #include "main.h"
 
 #include "carpet_brush.h"
+#include "editor.h"
 #include "items.h"
 #include "map.h"
 
@@ -37,7 +38,7 @@ CarpetBrush::~CarpetBrush()
 	////
 }
 
-bool CarpetBrush::load(pugi::xml_node node, wxArrayString& warnings)
+bool CarpetBrush::load(pugi::xml_node node)
 {
 	pugi::xml_attribute attribute;
 	if((attribute = node.attribute("lookid"))) {
@@ -53,12 +54,12 @@ bool CarpetBrush::load(pugi::xml_node node, wxArrayString& warnings)
 				if(alignString == "center") {
 					alignment = CARPET_CENTER;
 				} else {
-					warnings.push_back("Invalid alignment of carpet node\n");
+					g_editor.Warning("Invalid alignment of carpet node");
 					continue;
 				}
 			}
 		} else {
-			warnings.push_back("Could not read alignment tag of carpet node\n");
+			g_editor.Warning("Could not read alignment tag of carpet node");
 			continue;
 		}
 
@@ -66,13 +67,13 @@ bool CarpetBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		for(pugi::xml_node itemNode: carpetNode.children("item")){
 			use_local_id = false;
 			if(!(attribute = itemNode.attribute("id"))) {
-				warnings.push_back("Could not read id tag of item node\n");
+				g_editor.Warning("Could not read id tag of item node");
 				continue;
 			}
 
 			int32_t id = attribute.as_int();
 			if(!(attribute = itemNode.attribute("chance"))) {
-				warnings.push_back("Could not read chance tag of item node\n");
+				g_editor.Warning("Could not read chance tag of item node");
 				continue;
 			}
 
@@ -80,10 +81,10 @@ bool CarpetBrush::load(pugi::xml_node node, wxArrayString& warnings)
 
 			ItemType *type = GetMutableItemType(id);
 			if(!type) {
-				warnings.push_back("There is no itemtype with id " + std::to_string(id));
+				g_editor.Warning(wxString() << "There is no itemtype with id " << id);
 				continue;
 			} else if(type->brush && type->brush != this) {
-				warnings.push_back("Itemtype id " + std::to_string(id) + " already has a brush");
+				g_editor.Warning(wxString() << "Itemtype id " << id << " already has a brush");
 				continue;
 			}
 
@@ -102,17 +103,17 @@ bool CarpetBrush::load(pugi::xml_node node, wxArrayString& warnings)
 
 		if(use_local_id) {
 			if(!(attribute = carpetNode.attribute("id"))) {
-				warnings.push_back("Could not read id tag of carpet node\n");
+				g_editor.Warning("Could not read id tag of carpet node");
 				continue;
 			}
 
 			uint16_t id = attribute.as_ushort();
 			ItemType *type = GetMutableItemType(id);
 			if(!type) {
-				warnings.push_back("There is no itemtype with id " + std::to_string(id));
+				g_editor.Warning(wxString() << "There is no itemtype with id " << id);
 				return false;
 			} else if(type->brush && type->brush != this) {
-				warnings.push_back("Itemtype id " + std::to_string(id) + " already has a brush");
+				g_editor.Warning(wxString() << "Itemtype id " << id << " already has a brush");
 				return false;
 			}
 

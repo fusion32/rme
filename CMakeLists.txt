@@ -40,3 +40,6 @@ target_link_libraries(${PROJECT_NAME}
     ${GLUT_LIBRARIES}
     ${ZLIB_LIBRARIES}
 )
+
+target_precompile_headers(${PROJECT_NAME} PRIVATE source/main.h)
+

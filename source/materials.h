@@ -30,16 +30,16 @@ public:
 
 	TilesetContainer tilesets;
 
-	bool loadMaterials(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings);
+	bool loadMaterials(const wxString &projectDir);
 	void createOtherTileset();
 
 	bool isInTileset(const Item* item, std::string tileset) const;
 	bool isInTileset(Brush* brush, std::string tileset) const;
 
 protected:
-	bool loadMaterialsInternal(const wxString &filename, wxString &outError, wxArrayString &outWarnings);
-	bool unserializeMaterials(const wxString &filename, pugi::xml_node node, wxString &outError, wxArrayString &outWarnings);
-	bool unserializeTileset(pugi::xml_node node, wxArrayString& warnings);
+	bool loadMaterialsInternal(const wxString &filename);
+	bool unserializeMaterials(const wxString &filename, pugi::xml_node node);
+	bool unserializeTileset(pugi::xml_node node);
 
 private:
 	Materials(const Materials&);

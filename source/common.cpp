@@ -339,7 +339,13 @@ wxColor colorFromEightBit(int color)
 wxString GetExecDirectory(void)
 {
 	wxFileName dir = wxStandardPaths::Get().GetExecutablePath();
-	return dir.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
+	return dir.GetPath(wxPATH_GET_VOLUME);
+}
+
+wxString GetUserDirectory(void)
+{
+	wxFileName dir = wxStandardPaths::Get().GetUserConfigDir();
+	return dir.GetPath(wxPATH_GET_VOLUME);
 }
 
 wxString NormalizeDir(const wxString &dir){
@@ -349,7 +355,7 @@ wxString NormalizeDir(const wxString &dir){
 				| wxPATH_NORM_TILDE
 				| wxPATH_NORM_ABSOLUTE
 				| wxPATH_NORM_LONG);
-	return fn.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
+	return fn.GetPath(wxPATH_GET_VOLUME);
 }
 
 void SetWindowToolTip(wxWindow *a, const wxString &tooltip)

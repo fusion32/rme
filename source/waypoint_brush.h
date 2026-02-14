@@ -35,7 +35,7 @@ public:
 	WaypointBrush* asWaypoint() { return static_cast<WaypointBrush*>(this); }
 
 	// Not used
-	virtual bool load(pugi::xml_node node, wxArrayString& warnings) { return true; }
+	virtual bool load(pugi::xml_node node) { return true; }
 
 	virtual bool canDraw(Map *map, const Position& position) const;
 	// Will ASSERT

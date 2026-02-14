@@ -41,8 +41,8 @@ public:
 
 	void addBrush(Brush* brush);
 
-	bool unserializeBorder(pugi::xml_node node, wxArrayString& warnings);
-	bool unserializeBrush(pugi::xml_node node, wxArrayString& warnings);
+	bool unserializeBorder(pugi::xml_node node);
+	bool unserializeBrush(pugi::xml_node node);
 
 	const BrushMap& getMap() const noexcept { return brushes; }
 
@@ -66,7 +66,7 @@ public:
 	Brush();
 	virtual ~Brush();
 
-	virtual bool load(pugi::xml_node node, wxArrayString& warnings) {
+	virtual bool load(pugi::xml_node node) {
 		return true;
 	}
 
@@ -273,7 +273,7 @@ public:
 	~AutoBorder() {}
 
 	static int edgeNameToID(std::string_view edgename);
-	bool load(pugi::xml_node node, wxArrayString& warnings, GroundBrush* owner = nullptr, uint16_t ground_equivalent = 0);
+	bool load(pugi::xml_node node, GroundBrush* owner = nullptr, uint16_t ground_equivalent = 0);
 
 	uint32_t tiles[13];
 	uint32_t id;

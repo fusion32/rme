@@ -339,9 +339,9 @@ public:
 	// This is part of the binary
 	bool loadEditorSprites();
 	// This fills the item / creature adress space
-	bool loadSpriteMetadata(const wxString &projectDir, wxString& error, wxArrayString& warnings);
-	bool loadSpriteMetadataFlags(FileReadHandle& file, GameSprite* sType, wxString& error, wxArrayString& warnings);
-	bool loadSpriteData(const wxString &projectDir, wxString& error, wxArrayString& warnings);
+	bool loadSpriteMetadata(const wxString &projectDir);
+	bool loadSpriteMetadataFlags(FileReadHandle& file, GameSprite* sType);
+	bool loadSpriteData(const wxString &projectDir);
 
 	// Cleans old & unused textures according to config settings
 	void garbageCollection();

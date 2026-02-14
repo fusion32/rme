@@ -439,24 +439,24 @@ bool GraphicManager::loadEditorSprites()
 	return true;
 }
 
-bool GraphicManager::loadSpriteMetadata(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings)
+bool GraphicManager::loadSpriteMetadata(const wxString &projectDir)
 {
 	wxString filename;
 	{
 		wxPathList paths;
 		paths.Add(projectDir);
-		paths.Add(projectDir + "editor");
+		paths.Add(projectDir + "/editor");
 		filename = paths.FindValidPath("Tibia.dat");
 		if(filename.IsEmpty()){
-			outError << "Unable to locate Tibia.dat";
+			g_editor.Error("Unable to locate Tibia.dat");
 			return false;
 		}
 	}
 
 	FileReadHandle file(filename.ToStdString());
 	if(!file.isOk()) {
-		outError << "Failed to open " << filename
-				<< " for reading: " << file.getErrorMessage();
+		g_editor.Error(wxString() << "Failed to open " << filename
+				<< " for reading: " << file.getErrorMessage());
 		return false;
 	}
 
@@ -484,10 +484,9 @@ bool GraphicManager::loadSpriteMetadata(const wxString &projectDir, wxString &ou
 		sType->id = typeId;
 
 		// Load the sprite flags
-		if(!loadSpriteMetadataFlags(file, sType, outError, outWarnings)) {
-			wxString msg;
-			msg << "Failed to load flags for sprite " << sType->id;
-			outWarnings.push_back(msg);
+		if(!loadSpriteMetadataFlags(file, sType)) {
+			g_editor.Error(wxString() << "Failed to load flags for sprite " << sType->id);
+			return false;
 		}
 
 		// Size and GameSprite data
@@ -550,7 +549,7 @@ bool GraphicManager::loadSpriteMetadata(const wxString &projectDir, wxString &ou
 	return true;
 }
 
-bool GraphicManager::loadSpriteMetadataFlags(FileReadHandle& file, GameSprite* sType, wxString& error, wxArrayString& warnings)
+bool GraphicManager::loadSpriteMetadataFlags(FileReadHandle& file, GameSprite* sType)
 {
 	uint8_t prev_flag = 0;
 	uint8_t flag = DatFlagLast;
@@ -630,27 +629,26 @@ bool GraphicManager::loadSpriteMetadataFlags(FileReadHandle& file, GameSprite* s
 			}
 
 			default: {
-				wxString err;
-				err << "Metadata: Unknown flag: " << i2ws(flag) << ". Previous flag: " << i2ws(prev_flag) << ".";
-				warnings.push_back(err);
-				break;
+				g_editor.Error(wxString() << "Metadata: Unknown flag: " << flag
+						<< ". Previous flag: " << i2ws(prev_flag) << ".");
+				return false;
 			}
 		}
 	}
 
-	return true;
+	return false;
 }
 
-bool GraphicManager::loadSpriteData(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings)
+bool GraphicManager::loadSpriteData(const wxString &projectDir)
 {
 	wxString filename;
 	{
 		wxPathList paths;
 		paths.Add(projectDir);
-		paths.Add(projectDir + "editor");
+		paths.Add(projectDir + "/editor");
 		filename = paths.FindValidPath("Tibia.spr");
 		if(filename.IsEmpty()){
-			outError << "Unable to locate Tibia.spr";
+			g_editor.Error("Unable to locate Tibia.spr");
 			return false;
 		}
 	}
@@ -658,17 +656,17 @@ bool GraphicManager::loadSpriteData(const wxString &projectDir, wxString &outErr
 	FileReadHandle fh(filename.ToStdString());
 
 	if(!fh.isOk()) {
-		outError << "Failed to open " << filename
-				<< " for reading: " << fh.getErrorMessage();
+		g_editor.Error(wxString() << "Failed to open " << filename
+				<< " for reading: " << fh.getErrorMessage());
 		return false;
 	}
 
-#define safe_get(func, ...) do {						\
+#define safe_get(func, ...) do{							\
 		if(!fh.get##func(__VA_ARGS__)) {				\
-			outError = wxstr(fh.getErrorMessage());		\
+			g_editor.Error(fh.getErrorMessage());		\
 			return false;								\
 		}												\
-	} while(false)
+	}while(false)
 
 
 	uint32_t sprSignature;
@@ -703,16 +701,13 @@ bool GraphicManager::loadSpriteData(const wxString &projectDir, wxString &outErr
 				GameSprite::NormalImage* spr = dynamic_cast<GameSprite::NormalImage*>(it->second);
 				if(spr && size > 0) {
 					if(spr->size > 0) {
-						outWarnings.push_back(wxString("Duplicate GameSprite id ") << spriteId);
+						g_editor.Warning(wxString() << "Duplicate GameSprite id " << spriteId);
 						fh.skip(size);
 					} else {
 						spr->id = spriteId;
 						spr->size = size;
 						spr->dump = newd uint8_t[size];
-						if(!fh.getRAW(spr->dump, size)) {
-							outError = wxstr(fh.getErrorMessage());
-							return false;
-						}
+						safe_get(RAW, spr->dump, size);
 					}
 				}
 			}

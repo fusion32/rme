@@ -18,6 +18,7 @@
 #include "main.h"
 
 #include "tileset.h"
+#include "editor.h"
 #include "creature.h"
 #include "creature_brush.h"
 #include "items.h"
@@ -86,7 +87,7 @@ const TilesetCategory* Tileset::getCategory(TilesetCategoryType type) const
 	return nullptr;
 }
 
-void Tileset::loadCategory(pugi::xml_node node, wxArrayString &warnings)
+void Tileset::loadCategory(pugi::xml_node node)
 {
 	TilesetCategory* category = nullptr;
 	TilesetCategory* subCategory = nullptr;
@@ -115,9 +116,9 @@ void Tileset::loadCategory(pugi::xml_node node, wxArrayString &warnings)
 
 	if(category){
 		for(pugi::xml_node childNode: node.children()){
-			category->loadBrush(childNode, warnings);
+			category->loadBrush(childNode);
 			if(subCategory) {
-				subCategory->loadBrush(childNode, warnings);
+				subCategory->loadBrush(childNode);
 			}
 		}
 	}
@@ -140,7 +141,7 @@ bool TilesetCategory::isTrivial() const
 	return (type == TILESET_ITEM) || (type == TILESET_RAW);
 }
 
-void TilesetCategory::loadBrush(pugi::xml_node node, wxArrayString& warnings)
+void TilesetCategory::loadBrush(pugi::xml_node node)
 {
 	std::vector<Brush*> tmp;
 	std::string_view nodeTag = node.name();
@@ -148,7 +149,7 @@ void TilesetCategory::loadBrush(pugi::xml_node node, wxArrayString& warnings)
 		const char *brushName = node.attribute("name").as_string();
 		Brush* brush = tileset.brushes.getBrush(brushName);
 		if(!brush){
-			warnings.push_back(wxString() << "Brush \"" << brushName << "\" doenst exist.");
+			g_editor.Warning(wxString() << "Brush \"" << brushName << "\" doenst exist.");
 			return;
 		}
 
@@ -163,7 +164,7 @@ void TilesetCategory::loadBrush(pugi::xml_node node, wxArrayString& warnings)
 			fromId = attr.as_int();
 			toId   = std::max<int>(fromId, node.attribute("toid").as_int());
 		}else{
-			warnings.push_back("Tileset item is missing id/fromid attribute");
+			g_editor.Warning("Tileset item is missing id/fromid attribute");
 			return;
 		}
 
@@ -171,7 +172,7 @@ void TilesetCategory::loadBrush(pugi::xml_node node, wxArrayString& warnings)
 		for(int typeId = fromId; typeId <= toId; typeId += 1){
 			ItemType *type = GetMutableItemType(typeId);
 			if(!type) {
-				warnings.push_back(wxString() << "Tileset item has invalid item type "
+				g_editor.Warning(wxString() << "Tileset item has invalid item type "
 						<< typeId << " (fromId=" << fromId << ", toId=" << toId << ")");
 				continue;
 			}
@@ -192,14 +193,14 @@ void TilesetCategory::loadBrush(pugi::xml_node node, wxArrayString& warnings)
 	}else if(nodeTag == "creature"){
 		pugi::xml_attribute raceAttr = node.attribute("race");
 		if(!raceAttr){
-			warnings.push_back("Tileset creature is missing race attribute.");
+			g_editor.Warning("Tileset creature is missing race attribute.");
 			return;
 		}
 
 		int raceId = raceAttr.as_int();
 		CreatureType *creatureType = GetMutableCreatureType(raceId);
 		if(!creatureType){
-			warnings.push_back(wxString() << "Invalid creature race" << raceId);
+			g_editor.Warning(wxString() << "Invalid creature race" << raceId);
 			return;
 		}
 

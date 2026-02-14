@@ -18,6 +18,7 @@
 #include "main.h"
 
 #include "table_brush.h"
+#include "editor.h"
 #include "map.h"
 
 uint32_t TableBrush::table_types[256];
@@ -36,7 +37,7 @@ TableBrush::~TableBrush()
 	////
 }
 
-bool TableBrush::load(pugi::xml_node node, wxArrayString& warnings)
+bool TableBrush::load(pugi::xml_node node)
 {
 	if(pugi::xml_attribute attribute = node.attribute("lookid")){
 		look_id = attribute.as_ushort();
@@ -45,7 +46,7 @@ bool TableBrush::load(pugi::xml_node node, wxArrayString& warnings)
 	for(pugi::xml_node tableNode: node.children("table")){
 		const std::string& alignString = tableNode.attribute("align").as_string();
 		if(alignString.empty()) {
-			warnings.push_back("Could not read type tag of table node\n");
+			g_editor.Warning("Could not read type tag of table node");
 			continue;
 		}
 
@@ -65,23 +66,23 @@ bool TableBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		} else if(alignString == "alone") {
 			alignment = TABLE_ALONE;
 		} else {
-			warnings.push_back("Unknown table alignment '" + wxstr(alignString) + "'\n");
+			g_editor.Warning(wxString() << "Unknown table alignment '" << alignString << "'");
 			continue;
 		}
 
 		for(pugi::xml_node itemNode: tableNode.children("item")){
 			uint16_t id = itemNode.attribute("id").as_ushort();
 			if(id == 0) {
-				warnings.push_back("Could not read id tag of item node\n");
+				g_editor.Warning("Could not read id tag of item node");
 				break;
 			}
 
 			ItemType* type = GetMutableItemType(id);
 			if(!type) {
-				warnings.push_back("There is no itemtype with id " + std::to_string(id));
+				g_editor.Warning(wxString() << "There is no itemtype with id " << id);
 				return false;
 			} else if(type->brush && type->brush != this) {
-				warnings.push_back("Itemtype id " + std::to_string(id) + " already has a brush");
+				g_editor.Warning(wxString() << "Itemtype id " << id << " already has a brush");
 				return false;
 			}
 

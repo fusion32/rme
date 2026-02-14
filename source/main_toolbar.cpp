@@ -15,6 +15,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
+#include "const.h"
 #include "main.h"
 #include "main_toolbar.h"
 #include "application.h"
@@ -107,7 +108,7 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager)
 	x_control->SetToolTip("X Coordinate");
 	y_control = newd NumberCtrl(position_toolbar, wxID_ANY, wxDefaultPosition, FROM_DIP(parent, wxSize(60, 20)), wxTE_PROCESS_ENTER, 0, rme::MapMaxHeight, 0, "Y");
 	y_control->SetToolTip("Y Coordinate");
-	z_control = newd NumberCtrl(position_toolbar, wxID_ANY, wxDefaultPosition, FROM_DIP(parent, wxSize(35, 20)), wxTE_PROCESS_ENTER, 0, rme::MapMaxLayer, 0, "Z");
+	z_control = newd NumberCtrl(position_toolbar, wxID_ANY, wxDefaultPosition, FROM_DIP(parent, wxSize(35, 20)), wxTE_PROCESS_ENTER, 0, rme::MapMaxLayer, rme::MapGroundLayer, "Z");
 	z_control->SetToolTip("Z Coordinate");
 	go_button = newd wxButton(position_toolbar, TOOLBAR_POSITION_GO, wxEmptyString, wxDefaultPosition, FROM_DIP(parent, wxSize(22, 20)));
 	go_button->SetBitmap(go_bitmap);

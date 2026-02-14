@@ -18,6 +18,7 @@
 #include "main.h"
 
 #include "ground_brush.h"
+#include "editor.h"
 #include "map.h"
 
 uint32_t GroundBrush::border_types[256];
@@ -52,7 +53,7 @@ int AutoBorder::edgeNameToID(std::string_view edgename)
 	return BORDER_NONE;
 }
 
-bool AutoBorder::load(pugi::xml_node node, wxArrayString& warnings, GroundBrush* owner, uint16_t ground_equivalent)
+bool AutoBorder::load(pugi::xml_node node, GroundBrush* owner, uint16_t ground_equivalent)
 {
 	ASSERT(ground ? ground_equivalent != 0 : true);
 
@@ -77,7 +78,7 @@ bool AutoBorder::load(pugi::xml_node node, wxArrayString& warnings, GroundBrush*
 		int typeId = itemAttr.as_int();
 		ItemType *type = GetMutableItemType(itemAttr.as_int());
 		if(!type){
-			warnings.push_back(wxString() << "Invalid item ID " << typeId << " for border " << id);
+			g_editor.Warning(wxString() << "Invalid item ID " << typeId << " for border " << id);
 			continue;
 		}
 
@@ -138,7 +139,7 @@ GroundBrush::~GroundBrush()
 	borders.clear();
 }
 
-bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
+bool GroundBrush::load(pugi::xml_node node)
 {
 	pugi::xml_attribute attribute;
 	if((attribute = node.attribute("lookid"))) {
@@ -165,17 +166,17 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 
 			ItemType *type = GetMutableItemType(itemId);
 			if(!type) {
-				warnings.push_back("\nInvalid item id " + std::to_string(itemId));
+				g_editor.Warning(wxString() << "Invalid item id " << itemId);
 				return false;
 			}
 
 			if(!type->getFlag(BANK)) {
-				warnings.push_back("\nItem " + std::to_string(itemId) + " is not ground item.");
+				g_editor.Warning(wxString() << "Item " << itemId << " is not a ground item.");
 				return false;
 			}
 
 			if(type->brush && type->brush != this) {
-				warnings.push_back("\nItem " + std::to_string(itemId) + " can not be member of two brushes");
+				g_editor.Warning(wxString() << "Item " << itemId << " can not be member of two brushes");
 				return false;
 			}
 
@@ -189,7 +190,7 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		} else if(childName == "optional") {
 			// Mountain border!
 			if(optional_border) {
-				warnings.push_back("\nDuplicate optional borders!");
+				g_editor.Warning("Duplicate optional borders!");
 				continue;
 			}
 
@@ -199,30 +200,30 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 				// Load from inline definition
 				const ItemType &type = GetItemType(ground_equivalent);
 				if(type.typeId == 0) {
-					warnings.push_back("Invalid id of ground dependency equivalent item.\n");
+					g_editor.Warning("Invalid id of ground dependency equivalent item.");
 					continue;
 				} else if(!type.getFlag(BANK)) {
-					warnings.push_back("Ground dependency equivalent is not a ground item.\n");
+					g_editor.Warning("Ground dependency equivalent is not a ground item.");
 					continue;
 				} else if(type.brush && type.brush != this) {
-					warnings.push_back("Ground dependency equivalent does not use the same brush as ground border.\n");
+					g_editor.Warning("Ground dependency equivalent does not use the same brush as ground border.");
 					continue;
 				}
 
 				AutoBorder* autoBorder = newd AutoBorder(0); // Empty id basically
-				autoBorder->load(childNode, warnings, this, ground_equivalent);
+				autoBorder->load(childNode, this, ground_equivalent);
 				optional_border = autoBorder;
 			} else {
 				// Load from ID
 				if(!(attribute = childNode.attribute("id"))) {
-					warnings.push_back("\nMissing tag id for border node");
+					g_editor.Warning("Missing tag id for border node");
 					continue;
 				}
 
 				uint16_t id = attribute.as_ushort();
 				auto it = g_brushes.borders.find(id);
 				if(it == g_brushes.borders.end() || !it->second) {
-					warnings.push_back("\nCould not find border id " + std::to_string(id));
+					g_editor.Warning(wxString() << "Could not find border id " << id);
 					continue;
 				}
 
@@ -238,19 +239,19 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 				uint16_t ground_equivalent = attribute.as_ushort();
 				const ItemType &it = GetItemType(ground_equivalent);
 				if(it.typeId == 0) {
-					warnings.push_back("Invalid id of ground dependency equivalent item.\n");
+					g_editor.Warning("Invalid id of ground dependency equivalent item.");
 				}
 
 				if(!it.getFlag(BANK)) {
-					warnings.push_back("Ground dependency equivalent is not a ground item.\n");
+					g_editor.Warning("Ground dependency equivalent is not a ground item.");
 				}
 
 				if(it.brush && it.brush != this) {
-					warnings.push_back("Ground dependency equivalent does not use the same brush as ground border.\n");
+					g_editor.Warning("Ground dependency equivalent does not use the same brush as ground border.");
 				}
 
 				autoBorder = newd AutoBorder(0); // Empty id basically
-				autoBorder->load(childNode, warnings, this, ground_equivalent);
+				autoBorder->load(childNode, this, ground_equivalent);
 			} else {
 				int32_t id = attribute.as_int();
 				if(id == 0) {
@@ -258,7 +259,7 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 				} else {
 					auto it = g_brushes.borders.find(id);
 					if(it == g_brushes.borders.end() || !it->second) {
-						warnings.push_back("\nCould not find border id " + std::to_string(id));
+						g_editor.Warning(wxString() << "Could not find border id " << id);
 						continue;
 					}
 					autoBorder = it->second;
@@ -278,7 +279,7 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 				} else {
 					Brush* tobrush = g_brushes.getBrush(value);
 					if(!tobrush) {
-						warnings.push_back("To brush " + wxstr(value) + " doesn't exist.");
+						g_editor.Warning(wxString() << "To brush " << value << " doesn't exist.");
 						continue;
 					}
 					borderBlock->to = tobrush->getID();
@@ -340,7 +341,7 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 								int32_t edge_id = AutoBorder::edgeNameToID(attribute.as_string());
 								auto it = g_brushes.borders.find(border_id);
 								if(it == g_brushes.borders.end()) {
-									warnings.push_back("Unknown border id in specific case match block " + std::to_string(border_id));
+									g_editor.Warning(wxString() << "Unknown border id in specific case match block " << border_id);
 									continue;
 								}
 
@@ -405,7 +406,7 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 								int32_t with_id = attribute.as_int();
 								auto itt = g_brushes.borders.find(border_id);
 								if(itt == g_brushes.borders.end()) {
-									warnings.push_back("Unknown border id in specific case match block " + std::to_string(border_id));
+									g_editor.Warning(wxString() << "Unknown border id in specific case match block " << border_id);
 									continue;
 								}
 
@@ -468,7 +469,7 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 					if(brush) {
 						friends.push_back(brush->getID());
 					} else {
-						warnings.push_back("Brush '" + wxstr(name) + "' is not defined.");
+						g_editor.Warning(wxString() << "Brush '" << name << "' is not defined.");
 					}
 				}
 			}
@@ -483,7 +484,7 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString& warnings)
 					if(brush) {
 						friends.push_back(brush->getID());
 					} else {
-						warnings.push_back("Brush '" + wxstr(name) + "' is not defined.");
+						g_editor.Warning(wxString() << "Brush '" << name << "' is not defined.");
 					}
 				}
 			}

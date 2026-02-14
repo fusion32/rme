@@ -125,16 +125,12 @@ bool Editor::OpenProject(const wxString &dir)
 		return false;
 	}
 
-	wxString error;
-	wxArrayString warnings;
 	{
 		UnnamedRenderingLock();
-		if(!LoadProject(dir, error, warnings)){
-			PopupDialog("Error", error, wxOK);
+		if(!LoadProject(dir)){
 			return false;
 		}
 
-		projectDir = dir;
 		AddRecentFile(projectDir);
 		SetStatusText("");
 		SetTitle(projectDir);
@@ -149,7 +145,6 @@ bool Editor::OpenProject(const wxString &dir)
 		mapWindow->SetScreenCenterPosition(map.getCenterPosition());
 	}
 
-	ListDialog("Warnings", warnings);
 	return true;
 }
 
@@ -185,9 +180,7 @@ void Editor::SaveProject(void)
 		return;
 	}
 
-	wxArrayString warnings;
-	map.save(warnings);
-	ListDialog("Warnings", warnings);
+	map.save();
 }
 
 void Editor::SaveProjectAs(void)
@@ -208,7 +201,7 @@ bool Editor::IsProjectDirty(void) const {
 	return actionQueue.hasChanges();
 }
 
-bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWarnings)
+bool Editor::LoadProject(wxString dir)
 {
 	ASSERT(!IsProjectOpen());
 
@@ -216,57 +209,44 @@ bool Editor::LoadProject(wxString dir, wxString &outError, wxArrayString &outWar
 
 	{
 		ScopedLoadingBar loadingBar("Loading menu bar...");
-		if(!menubar->Load(dir, outError, outWarnings)){
-			outWarnings.push_back(wxString() << "Unable to load menu bar: " << outError);
-			outError.Clear();
-		}
+		menubar->Load(dir);
 
 		loadingBar.SetLoadDone(0, "Loading item types...");
-		if(!LoadItemTypes(dir, outError, outWarnings)){
-			outError = "Unable to load item types: " + outError;
+		if(!LoadItemTypes(dir)){
 			UnloadProject();
 			return false;
 		}
 
 		loadingBar.SetLoadDone(20, "Loading creature types...");
-		if(!LoadCreatureTypes(dir, outError, outWarnings)){
-			outWarnings.push_back(wxString() << "Unable to load creature types: " << outError);
-			outError.Clear();
-		}
+		LoadCreatureTypes(dir);
 
 		loadingBar.SetLoadDone(40, "Loading DAT...");
-		if(!gfx.loadSpriteMetadata(dir, outError, outWarnings)){
-			outError = "Unable to load DAT: " + outError;
+		if(!gfx.loadSpriteMetadata(dir)){
 			UnloadProject();
 			return false;
 		}
 
 		loadingBar.SetLoadDone(60, "Loading SPR...");
-		if(!gfx.loadSpriteData(dir, outError, outWarnings)){
-			outError = "Unable to load SPR: " + outError;
+		if(!gfx.loadSpriteData(dir)){
 			UnloadProject();
 			return false;
 		}
 
 		loadingBar.SetLoadDone(80, "Loading materials.xml...");
-		if(!g_materials.loadMaterials(dir, outError, outWarnings)){
-			outWarnings.push_back(wxString() << "Unable to load materials.xml: " << outError);
-			outError.Clear();
-		}
-
+		g_materials.loadMaterials(dir);
 		g_brushes.init();
 		g_materials.createOtherTileset();
 	}
 
 	{
 		ScopedLoadingBar loadingBar("Loading map...");
-		if(!map.load(dir, outError, outWarnings)){
-			outError = "Unable to load map: " + outError;
+		if(!map.load(dir)){
 			UnloadProject();
 			return false;
 		}
 	}
 
+	projectDir = std::move(dir);
 	return true;
 }
 
@@ -321,6 +301,24 @@ void Editor::AddPendingCanvasEvent(wxEvent &event)
 	mapWindow->GetCanvas()->GetEventHandler()->AddPendingEvent(event);
 }
 
+static void DockPaneIfOffscreen(wxAuiPaneInfo &pane){
+	if(pane.IsFloatable()) {
+		bool offscreen = true;
+		for(uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
+			wxDisplay display(index);
+			wxRect rect = display.GetClientArea();
+			if(rect.Contains(pane.floating_pos)) {
+				offscreen = false;
+				break;
+			}
+		}
+
+		if(offscreen) {
+			pane.Dock();
+		}
+	}
+}
+
 void Editor::LoadPerspective()
 {
 	std::vector<std::string> palette_list;
@@ -345,21 +343,7 @@ void Editor::LoadPerspective()
 		PaletteWindow* palette = CreatePalette();
 		wxAuiPaneInfo &pane = aui_manager->GetPane(palette);
 		aui_manager->LoadPaneInfo(wxstr(name), pane);
-		if(pane.IsFloatable()) {
-			bool offscreen = true;
-			for(uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
-				wxDisplay display(index);
-				wxRect rect = display.GetClientArea();
-				if(rect.Contains(pane.floating_pos)) {
-					offscreen = false;
-					break;
-				}
-			}
-
-			if(offscreen) {
-				pane.Dock();
-			}
-		}
+		DockPaneIfOffscreen(pane);
 	}
 
 	if(g_settings.getInteger(Config::MINIMAP_VISIBLE)) {
@@ -369,26 +353,11 @@ void Editor::LoadPerspective()
 			aui_manager->LoadPaneInfo(layout, pane);
 			minimap = newd MinimapWindow(root);
 			aui_manager->AddPane(minimap, pane);
+			DockPaneIfOffscreen(pane);
 		} else {
 			wxAuiPaneInfo &pane = aui_manager->GetPane(minimap);
 			aui_manager->LoadPaneInfo(layout, pane);
-		}
-
-		wxAuiPaneInfo &pane = aui_manager->GetPane(minimap);
-		if(pane.IsFloatable()) {
-			bool offscreen = true;
-			for(uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
-				wxDisplay display(index);
-				wxRect rect = display.GetClientArea();
-				if(rect.Contains(pane.floating_pos)) {
-					offscreen = false;
-					break;
-				}
-			}
-
-			if(offscreen) {
-				pane.Dock();
-			}
+			DockPaneIfOffscreen(pane);
 		}
 	}
 
@@ -399,26 +368,11 @@ void Editor::LoadPerspective()
 			aui_manager->LoadPaneInfo(layout, pane);
 			actions_history_window = new ActionsHistoryWindow(root);
 			aui_manager->AddPane(actions_history_window, pane);
+			DockPaneIfOffscreen(pane);
 		} else {
 			wxAuiPaneInfo &pane = aui_manager->GetPane(actions_history_window);
 			aui_manager->LoadPaneInfo(layout, pane);
-		}
-
-		wxAuiPaneInfo& pane = aui_manager->GetPane(actions_history_window);
-		if(pane.IsFloatable()) {
-			bool offscreen = true;
-			for(uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
-				wxDisplay display(index);
-				wxRect rect = display.GetClientArea();
-				if(rect.Contains(pane.floating_pos)) {
-					offscreen = false;
-					break;
-				}
-			}
-
-			if(offscreen) {
-				pane.Dock();
-			}
+			DockPaneIfOffscreen(pane);
 		}
 	}
 
@@ -517,6 +471,31 @@ void Editor::HideActionsWindow()
 		aui_manager->GetPane(actions_history_window).Show(false);
 		aui_manager->Update();
 	}
+}
+
+ProblemsWindow *Editor::ShowProblemsWindow()
+{
+	if(!problems_window){
+		problems_window = new ProblemsWindow(root);
+		aui_manager->AddPane(problems_window, wxAuiPaneInfo().Caption("Problems").Bottom().Floatable(false).Dock());
+	}else{
+		aui_manager->GetPane(problems_window).Show();
+	}
+
+	aui_manager->Update();
+	return problems_window;
+}
+
+void Editor::Notice(wxString message, ProblemSource source /*= {}*/){
+	ShowProblemsWindow()->Insert(SEVERITY_NOTICE, source, std::move(message));
+}
+
+void Editor::Warning(wxString message, ProblemSource source /*= {}*/){
+	ShowProblemsWindow()->Insert(SEVERITY_WARNING, source, std::move(message));
+}
+
+void Editor::Error(wxString message, ProblemSource source /*= {}*/){
+	ShowProblemsWindow()->Insert(SEVERITY_ERROR, source, std::move(message));
 }
 
 //=============================================================================

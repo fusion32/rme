@@ -121,7 +121,6 @@ namespace Config {
 		COPY_POSITION_FORMAT,
 
 		GOTO_WEBSITE_ON_BOOT,
-		INDIRECTORY_INSTALLATION,
 		AUTOCHECK_FOR_UPDATES,
 		ONLY_ONE_INSTANCE,
 
@@ -140,9 +139,6 @@ namespace Config {
 
 		NUMERICAL_HOTKEYS,
 		RECENT_FILES,
-
-		RECENT_EDITED_MAP_PATH,
-		RECENT_EDITED_MAP_POSITION,
 
 		FIND_ITEM_MODE,
 		JUMP_TO_ITEM_MODE,
@@ -181,7 +177,7 @@ public:
 	wxConfigBase& getConfigObject();
 	void setDefaults() { IO(DEFAULT); }
 	void load();
-	void save(bool endoftheworld = false);
+	void save();
 
 public:
 	enum DynamicType {
@@ -231,9 +227,6 @@ private:
 	};
 	void IO(IOMode mode);
 	std::vector<DynamicValue> store;
-#ifdef __WINDOWS__
-	bool use_file_cfg;
-#endif
 };
 
 extern Settings g_settings;

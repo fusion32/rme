@@ -36,7 +36,7 @@ public:
 	HouseBrush* asHouse() { return static_cast<HouseBrush*>(this); }
 
 	// Not used
-	virtual bool load(pugi::xml_node node, wxArrayString& warnings) { return true; }
+	virtual bool load(pugi::xml_node node) { return true; }
 
 	// You can always draw house tiles!
 	virtual bool canDraw(Map *map, const Position& position) const { return true; }

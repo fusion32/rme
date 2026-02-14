@@ -18,6 +18,7 @@
 #include "main.h"
 
 #include "doodad_brush.h"
+#include "editor.h"
 #include "settings.h"
 #include "tile.h"
 
@@ -82,7 +83,7 @@ static Item *CreateItem(pugi::xml_node node){
 	return item;
 }
 
-bool DoodadBrush::loadAlternative(pugi::xml_node node, wxArrayString& warnings, AlternativeBlock* which)
+bool DoodadBrush::loadAlternative(pugi::xml_node node, AlternativeBlock* which)
 {
 	AlternativeBlock* alternativeBlock;
 	if(which) {
@@ -96,13 +97,13 @@ bool DoodadBrush::loadAlternative(pugi::xml_node node, wxArrayString& warnings, 
 		const std::string& childName = as_lower_str(childNode.name());
 		if(childName == "item") {
 			if(!(attribute = childNode.attribute("chance"))) {
-				warnings.push_back("Can't read chance tag of doodad item node.");
+				g_editor.Warning("Can't read chance tag of doodad item node.");
 				continue;
 			}
 
 			Item* item = CreateItem(childNode);
 			if(!item) {
-				warnings.push_back("Can't create item from doodad item node.");
+				g_editor.Warning("Can't create item from doodad item node.");
 				continue;
 			}
 
@@ -115,7 +116,7 @@ bool DoodadBrush::loadAlternative(pugi::xml_node node, wxArrayString& warnings, 
 			alternativeBlock->single_chance += sb.chance;
 		} else if(childName == "composite") {
 			if(!(attribute = childNode.attribute("chance"))) {
-				warnings.push_back("Can't read chance tag of doodad item node.");
+				g_editor.Warning("Can't read chance tag of doodad item node.");
 				continue;
 			}
 
@@ -130,26 +131,26 @@ bool DoodadBrush::loadAlternative(pugi::xml_node node, wxArrayString& warnings, 
 				}
 
 				if(!(attribute = compositeNode.attribute("x"))) {
-					warnings.push_back("Couldn't read positionX values of composite tile node.");
+					g_editor.Warning("Couldn't read positionX values of composite tile node.");
 					continue;
 				}
 
 				int32_t x = attribute.as_int();
 				if(!(attribute = compositeNode.attribute("y"))) {
-					warnings.push_back("Couldn't read positionY values of composite tile node.");
+					g_editor.Warning("Couldn't read positionY values of composite tile node.");
 					continue;
 				}
 
 				int32_t y = attribute.as_int();
 				int32_t z = compositeNode.attribute("z").as_int();
 				if(x < -0x7FFF || x > 0x7FFF) {
-					warnings.push_back("Invalid range of x value on composite tile node.");
+					g_editor.Warning("Invalid range of x value on composite tile node.");
 					continue;
 				} else if(y < -0x7FFF || y > 0x7FFF) {
-					warnings.push_back("Invalid range of y value on composite tile node.");
+					g_editor.Warning("Invalid range of y value on composite tile node.");
 					continue;
 				} else if(z < -0x7 || z > 0x7) {
-					warnings.push_back("Invalid range of z value on composite tile node.");
+					g_editor.Warning("Invalid range of z value on composite tile node.");
 					continue;
 				}
 
@@ -179,7 +180,7 @@ bool DoodadBrush::loadAlternative(pugi::xml_node node, wxArrayString& warnings, 
 	return true;
 }
 
-bool DoodadBrush::load(pugi::xml_node node, wxArrayString& warnings)
+bool DoodadBrush::load(pugi::xml_node node)
 {
 	pugi::xml_attribute attribute;
 	if((attribute = node.attribute("lookid"))) {
@@ -208,7 +209,7 @@ bool DoodadBrush::load(pugi::xml_node node, wxArrayString& warnings)
 
 	if(node.attribute("remove_optional_border").as_bool()) {
 		if(!do_new_borders) {
-			warnings.push_back("remove_optional_border will not work without redo_borders\n");
+			g_editor.Warning("remove_optional_border will not work without redo_borders\n");
 		}
 
 		// TODO(fusion): Figure out what this is/was?
@@ -240,11 +241,11 @@ bool DoodadBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		if(as_lower_str(childNode.name()) != "alternate") {
 			continue;
 		}
-		if(!loadAlternative(childNode, warnings)) {
+		if(!loadAlternative(childNode)) {
 			return false;
 		}
 	}
-	loadAlternative(node, warnings, alternatives.empty() ? nullptr : alternatives.back());
+	loadAlternative(node, alternatives.empty() ? nullptr : alternatives.back());
 	return true;
 }
 

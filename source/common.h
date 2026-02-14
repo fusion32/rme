@@ -82,6 +82,7 @@ wxString b2yn(bool v);
 wxColor colorFromEightBit(int color);
 
 wxString GetExecDirectory(void);
+wxString GetUserDirectory(void);
 wxString NormalizeDir(const wxString &dir);
 void SetWindowToolTip(wxWindow *a, const wxString &tooltip);
 void SetWindowToolTip(wxWindow *a, wxWindow *b, const wxString &tooltip);

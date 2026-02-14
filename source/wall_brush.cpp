@@ -16,8 +16,10 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "main.h"
-#include "brush_enums.h"
+
 #include "wall_brush.h"
+#include "brush_enums.h"
+#include "editor.h"
 #include "map.h"
 
 uint32_t WallBrush::full_border_types[16];
@@ -34,7 +36,7 @@ WallBrush::~WallBrush()
 	////
 }
 
-bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
+bool WallBrush::load(pugi::xml_node node)
 {
 	pugi::xml_attribute attribute;
 	if((attribute = node.attribute("lookid"))) {
@@ -46,7 +48,7 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 		if(childTag == "wall") {
 			const std::string& typeString = childNode.attribute("type").as_string();
 			if(typeString.empty()) {
-				warnings.push_back("Could not read type tag of wall node\n");
+				g_editor.Warning("Could not read type tag of wall node");
 				continue;
 			}
 
@@ -88,7 +90,7 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 			} else if(typeString == "untouchable") {
 				alignment = WALL_UNTOUCHABLE;
 			} else {
-				warnings.push_back("Unknown wall alignment '" + wxstr(typeString) + "'\n");
+				g_editor.Warning(wxString() << "Unknown wall alignment '" << typeString << "'");
 				continue;
 			}
 
@@ -97,16 +99,16 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 				if(itemTag == "item") {
 					uint16_t id = itemNode.attribute("id").as_ushort();
 					if(id == 0) {
-						warnings.push_back("Could not read id tag of item node\n");
+						g_editor.Warning("Could not read id tag of item node");
 						break;
 					}
 
 					ItemType *type = GetMutableItemType(id);
 					if(!type) {
-						warnings.push_back("There is no itemtype with id " + std::to_string(id));
+						g_editor.Warning(wxString() << "There is no itemtype with id " << id);
 						return false;
 					} else if(type->brush && type->brush != this) {
-						warnings.push_back("Itemtype id " + std::to_string(id) + " already has a brush");
+						g_editor.Warning(wxString() << "Itemtype id " << id << " already has a brush");
 						return false;
 					}
 
@@ -124,13 +126,13 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 				} else if(itemTag == "door") {
 					uint16_t id = itemNode.attribute("id").as_ushort();
 					if(id == 0) {
-						warnings.push_back("Could not read id tag of door node\n");
+						g_editor.Warning("Could not read id tag of door node");
 						break;
 					}
 
 					std::string nodetype = itemNode.attribute("type").as_string();
 					if(nodetype.empty()) {
-						warnings.push_back("Could not read type tag of door node\n");
+						g_editor.Warning("Could not read type tag of door node");
 						continue;
 					}
 
@@ -141,17 +143,17 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 					} else {
 						isOpen = true;
 						if(nodetype != "window" && nodetype != "any window" && nodetype != "hatch window") {
-							warnings.push_back("Could not read open tag of door node\n");
+							g_editor.Warning("Could not read open tag of door node");
 							break;
 						}
 					}
 
 					ItemType* type = GetMutableItemType(id);
 					if(!type) {
-						warnings.push_back("There is no itemtype with id " + std::to_string(id));
+						g_editor.Warning(wxString() << "There is no itemtype with id " << id);
 						return false;
 					} else if(type->brush && type->brush != this) {
-						warnings.push_back("Itemtype id " + std::to_string(id) + " already has a brush");
+						g_editor.Warning(wxString() << "Itemtype id " << id << " already has a brush");
 						return false;
 					}
 
@@ -187,7 +189,7 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 						all_windows = true;
 						all_doors = true;
 					} else {
-						warnings.push_back("Unknown door type '" + wxstr(nodetype) + "'\n");
+						g_editor.Warning(wxString() << "Unknown door type '" << nodetype << "'");
 						break;
 					}
 
@@ -219,17 +221,17 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings)
 				if(brush) {
 					friends.push_back(brush->getID());
 				} else {
-					warnings.push_back("Brush '" + wxstr(name) + "' is not defined.");
+					g_editor.Warning(wxString() << "Brush '" << name << "' is not defined.");
 					continue;
 				}
 
 				if(childNode.attribute("redirect").as_bool()) {
 					if(!brush->isWall()) {
-						warnings.push_back("Wall brush redirect link: '" + wxstr(name) + "' is not a wall brush.");
+						g_editor.Warning(wxString() << "Wall brush redirect link: '" << name << "' is not a wall brush.");
 					} else if(!redirect_to) {
 						redirect_to = brush->asWall();
 					} else {
-						warnings.push_back( "Wall brush '" + wxstr(getName()) + "' has more than one redirect link.");
+						g_editor.Warning(wxString() << "Wall brush '" << getName() << "' has more than one redirect link.");
 					}
 				}
 			}

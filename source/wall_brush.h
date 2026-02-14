@@ -34,7 +34,7 @@ public:
 	bool isWall() const { return true; }
 	WallBrush* asWall() { return static_cast<WallBrush*>(this); }
 
-	virtual bool load(pugi::xml_node node, wxArrayString& warnings);
+	virtual bool load(pugi::xml_node node);
 
 	virtual bool canDraw(Map *map, const Position& position) const { return true; }
 

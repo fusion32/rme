@@ -117,7 +117,7 @@ static Outfit ReadOutfit(Script *script){
 	return outfit;
 }
 
-static bool LoadCreatureType(const wxString &filename, wxString &outError, wxArrayString &outWarnings){
+static bool LoadCreatureType(const wxString &filename){
 	Script script(filename.mb_str());
 
 	// NOTE(fusion): Make sure we don't attempt to parse anything if there was
@@ -125,19 +125,19 @@ static bool LoadCreatureType(const wxString &filename, wxString &outError, wxArr
 	// of the data is parsed outside the parsing loop.
 	if(!script.eof()){
 		if(strcmp(script.readIdentifier(), "racenumber") != 0){
-			outError << "Excepted race number as the first attribute";
+			g_editor.Error("Excepted race number as the first attribute");
 			return false;
 		}
 
 		script.readSymbol('=');
 		int raceId = script.readNumber();
 		if(raceId <= 0 || raceId > 1024){
-			outError << "Illegal race number " << raceId;
+			g_editor.Error(wxString() << "Illegal race number " << raceId);
 			return false;
 		}
 
 		if(CreatureTypeExists(raceId)){
-			outError << "Race " << raceId << " already defined";
+			g_editor.Error(wxString() << "Race " << raceId << " already defined");
 			return false;
 		}
 
@@ -312,17 +312,17 @@ static bool LoadCreatureType(const wxString &filename, wxString &outError, wxArr
 	}
 
 	if(const char *error = script.getError()){
-		outError << error;
+		g_editor.Error(error);
 		return false;
 	}
 
 	return true;
 }
 
-bool LoadCreatureTypes(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings){
-	wxString monsterDir = projectDir + "mon";
+bool LoadCreatureTypes(const wxString &projectDir){
+	wxString monsterDir = projectDir + "/mon";
 	if(!wxDir::Exists(monsterDir)){
-		outError << "Unable to locate monster directory";
+		g_editor.Error("Unable to locate monster directory");
 		return false;
 	}
 
@@ -331,8 +331,8 @@ bool LoadCreatureTypes(const wxString &projectDir, wxString &outError, wxArraySt
 	if(dir.GetFirst(&filename, "*.mon", wxDIR_FILES)){
 		do{
 			FileName fn(monsterDir, filename);
-			if(!LoadCreatureType(fn.GetFullPath(), outError, outWarnings)){
-				outError.Prepend(wxString() << "Unable to load monster " << filename << ": ");
+			if(!LoadCreatureType(fn.GetFullPath())){
+				g_editor.Error(wxString() << "Unable to load monster " << filename);
 				return false;
 			}
 		}while(dir.GetNext(&filename));

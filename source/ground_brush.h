@@ -36,7 +36,7 @@ public:
 	bool isGround() const { return true; }
 	GroundBrush* asGround() { return static_cast<GroundBrush*>(this); }
 
-	virtual bool load(pugi::xml_node node, wxArrayString& warnings);
+	virtual bool load(pugi::xml_node node);
 
 	virtual void draw(Map *map, Tile* tile, void* parameter);
 	virtual void undraw(Map *map, Tile* tile);

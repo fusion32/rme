@@ -49,45 +49,43 @@ void Materials::clear()
 	tilesets.clear();
 }
 
-bool Materials::loadMaterials(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings)
+bool Materials::loadMaterials(const wxString &projectDir)
 {
 	wxString filename;
 	{
 		wxPathList paths;
 		paths.Add(projectDir);
-		paths.Add(projectDir + "editor");
+		paths.Add(projectDir + "/editor");
 		filename = paths.FindValidPath("materials.xml");
 		if(filename.IsEmpty()){
-			outError << "Unable to locate materials.xml";
+			g_editor.Error("Unable to locate materials.xml");
 			return false;
 		}
 	}
 
-	return loadMaterialsInternal(filename, outError, outWarnings);
+	return loadMaterialsInternal(filename);
 }
 
-bool Materials::loadMaterialsInternal(const wxString &filename, wxString &outError, wxArrayString &outWarnings)
+bool Materials::loadMaterialsInternal(const wxString &filename)
 {
 	pugi::xml_document doc;
 	pugi::xml_parse_result result = doc.load_file(filename.mb_str());
 	if(!result) {
-		outWarnings.push_back(wxString("Could not open ")
-				<< filename << ": " << result.description());
+		g_editor.Error(wxString() << "Could not open " << filename << ": " << result.description());
 		return false;
 	}
 
 	pugi::xml_node node = doc.child("materials");
 	if(!node) {
-		outWarnings.push_back(wxString("Materials file \"")
-				<< filename << "\" is missing top-level materials node");
+		g_editor.Error(wxString() << "Materials file \"" << filename << "\" is missing top-level materials node");
 		return false;
 	}
 
-	unserializeMaterials(filename, node, outError, outWarnings);
+	unserializeMaterials(filename, node);
 	return true;
 }
 
-bool Materials::unserializeMaterials(const wxString &filename, pugi::xml_node node, wxString &outError, wxArrayString &outWarnings)
+bool Materials::unserializeMaterials(const wxString &filename, pugi::xml_node node)
 {
 	pugi::xml_attribute attribute;
 	for(pugi::xml_node childNode: node.children()){
@@ -97,19 +95,17 @@ bool Materials::unserializeMaterials(const wxString &filename, pugi::xml_node no
 				continue;
 			}
 
-			wxString innerError;
 			FileName includeName = filename;
 			includeName.SetFullName(wxString(attribute.as_string(), wxConvUTF8));
-			if(!loadMaterialsInternal(includeName.GetFullPath(), innerError, outWarnings)) {
-				outWarnings.push_back(wxString("Error while loading file \"")
-						<< includeName.GetFullName() << "\": " + innerError);
+			if(!loadMaterialsInternal(includeName.GetFullPath())) {
+				g_editor.Error(wxString() << "Error while loading file \"" << includeName.GetFullName() << "\"");
 			}
 		} else if(childName == "border") {
-			g_brushes.unserializeBorder(childNode, outWarnings);
+			g_brushes.unserializeBorder(childNode);
 		} else if(childName == "brush") {
-			g_brushes.unserializeBrush(childNode, outWarnings);
+			g_brushes.unserializeBrush(childNode);
 		} else if(childName == "tileset") {
-			unserializeTileset(childNode, outWarnings);
+			unserializeTileset(childNode);
 		}
 	}
 	return true;
@@ -182,11 +178,11 @@ void Materials::createOtherTileset()
 	}
 }
 
-bool Materials::unserializeTileset(pugi::xml_node node, wxArrayString& warnings)
+bool Materials::unserializeTileset(pugi::xml_node node)
 {
 	pugi::xml_attribute attribute;
 	if(!(attribute = node.attribute("name"))) {
-		warnings.push_back("Couldn't read tileset name");
+		g_editor.Warning("Couldn't read tileset name");
 		return false;
 	}
 
@@ -202,7 +198,7 @@ bool Materials::unserializeTileset(pugi::xml_node node, wxArrayString& warnings)
 	}
 
 	for(pugi::xml_node childNode = node.first_child(); childNode; childNode = childNode.next_sibling()) {
-		tileset->loadCategory(childNode, warnings);
+		tileset->loadCategory(childNode);
 	}
 	return true;
 }
