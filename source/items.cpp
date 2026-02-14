@@ -349,17 +349,17 @@ int GetInstanceAttributeByName(const char *name){
 }
 
 const char *GetFlagName(int flag){
-	ASSERT(flag >= 0 && flag <= NUM_FLAGS);
+	ASSERT(flag >= 0 && flag < NUM_FLAGS);
 	return g_flagNames[flag];
 }
 
 const char *GetTypeAttributeName(int attr){
-	ASSERT(attr >= 0 && attr <= NUM_TYPE_ATTRIBUTES);
+	ASSERT(attr >= 0 && attr < NUM_TYPE_ATTRIBUTES);
 	return g_typeAttrNames[attr];
 }
 
 const char *GetInstanceAttributeName(int attr){
-	ASSERT(attr >= 0 && attr <= NUM_INSTANCE_ATTRIBUTES);
+	ASSERT(attr >= 0 && attr < NUM_INSTANCE_ATTRIBUTES);
 	return g_instanceAttrNames[attr];
 }
 

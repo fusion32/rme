@@ -438,6 +438,10 @@ void MainMenuBar::LoadDefault(void){
 
 	frame->SetAcceleratorTable(wxAcceleratorTable(
 			NARRAY(accelerators), accelerators));
+
+	g_editor.recentFiles.AddFilesToMenu();
+	Update();
+	LoadValues();
 }
 
 bool MainMenuBar::Load(const wxString &projectDir, wxString &outError, wxArrayString &outWarnings)

@@ -147,8 +147,7 @@ static void SaveObjects(ScriptWriter *script, const Item *first){
 		if(item != first) script->writeText(", ");
 		script->writeNumber(item->getID());
 
-		int attrCount = 0;
-		for(int attr = 0; attr <= NUM_INSTANCE_ATTRIBUTES; attr += 1){
+		for(int attr = 0; attr < NUM_INSTANCE_ATTRIBUTES; attr += 1){
 			if(attr == CONTENT || item->getAttributeOffset((ObjectInstanceAttribute)attr) == -1){
 				continue;
 			}
@@ -161,7 +160,6 @@ static void SaveObjects(ScriptWriter *script, const Item *first){
 			}else{
 				script->writeNumber(item->getAttribute((ObjectInstanceAttribute)attr));
 			}
-			attrCount += 1;
 		}
 
 		if(item->getAttributeOffset(CONTENT) != -1){
