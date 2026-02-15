@@ -97,11 +97,6 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage()
 	grid_sizer->Add(undo_mem_size_spin, 0);
 	SetWindowToolTip(tmptext, undo_mem_size_spin, "The approximite limit for the memory usage of the undo queue.");
 
-	grid_sizer->Add(tmptext = newd wxStaticText(general_page, wxID_ANY, "Worker Threads: "), 0);
-	worker_threads_spin = newd wxSpinCtrl(general_page, wxID_ANY, i2ws(g_settings.getInteger(Config::WORKER_THREADS)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 64);
-	grid_sizer->Add(worker_threads_spin, 0);
-	SetWindowToolTip(tmptext, worker_threads_spin, "How many threads the editor will use for intensive operations. This should be equivalent to the amount of logical processors in your system.");
-
 	grid_sizer->Add(tmptext = newd wxStaticText(general_page, wxID_ANY, "Replace count: "), 0);
 	replace_size_spin = newd wxSpinCtrl(general_page, wxID_ANY, i2ws(g_settings.getInteger(Config::REPLACE_SIZE)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 100000);
 	grid_sizer->Add(replace_size_spin, 0);
@@ -110,11 +105,14 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage()
 	sizer->Add(grid_sizer, 0, wxALL, 5);
 	sizer->AddSpacer(10);
 
-	wxString position_choices[] = { "  {x = 0, y = 0, z = 0}",
-                                    R"(  {"x":0,"y":0,"z":0})",
-									"  x, y, z",
-									"  (x, y, z)",
-									"  Position(x, y, z)" };
+	wxString position_choices[] = {
+		"  [x,y,z]",
+		"  {x = 0, y = 0, z = 0}",
+		"  {\"x\":0,\"y\":0,\"z\":0}",
+		"  x, y, z",
+		"  (x, y, z)",
+		"  Position(x, y, z)",
+	};
 	int radio_choices = sizeof(position_choices) / sizeof(wxString);
 	position_format = newd wxRadioBox(general_page, wxID_ANY, "Copy Position Format", wxDefaultPosition, wxDefaultSize, radio_choices, position_choices, 1, wxRA_SPECIFY_COLS);
 	position_format->SetSelection(g_settings.getInteger(Config::COPY_POSITION_FORMAT));
@@ -208,8 +206,15 @@ wxNotebookPage* PreferencesWindow::CreateGraphicsPage()
 
 	sizer->AddSpacer(10);
 
-    auto * subsizer = newd wxFlexGridSizer(2, 10, 10);
+	wxFlexGridSizer *subsizer = newd wxFlexGridSizer(2, 10, 10);
 	subsizer->AddGrowableCol(1);
+
+	// Grid size
+	// TODO(fusion): Not sure if this is the appropriate place to put this.
+	subsizer->Add(tmp = newd wxStaticText(graphics_page, wxID_ANY, "Grid Size: "), 0);
+	grid_size_spin = newd wxSpinCtrl(graphics_page, wxID_ANY, i2ws(g_settings.getInteger(Config::GRID_SIZE)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 256);
+	subsizer->Add(grid_size_spin, 0);
+	SetWindowToolTip(tmp, grid_size_spin, "The size of a grid square when drawing the grid.");
 
 	// Icon background color
 	icon_background_choice = newd wxChoice(graphics_page, wxID_ANY);
@@ -444,24 +449,10 @@ wxNotebookPage* PreferencesWindow::CreateUIPage()
 	doubleclick_properties_chkbox->SetToolTip("Double clicking on a tile will bring up the properties menu for the top item.");
 	sizer->Add(doubleclick_properties_chkbox, 0, wxLEFT | wxTOP, 5);
 
-	inversed_scroll_chkbox = newd wxCheckBox(ui_page, wxID_ANY, "Use inversed scroll");
-	inversed_scroll_chkbox->SetValue(g_settings.getFloat(Config::SCROLL_SPEED) < 0);
-	inversed_scroll_chkbox->SetToolTip("When this checkbox is checked, dragging the map using the center mouse button will be inversed (default RTS behaviour).");
-	sizer->Add(inversed_scroll_chkbox, 0, wxLEFT | wxTOP, 5);
-
 	sizer->AddSpacer(10);
 
-	sizer->Add(newd wxStaticText(ui_page, wxID_ANY, "Scroll speed: "), 0, wxLEFT | wxTOP, 5);
-
-    auto true_scrollspeed = int(std::abs(g_settings.getFloat(Config::SCROLL_SPEED)) * 10);
-	scroll_speed_slider = newd wxSlider(ui_page, wxID_ANY, true_scrollspeed, 1, std::max(true_scrollspeed, 100));
-	scroll_speed_slider->SetToolTip("This controls how fast the map will scroll when you hold down the center mouse button and move it around.");
-	sizer->Add(scroll_speed_slider, 0, wxEXPAND, 5);
-
 	sizer->Add(newd wxStaticText(ui_page, wxID_ANY, "Zoom speed: "), 0, wxLEFT | wxTOP, 5);
-
-    auto true_zoomspeed = int(g_settings.getFloat(Config::ZOOM_SPEED) * 10);
-	zoom_speed_slider = newd wxSlider(ui_page, wxID_ANY, true_zoomspeed, 1, std::max(true_zoomspeed, 100));
+	zoom_speed_slider = newd wxSlider(ui_page, wxID_ANY, int(g_settings.getFloat(Config::ZOOM_SPEED) * 100.0f), 10, 200);
 	zoom_speed_slider->SetToolTip("This controls how fast you will zoom when you scroll the center mouse button.");
 	sizer->Add(zoom_speed_slider, 0, wxEXPAND, 5);
 
@@ -505,7 +496,6 @@ void PreferencesWindow::Apply()
 	g_settings.setInteger(Config::ONLY_ONE_INSTANCE, only_one_instance_chkbox->GetValue());
 	g_settings.setInteger(Config::UNDO_SIZE, undo_size_spin->GetValue());
 	g_settings.setInteger(Config::UNDO_MEM_SIZE, undo_mem_size_spin->GetValue());
-	g_settings.setInteger(Config::WORKER_THREADS, worker_threads_spin->GetValue());
 	g_settings.setInteger(Config::REPLACE_SIZE, replace_size_spin->GetValue());
 	g_settings.setInteger(Config::COPY_POSITION_FORMAT, position_format->GetSelection());
 
@@ -521,11 +511,14 @@ void PreferencesWindow::Apply()
 	g_settings.setInteger(Config::MERGE_PASTE, merge_paste_chkbox->GetValue());
 
 	// Graphics
+	g_settings.setInteger(Config::HIDE_ITEMS_WHEN_ZOOMED, hide_items_when_zoomed_chkbox->GetValue());
 	g_settings.setInteger(Config::USE_GUI_SELECTION_SHADOW, icon_selection_shadow_chkbox->GetValue());
 	if(g_settings.getBoolean(Config::USE_MEMCACHED_SPRITES) != use_memcached_chkbox->GetValue()) {
 		must_restart = true;
 	}
 	g_settings.setInteger(Config::USE_MEMCACHED_SPRITES_TO_SAVE, use_memcached_chkbox->GetValue());
+	g_settings.setInteger(Config::GRID_SIZE, grid_size_spin->GetValue());
+
 	if(icon_background_choice->GetSelection() == 0) {
 		if(g_settings.getInteger(Config::ICON_BACKGROUND) != 0) {
 			g_editor.gfx.cleanSoftwareSprites();
@@ -543,7 +536,22 @@ void PreferencesWindow::Apply()
 		g_settings.setInteger(Config::ICON_BACKGROUND, 255);
 	}
 
-	// Screenshots
+	{
+		wxColor color = cursor_color_pick->GetColour();
+		g_settings.setInteger(Config::CURSOR_RED, color.Red());
+		g_settings.setInteger(Config::CURSOR_GREEN, color.Green());
+		g_settings.setInteger(Config::CURSOR_BLUE, color.Blue());
+		//g_settings.setInteger(Config::CURSOR_ALPHA, color.Alpha());
+	}
+
+	{
+		wxColor color = cursor_alt_color_pick->GetColour();
+		g_settings.setInteger(Config::CURSOR_ALT_RED, color.Red());
+		g_settings.setInteger(Config::CURSOR_ALT_GREEN, color.Green());
+		g_settings.setInteger(Config::CURSOR_ALT_BLUE, color.Blue());
+		//g_settings.setInteger(Config::CURSOR_ALT_ALPHA, clr.Alpha());
+	}
+
 	g_settings.setString(Config::SCREENSHOT_DIRECTORY, nstr(screenshot_directory_picker->GetPath()));
 
 	std::string new_format = nstr(screenshot_format_choice->GetStringSelection());
@@ -557,19 +565,6 @@ void PreferencesWindow::Apply()
 		g_settings.setString(Config::SCREENSHOT_FORMAT, "bmp");
 	}
 
-	wxColor clr = cursor_color_pick->GetColour();
-		g_settings.setInteger(Config::CURSOR_RED, clr.Red());
-		g_settings.setInteger(Config::CURSOR_GREEN, clr.Green());
-		g_settings.setInteger(Config::CURSOR_BLUE, clr.Blue());
-		//g_settings.setInteger(Config::CURSOR_ALPHA, clr.Alpha());
-
-	clr = cursor_alt_color_pick->GetColour();
-		g_settings.setInteger(Config::CURSOR_ALT_RED, clr.Red());
-		g_settings.setInteger(Config::CURSOR_ALT_GREEN, clr.Green());
-		g_settings.setInteger(Config::CURSOR_ALT_BLUE, clr.Blue());
-		//g_settings.setInteger(Config::CURSOR_ALT_ALPHA, clr.Alpha());
-
-	g_settings.setInteger(Config::HIDE_ITEMS_WHEN_ZOOMED, hide_items_when_zoomed_chkbox->GetValue());
 	/*
 	g_settings.setInteger(Config::TEXTURE_MANAGEMENT, texture_managment_chkbox->GetValue());
 	g_settings.setInteger(Config::TEXTURE_CLEAN_PULSE, clean_interval_spin->GetValue());
@@ -591,17 +586,9 @@ void PreferencesWindow::Apply()
 	g_settings.setInteger(Config::USE_LARGE_RAW_SIZEBAR, large_raw_sizebar_chkbox->GetValue());
 	g_settings.setInteger(Config::USE_LARGE_CONTAINER_ICONS, large_container_icons_chkbox->GetValue());
 	g_settings.setInteger(Config::USE_LARGE_CHOOSE_ITEM_ICONS, large_pick_item_icons_chkbox->GetValue());
-
-
 	g_settings.setInteger(Config::SWITCH_MOUSEBUTTONS, switch_mousebtn_chkbox->GetValue());
 	g_settings.setInteger(Config::DOUBLECLICK_PROPERTIES, doubleclick_properties_chkbox->GetValue());
-
-	float scroll_mul = 1.0;
-	if(inversed_scroll_chkbox->GetValue()) {
-		scroll_mul = -1.0;
-	}
-	g_settings.setFloat(Config::SCROLL_SPEED, scroll_mul * scroll_speed_slider->GetValue()/10.f);
-	g_settings.setFloat(Config::ZOOM_SPEED, zoom_speed_slider->GetValue()/10.f);
+	g_settings.setFloat(Config::ZOOM_SPEED, zoom_speed_slider->GetValue() / 100.0f);
 
 	g_settings.save();
 

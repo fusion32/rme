@@ -56,7 +56,7 @@ void DrawingOptions::SetDefault()
 	ingame = false;
 	dragging = false;
 
-	show_grid = 0;
+	grid_size = 0;
 	show_all_floors = true;
 	show_creatures = true;
 	show_houses = true;
@@ -86,7 +86,7 @@ void DrawingOptions::SetIngame()
 	ingame = true;
 	dragging = false;
 
-	show_grid = 0;
+	grid_size = 0;
 	show_all_floors = true;
 	show_creatures = true;
 	show_houses = false;
@@ -195,8 +195,8 @@ void MapDrawer::SetupGL()
 
 void MapDrawer::Release()
 {
-	for(auto it = tooltips.begin(); it != tooltips.end(); ++it) {
-		delete *it;
+	for(MapTooltip *tooltip: tooltips){
+		delete tooltip;
 	}
 	tooltips.clear();
 
@@ -224,8 +224,8 @@ void MapDrawer::Draw()
 	if(options.dragging)
 		DrawSelectionBox();
 	DrawBrush();
-	if(options.show_grid && zoom <= 10.f)
-		DrawGrid();
+	if(options.grid_size > 0 && zoom <= (options.grid_size * 5.0f))
+		DrawGrid(options.grid_size);
 	if(options.show_ingame_box)
 		DrawIngameBox();
 	if(options.isTooltips())
@@ -510,22 +510,34 @@ void MapDrawer::DrawIngameBox()
 	glEnable(GL_TEXTURE_2D);
 }
 
-void MapDrawer::DrawGrid()
+void MapDrawer::DrawGrid(int grid_size)
 {
 	glDisable(GL_TEXTURE_2D);
 	glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
 	glBegin(GL_LINES);
 
-	for(int y = start_y; y < end_y; ++y) {
-		int py = y * rme::TileSize - view_scroll_y;
-		glVertex2f(start_x * rme::TileSize - view_scroll_x, py);
-		glVertex2f(end_x * rme::TileSize - view_scroll_x, py);
+	{
+		float left = start_x * rme::TileSize - view_scroll_x;
+		float right = end_x * rme::TileSize - view_scroll_x;
+		int tile_y = start_y - (start_y % grid_size);
+		while(tile_y < end_y){
+			int y = tile_y * rme::TileSize - view_scroll_y;
+			glVertex2f(left, y);
+			glVertex2f(right, y);
+			tile_y += grid_size;
+		}
 	}
 
-	for(int x = start_x; x < end_x; ++x) {
-		int px = x * rme::TileSize - view_scroll_x;
-		glVertex2f(px, start_y * rme::TileSize - view_scroll_y);
-		glVertex2f(px, end_y * rme::TileSize - view_scroll_y);
+	{
+		float top = start_y * rme::TileSize - view_scroll_y;
+		float bottom = end_y * rme::TileSize - view_scroll_y;
+		int tile_x = start_x - (start_x % grid_size);
+		while(tile_x < end_x){
+			int x = tile_x * rme::TileSize - view_scroll_x;
+			glVertex2f(x, top);
+			glVertex2f(x, bottom);
+			tile_x += grid_size;
+		}
 	}
 
 	glEnd();
@@ -1331,23 +1343,42 @@ void MapDrawer::WriteItemTooltip(const Item* item, std::ostringstream& stream)
 {
 	if(!item || !ItemTypeExists(item->getID())) return;
 
-	// TODO(fusion): Relevant srv flags/attributes instead?
-#if TODO
-	if(...){ // check all flags
-		if(stream.tellp() > 0){
-			stream << "\n";
-		}
-
-		// check individual flags and add attributes here
+	if(item->getFlag(CHEST)){
+		stream << GetInstanceAttributeName(CHESTQUESTNUMBER)
+			<< ": " << item->getAttribute(CHESTQUESTNUMBER) << "\n";
 	}
-#endif
+
+	if(item->getFlag(KEY)){
+		stream << GetInstanceAttributeName(KEYNUMBER)
+			<< ": " << item->getAttribute(KEYNUMBER) << "\n";
+	}
+
+	if(item->getFlag(KEYDOOR)){
+		stream << GetInstanceAttributeName(KEYHOLENUMBER)
+			<< ": " << item->getAttribute(KEYHOLENUMBER) << "\n";
+	}
+
+	if(item->getFlag(LEVELDOOR)){
+		stream << GetInstanceAttributeName(DOORLEVEL)
+			<< ": " << item->getAttribute(DOORLEVEL) << "\n";
+	}
+
+	if(item->getFlag(QUESTDOOR)){
+		stream << GetInstanceAttributeName(DOORQUESTNUMBER)
+			<< ": " << item->getAttribute(DOORQUESTNUMBER) << "\n";
+		stream << GetInstanceAttributeName(DOORQUESTVALUE)
+			<< ": " << item->getAttribute(DOORQUESTVALUE) << "\n";
+	}
+
+	if(item->getFlag(TELEPORTABSOLUTE)){
+		stream << GetInstanceAttributeName(ABSTELEPORTDESTINATION)
+			<< ": " << UnpackAbsoluteCoordinate(item->getAttribute(ABSTELEPORTDESTINATION)) << "\n";
+	}
 }
 
-void MapDrawer::WriteWaypointTooltip(const wxString &name, std::ostringstream& stream)
+void MapDrawer::WriteMarkTooltip(const wxString &name, std::ostringstream& stream)
 {
-	if(stream.tellp() > 0)
-		stream << "\n";
-	stream << "wp: " << name << "\n";
+	stream << "Mark: " << name << "\n";
 }
 
 void MapDrawer::DrawTile(Tile *tile)
@@ -1493,7 +1524,8 @@ void MapDrawer::DrawBrushIndicator(int x, int y, Brush* brush, float red, float 
 	glVertex2i(x, y);
 	for(int i = 0; i <= 30; i++) {
 		float angle = i * 2.0f * rme::PI / 30;
-		glVertex2f(cos(angle) * (rme::TileSize / 2) + x, sin(angle) * (rme::TileSize / 2) + y);
+		glVertex2f(cos(angle) * (rme::TileSize / 2) + x,
+				   sin(angle) * (rme::TileSize / 2) + y);
 	}
 	glEnd();
 
@@ -1623,7 +1655,7 @@ void MapDrawer::DrawPositionIndicator(int z)
 
 void MapDrawer::DrawTooltips()
 {
-	if(!options.show_tooltips || tooltips.empty())
+	if(!options.show_tooltips || zoom > 5.0f || tooltips.empty())
 		return;
 
 	glDisable(GL_TEXTURE_2D);
@@ -1652,7 +1684,7 @@ void MapDrawer::DrawTooltips()
 				break;
 		}
 
-		float scale = zoom < 1.0f ? zoom : 1.0f;
+		float scale = zoom;
 
 		width = (width + 8.0f) * scale;
 		height = (height + 4.0f) * scale;
@@ -1701,29 +1733,32 @@ void MapDrawer::DrawTooltips()
 		glEnd();
 
 		// text
-		if(zoom <= 1.0) {
-			startx += (3.0f * scale);
-			starty += (14.0f * scale);
-			glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
-			glRasterPos2f(startx, starty);
-			char_count = 0;
-			line_char_count = 0;
-			for(const char* c = text; *c != '\0'; c++) {
-				if(*c == '\n' || (line_char_count >= MapTooltip::MAX_CHARS_PER_LINE && *c == ' ')) {
-					starty += (14.0f * scale);
-					glRasterPos2f(startx, starty);
-					line_char_count = 0;
-				}
-				char_count++;
-				line_char_count++;
+		startx += (3.0f * scale);
+		starty += (14.0f * scale);
+		glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+		glRasterPos2f(startx, starty);
+		char_count = 0;
+		line_char_count = 0;
+		for(const char* c = text; *c != '\0'; c++) {
+			if(*c == '\n' || (line_char_count >= MapTooltip::MAX_CHARS_PER_LINE && *c == ' ')) {
+				starty += (14.0f * scale);
+				glRasterPos2f(startx, starty);
+				line_char_count = 0;
+			}
+			char_count++;
+			line_char_count++;
 
-				if(tooltip->ellipsis && char_count >= MapTooltip::MAX_CHARS) {
-					glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, '.');
-					if(char_count >= (MapTooltip::MAX_CHARS + 2))
-						break;
-				} else if(!iscntrl(*c)) {
-					glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *c);
-				}
+			// TODO(fusion): glutBitmapCharacter doesn't advance the raster
+			// position when it falls outside the viewport, causing the whole
+			// text to not be drawn. The solution would be to have proper text
+			// rendering, but is it even worth it for this small detail? Maybe
+			// wxWidgets has some utility to do that?
+			if(tooltip->ellipsis && char_count >= MapTooltip::MAX_CHARS) {
+				glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, '.');
+				if(char_count >= (MapTooltip::MAX_CHARS + 2))
+					break;
+			} else if(!iscntrl(*c)) {
+				glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *c);
 			}
 		}
 	}

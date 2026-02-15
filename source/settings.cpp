@@ -194,6 +194,7 @@ void Settings::IO(IOMode mode)
 	Int(SHOW_INGAME_BOX, 0);
 	Int(SHOW_LIGHTS, 1);
 	Int(SHOW_GRID, 0);
+	Int(GRID_SIZE, 32);
 	Int(SHOW_EXTRA, 1);
 	Int(SHOW_SHADE, 1);
 	Int(SHOW_SPECIAL_TILES, 1);
@@ -212,7 +213,6 @@ void Settings::IO(IOMode mode)
 
 	section("Editor");
 	String(RECENT_FILES, "");
-	Int(WORKER_THREADS, 1);
 	Int(MERGE_MOVE, 0);
 	Int(MERGE_PASTE, 0);
 	Int(UNDO_SIZE, 400);
@@ -220,8 +220,7 @@ void Settings::IO(IOMode mode)
 	Int(GROUP_ACTIONS, 1);
 	Int(SELECTION_TYPE, SELECT_CURRENT_FLOOR);
 	Int(COMPENSATED_SELECT, 1);
-	Float(SCROLL_SPEED, 3.5f);
-	Float(ZOOM_SPEED, 1.4f);
+	Float(ZOOM_SPEED, 1.0f);
 	Int(SWITCH_MOUSEBUTTONS, 0);
 	Int(DOUBLECLICK_PROPERTIES, 1);
 	Int(LISTBOX_EATS_ALL_EVENTS, 1);

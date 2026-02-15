@@ -64,7 +64,7 @@ public:
 	bool ingame;
 	bool dragging;
 
-	int show_grid;
+	int grid_size;
 	bool show_all_floors;
 	bool show_creatures;
 	bool show_houses;
@@ -133,7 +133,7 @@ public:
 	void DrawSelectionBox();
 	void DrawBrush();
 	void DrawIngameBox();
-	void DrawGrid();
+	void DrawGrid(int grid_size);
 	void DrawTooltips();
 
 	void TakeScreenshot(uint8_t* screenshot_buffer);
@@ -163,7 +163,7 @@ protected:
 	void DrawIndicator(int x, int y, int indicator, float red = 1.0f, float green = 1.0f, float blue = 1.0f, float alpha = 1.0f);
 	void DrawPositionIndicator(int z);
 	void WriteItemTooltip(const Item* item, std::ostringstream& stream);
-	void WriteWaypointTooltip(const wxString &name, std::ostringstream& stream);
+	void WriteMarkTooltip(const wxString &name, std::ostringstream& stream);
 	void MakeTooltip(int screenx, int screeny, const std::string& text, float red = 1.0f, float green = 1.0f, float blue = 1.0f);
 	void AddLight(Tile *tile);
 

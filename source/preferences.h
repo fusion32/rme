@@ -50,7 +50,6 @@ protected:
 	wxCheckBox* show_welcome_dialog_chkbox;
 	wxSpinCtrl* undo_size_spin;
 	wxSpinCtrl* undo_mem_size_spin;
-	wxSpinCtrl* worker_threads_spin;
 	wxSpinCtrl* replace_size_spin;
 	wxRadioBox* position_format;
 
@@ -66,14 +65,15 @@ protected:
 	wxCheckBox* merge_paste_chkbox;
 
 	// Graphics
-	wxCheckBox* icon_selection_shadow_chkbox;
-	wxChoice* icon_background_choice;
-	wxCheckBox* use_memcached_chkbox;
-	wxDirPickerCtrl* screenshot_directory_picker;
-	wxChoice* screenshot_format_choice;
 	wxCheckBox* hide_items_when_zoomed_chkbox;
+	wxCheckBox* icon_selection_shadow_chkbox;
+	wxCheckBox* use_memcached_chkbox;
+	wxSpinCtrl* grid_size_spin;
+	wxChoice* icon_background_choice;
 	wxColourPickerCtrl* cursor_color_pick;
 	wxColourPickerCtrl* cursor_alt_color_pick;
+	wxDirPickerCtrl* screenshot_directory_picker;
+	wxChoice* screenshot_format_choice;
 	/*
 	wxCheckBox* texture_managment_chkbox;
 	wxSpinCtrl* clean_interval_spin;
@@ -99,8 +99,6 @@ protected:
 
 	wxCheckBox* switch_mousebtn_chkbox;
 	wxCheckBox* doubleclick_properties_chkbox;
-	wxCheckBox* inversed_scroll_chkbox;
-	wxSlider* scroll_speed_slider;
 	wxSlider* zoom_speed_slider;
 
 	// Client info
