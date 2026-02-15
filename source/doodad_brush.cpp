@@ -184,7 +184,7 @@ bool DoodadBrush::load(pugi::xml_node node)
 {
 	pugi::xml_attribute attribute;
 	if((attribute = node.attribute("lookid"))) {
-		look_id = attribute.as_ushort();
+		look_id = (uint16_t)attribute.as_int();
 	}
 
 	if((attribute = node.attribute("on_blocking"))) {

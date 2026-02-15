@@ -28,7 +28,7 @@ class GamePanel : public wxPanel
 {
 public:
 	GamePanel(wxWindow* parent, int width, int height);
-	virtual ~GamePanel();
+	~GamePanel() override;
 
 	void OnPaint(wxPaintEvent&);
 	void OnKeyDown(wxKeyEvent&);
@@ -43,7 +43,6 @@ protected:
 	virtual void Render(wxDC& pdc) = 0;
 	virtual void GameLoop(int time) = 0;
 	virtual void OnKey(wxKeyEvent& event, bool down) = 0;
-
 	virtual int getFPS() const = 0;
 
 protected:
@@ -65,14 +64,13 @@ class TetrisPanel : public GamePanel
 {
 public:
 	TetrisPanel(wxWindow* parent);
-	~TetrisPanel();
+	~TetrisPanel() override;
 
 protected:
-	virtual void Render(wxDC& pdc);
-	virtual void GameLoop(int time);
-	virtual void OnKey(wxKeyEvent& event, bool down);
-
-	virtual int getFPS() const { return lines / 10 + 3; }
+	void Render(wxDC& pdc) override;
+	void GameLoop(int time) override;
+	void OnKey(wxKeyEvent& event, bool down) override;
+	int getFPS() const override { return lines / 10 + 3; }
 
 	enum Color {
 		NO_COLOR,
@@ -124,14 +122,13 @@ class SnakePanel : public GamePanel
 {
 public:
 	SnakePanel(wxWindow* parent);
-	~SnakePanel();
+	~SnakePanel() override;
 
 protected:
-	virtual void Render(wxDC& pdc);
-	virtual void GameLoop(int time);
-	virtual void OnKey(wxKeyEvent& event, bool down);
-
-	virtual int getFPS() const { return 7; }
+	void Render(wxDC& pdc) override;
+	void GameLoop(int time) override;
+	void OnKey(wxKeyEvent& event, bool down) override;
+	int getFPS() const override { return 7; }
 
 	enum {
 		NORTH,

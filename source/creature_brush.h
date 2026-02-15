@@ -28,23 +28,23 @@ class CreatureBrush : public Brush
 {
 public:
 	CreatureBrush(int raceId_);
-	virtual ~CreatureBrush();
+	~CreatureBrush() override;
 
-	bool isCreature() const { return true; }
-	CreatureBrush* asCreature() { return static_cast<CreatureBrush*>(this); }
+	bool isCreature() const override { return true; }
+	CreatureBrush* asCreature() override { return static_cast<CreatureBrush*>(this); }
 
-	virtual bool canDraw(Map *map, const Position& position) const;
-	virtual void draw(Map *map, Tile* tile, void* parameter);
-	virtual void undraw(Map *map, Tile* tile);
+	bool canDraw(Map *map, const Position& position) const override;
+	void draw(Map *map, Tile* tile, void* parameter) override;
+	void undraw(Map *map, Tile* tile) override;
 
 	const CreatureType &getType() const { return GetCreatureType(raceId); }
 	Outfit getOutfit(void) const { return getType().outfit; }
 
-	virtual int getLookID() const { return 0; }
-	virtual std::string getName() const { return getType().name; }
-	virtual bool canDrag() const { return false; }
-	virtual bool canSmear() const { return true; }
-	virtual bool oneSizeFitsAll() const { return true; }
+	int getLookID() const override { return 0; }
+	std::string getName() const override { return getType().name; }
+	bool canDrag() const override { return false; }
+	bool canSmear() const override { return true; }
+	bool oneSizeFitsAll() const override { return true; }
 
 protected:
 	const int raceId;

@@ -72,7 +72,7 @@ class FileReadHandle : public FileHandle
 {
 public:
 	explicit FileReadHandle(const std::string& name);
-	virtual ~FileReadHandle();
+	~FileReadHandle() override;
 
 	bool getU8(uint8_t& u8) { return getType(u8); }
 	bool getByte(uint8_t& u8) { return getType(u8); }
@@ -85,7 +85,7 @@ public:
 	bool getString(std::string& str);
 	bool getLongString(std::string& str);
 
-	virtual void close();
+	void close() override;
 	size_t size() { return file_size; }
 
 protected:
@@ -157,7 +157,7 @@ class NodeFileReadHandle : public FileHandle
 {
 public:
 	NodeFileReadHandle();
-	virtual ~NodeFileReadHandle();
+	~NodeFileReadHandle() override;
 
 	virtual BinaryNode* getRootNode() = 0;
 
@@ -186,15 +186,15 @@ class DiskNodeFileReadHandle : public NodeFileReadHandle
 {
 public:
 	DiskNodeFileReadHandle(const std::string& name, const std::vector<std::string>& acceptable_identifiers);
-	virtual ~DiskNodeFileReadHandle();
+	~DiskNodeFileReadHandle() override;
 
-	virtual void close();
-	virtual BinaryNode* getRootNode();
+	void close() override;
+	BinaryNode* getRootNode() override;
 
-	virtual size_t size() { return file_size; }
-	virtual size_t tell() {if(file) return ftell(file); return 0; }
+	size_t size() override { return file_size; }
+	size_t tell() override {if(file) return ftell(file); return 0; }
 protected:
-	virtual bool renewCache();
+	bool renewCache() override;
 
 	size_t file_size;
 };
@@ -204,18 +204,18 @@ class MemoryNodeFileReadHandle : public NodeFileReadHandle
 public:
 	// Does NOT claim ownership of the memory it is given.
 	MemoryNodeFileReadHandle(const uint8_t* data, size_t size);
-	virtual ~MemoryNodeFileReadHandle();
+	~MemoryNodeFileReadHandle() override;
 
 	void assign(const uint8_t* data, size_t size);
 
-	virtual void close();
-	virtual BinaryNode* getRootNode();
+	void close() override;
+	BinaryNode* getRootNode() override;
 
-	virtual size_t size() { return cache_size; }
-	virtual size_t tell() { return local_read_index; }
-	virtual bool isOk() { return true; }
+	size_t size() override { return cache_size; }
+	size_t tell() override { return local_read_index; }
+	bool isOk() override { return true; }
 protected:
-	virtual bool renewCache();
+	bool renewCache() override;
 
 	uint8_t* index;
 };
@@ -224,7 +224,7 @@ class FileWriteHandle : public FileHandle
 {
 public:
 	explicit FileWriteHandle(const std::string& name);
-	virtual ~FileWriteHandle();
+	~FileWriteHandle() override;
 
 	bool addU8(uint8_t u8) { return addType(u8); }
 	bool addByte(uint8_t u8) { return addType(u8); }
@@ -251,7 +251,7 @@ class NodeFileWriteHandle : public FileHandle
 {
 public:
 	NodeFileWriteHandle();
-	virtual ~NodeFileWriteHandle();
+	~NodeFileWriteHandle() override;
 
 	bool addNode(uint8_t nodetype);
 	bool endNode();
@@ -302,28 +302,28 @@ class DiskNodeFileWriteHandle : public NodeFileWriteHandle
 {
 public:
 	DiskNodeFileWriteHandle(const std::string& name, const std::string& identifier);
-	virtual ~DiskNodeFileWriteHandle();
+	~DiskNodeFileWriteHandle() override;
 
-	virtual void close();
+	void close() override;
 
 protected:
-	virtual void renewCache();
+	void renewCache() override;
 };
 
 class MemoryNodeFileWriteHandle : public NodeFileWriteHandle
 {
 public:
 	MemoryNodeFileWriteHandle();
-	virtual ~MemoryNodeFileWriteHandle();
+	~MemoryNodeFileWriteHandle() override;
 
 	void reset();
-	virtual void close();
+	void close() override;
 
 	uint8_t* getMemory();
 	size_t getSize();
 
 protected:
-	virtual void renewCache();
+	void renewCache() override;
 };
 
 #endif

@@ -104,9 +104,9 @@ class EditorSprite : public Sprite
 public:
 	EditorSprite(wxBitmap* b16x16, wxBitmap* b32x32);
 
-	virtual ~EditorSprite();
-	virtual void DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width = -1, int height = -1);
-	virtual void unloadDC();
+	~EditorSprite() override;
+	void DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width = -1, int height = -1) override;
+	void unloadDC() override;
 
 protected:
 	wxBitmap* bm[SPRITE_SIZE_COUNT];
@@ -116,15 +116,15 @@ class GameSprite : public Sprite
 {
 public:
 	GameSprite();
-	virtual ~GameSprite();
+	~GameSprite() override;
 
 	int getIndex(int width, int height, int layer, int pattern_x, int pattern_y, int pattern_z, int frame) const;
 	GLuint getHardwareID(int _x, int _y, int _layer, int _pattern_x, int _pattern_y, int _pattern_z, int _frame);
-	GLuint getHardwareID(int _x, int _y, int _dir, int _addon, int _pattern_z, const Outfit& _outfit, int _frame); // CreatureDatabase
-	virtual void DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width = -1, int height = -1);
+	GLuint getHardwareID(int _x, int _y, int _dir, int _addon, int _pattern_z, const Outfit& _outfit, int _frame);
+	void DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width = -1, int height = -1) override;
 	void DrawTo(wxDC* context, const wxRect& rect, const Outfit& outfit);
 
-	virtual void unloadDC();
+	void unloadDC() override;
 
 	void clean(time_t time);
 
@@ -169,7 +169,7 @@ protected:
 	class NormalImage : public Image {
 	public:
 		NormalImage();
-		virtual ~NormalImage();
+		~NormalImage() override;
 
 		// We use the sprite id as GL texture id
 		uint32_t id;
@@ -178,15 +178,15 @@ protected:
 		uint16_t size;
 		uint8_t* dump;
 
-		virtual void clean(time_t time);
+		void clean(time_t time) override;
 
-		virtual GLuint getHardwareID();
-		virtual uint8_t* getRGBData();
-		virtual uint8_t* getRGBAData();
+		GLuint getHardwareID() override;
+		uint8_t* getRGBData() override;
+		uint8_t* getRGBAData() override;
 
 	protected:
-		virtual void createGLTexture(GLuint textureId = 0);
-		virtual void unloadGLTexture(GLuint textureId = 0);
+		void createGLTexture(GLuint textureId = 0) override;
+		void unloadGLTexture(GLuint textureId = 0) override;
 	};
 
 	class EditorImage : public NormalImage {
@@ -202,11 +202,11 @@ protected:
 	class TemplateImage : public Image {
 	public:
 		TemplateImage(GameSprite* parent, int v, const Outfit& outfit);
-		virtual ~TemplateImage();
+		~TemplateImage() override;
 
-		virtual GLuint getHardwareID();
-		virtual uint8_t* getRGBData();
-		virtual uint8_t* getRGBAData();
+		GLuint getHardwareID() override;
+		uint8_t* getRGBData() override;
+		uint8_t* getRGBAData() override;
 
 		GLuint gl_tid;
 		GameSprite* parent;
@@ -218,8 +218,8 @@ protected:
 	protected:
 		void colorizePixel(uint8_t color, uint8_t &r, uint8_t &b, uint8_t &g);
 
-		virtual void createGLTexture(GLuint ignored = 0);
-		virtual void unloadGLTexture(GLuint ignored = 0);
+		void createGLTexture(GLuint ignored = 0) override;
+		void unloadGLTexture(GLuint ignored = 0) override;
 	};
 
 	uint32_t id;

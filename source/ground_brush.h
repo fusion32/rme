@@ -31,15 +31,16 @@ public:
 	static void init();
 
 	GroundBrush();
-	virtual ~GroundBrush();
+	~GroundBrush() override;
 
-	bool isGround() const { return true; }
-	GroundBrush* asGround() { return static_cast<GroundBrush*>(this); }
+	bool isGround() const override { return true; }
+	GroundBrush* asGround() override { return static_cast<GroundBrush*>(this); }
 
-	virtual bool load(pugi::xml_node node);
+	bool load(pugi::xml_node node) override;
 
-	virtual void draw(Map *map, Tile* tile, void* parameter);
-	virtual void undraw(Map *map, Tile* tile);
+	void draw(Map *map, Tile* tile, void* parameter) override;
+	void undraw(Map *map, Tile* tile) override;
+
 	static void doBorders(Map *map, Tile* tile);
 	static const BorderBlock* getBrushTo(GroundBrush* first, GroundBrush* second);
 

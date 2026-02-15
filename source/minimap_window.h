@@ -21,7 +21,7 @@
 class MinimapWindow : public wxPanel {
 public:
 	MinimapWindow(wxWindow* parent);
-	virtual ~MinimapWindow();
+	~MinimapWindow() override;
 
 	void OnPaint(wxPaintEvent&);
 	void OnEraseBackground(wxEraseEvent&) {}
@@ -34,7 +34,7 @@ public:
 	void OnKey(wxKeyEvent& event);
 protected:
 	wxPen* pens[256];
-	wxTimer	update_timer;
+	wxTimer update_timer;
 	int last_start_x;
 	int last_start_y;
 

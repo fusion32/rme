@@ -23,18 +23,17 @@ struct ActionGroup;
 struct ActionQueue;
 struct Creature;
 struct CreatureType;
+struct House;
 struct Item;
 struct ItemType;
 struct Map;
 struct Outfit;
 struct Tile;
+struct Script;
 
 class CopyBuffer;
-class House;
 class Tileset;
 class Town;
-class Waypoint;
-class Waypoints;
 
 class AutoBorder;
 class Brush;

@@ -27,10 +27,10 @@ class DoodadBrush : public Brush
 {
 public:
 	DoodadBrush();
-	virtual ~DoodadBrush();
+	~DoodadBrush() override;
 
-	bool isDoodad() const { return true; }
-	DoodadBrush* asDoodad() { return static_cast<DoodadBrush*>(this); }
+	bool isDoodad() const override { return true; }
+	DoodadBrush* asDoodad() override { return static_cast<DoodadBrush*>(this); }
 
 protected:
 	struct SimpleBlock;
@@ -40,12 +40,12 @@ protected:
 
 public:
 	bool loadAlternative(pugi::xml_node node, AlternativeBlock* which = nullptr);
-	virtual bool load(pugi::xml_node node);
+	bool load(pugi::xml_node node) override;
 
-	virtual bool canDraw(Map *map, const Position& position) const { return true; }
-	virtual void draw(Map *map, Tile* tile, void* parameter);
+	bool canDraw(Map *map, const Position& position) const override { return true; }
+	void draw(Map *map, Tile* tile, void* parameter) override;
 	const std::vector<CompositeTile> &getComposite(int variation) const;
-	virtual void undraw(Map *map, Tile* tile);
+	void undraw(Map *map, Tile* tile) override;
 
 	bool isEmpty(int variation) const;
 
@@ -64,13 +64,13 @@ public:
 	bool doNewBorders() const { return do_new_borders; }
 	bool ownsItem(const Item* item) const;
 
-	virtual bool canSmear() const { return draggable; }
-	virtual bool canDrag() const { return false; }
-	virtual bool oneSizeFitsAll() const { return one_size; }
-	virtual int getLookID() const { return look_id; }
-	virtual int getMaxVariation() const { return alternatives.size(); }
-	virtual std::string getName() const { return name; }
-	virtual void setName(const std::string& newName) { name = newName; }
+	bool canSmear() const override { return draggable; }
+	bool canDrag() const override { return false; }
+	bool oneSizeFitsAll() const override { return one_size; }
+	int getLookID() const override { return look_id; }
+	int getMaxVariation() const override { return alternatives.size(); }
+	std::string getName() const override { return name; }
+	void setName(const std::string& newName) override { name = newName; }
 
 protected:
 	std::string name;

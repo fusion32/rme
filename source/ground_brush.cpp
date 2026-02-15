@@ -65,7 +65,7 @@ bool AutoBorder::load(pugi::xml_node node, GroundBrush* owner, uint16_t ground_e
 	}
 
 	if(pugi::xml_attribute attr = node.attribute("group")) {
-		group = attr.as_ushort();
+		group = (uint16_t)attr.as_int();
 	}
 
 	for(pugi::xml_node childNode: node.children()){
@@ -143,7 +143,7 @@ bool GroundBrush::load(pugi::xml_node node)
 {
 	pugi::xml_attribute attribute;
 	if((attribute = node.attribute("lookid"))) {
-		look_id = attribute.as_ushort();
+		look_id = (uint16_t)attribute.as_int();
 	}
 
 	if((attribute = node.attribute("z-order"))) {
@@ -161,7 +161,7 @@ bool GroundBrush::load(pugi::xml_node node)
 	for(pugi::xml_node childNode: node.children()){
 		std::string_view childName = childNode.name();
 		if(childName == "item") {
-			uint16_t itemId = childNode.attribute("id").as_ushort();
+			uint16_t itemId = (uint16_t)childNode.attribute("id").as_int();
 			int32_t chance = childNode.attribute("chance").as_int();
 
 			ItemType *type = GetMutableItemType(itemId);
@@ -195,7 +195,7 @@ bool GroundBrush::load(pugi::xml_node node)
 			}
 
 			if((attribute = childNode.attribute("ground_equivalent"))) {
-				uint16_t ground_equivalent = attribute.as_ushort();
+				uint16_t ground_equivalent = (uint16_t)attribute.as_int();
 
 				// Load from inline definition
 				const ItemType &type = GetItemType(ground_equivalent);
@@ -220,7 +220,7 @@ bool GroundBrush::load(pugi::xml_node node)
 					continue;
 				}
 
-				uint16_t id = attribute.as_ushort();
+				uint16_t id = (uint16_t)attribute.as_int();
 				auto it = g_brushes.borders.find(id);
 				if(it == g_brushes.borders.end() || !it->second) {
 					g_editor.Warning(wxString() << "Could not find border id " << id);
@@ -236,7 +236,7 @@ bool GroundBrush::load(pugi::xml_node node)
 					continue;
 				}
 
-				uint16_t ground_equivalent = attribute.as_ushort();
+				uint16_t ground_equivalent = (uint16_t)attribute.as_int();
 				const ItemType &it = GetItemType(ground_equivalent);
 				if(it.typeId == 0) {
 					g_editor.Warning("Invalid id of ground dependency equivalent item.");
@@ -358,7 +358,7 @@ bool GroundBrush::load(pugi::xml_node node)
 									continue;
 								}
 
-								uint16_t group = attribute.as_ushort();
+								uint16_t group = (uint16_t)attribute.as_int();
 								if(!(attribute = conditionChild.attribute("edge"))) {
 									continue;
 								}

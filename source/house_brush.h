@@ -30,28 +30,25 @@ class HouseBrush : public Brush
 {
 public:
 	HouseBrush();
-	virtual ~HouseBrush();
+	~HouseBrush() override;
 
-	bool isHouse() const { return true; }
-	HouseBrush* asHouse() { return static_cast<HouseBrush*>(this); }
+	bool isHouse() const override { return true; }
+	HouseBrush* asHouse() override { return static_cast<HouseBrush*>(this); }
 
 	// Not used
-	virtual bool load(pugi::xml_node node) { return true; }
+	bool load(pugi::xml_node node) override { return true; }
 
-	// You can always draw house tiles!
-	virtual bool canDraw(Map *map, const Position& position) const { return true; }
-	// Draw the shit!
-	virtual void draw(Map *map, Tile* tile, void* parameter);
-	// Undraw the shit!
-	virtual void undraw(Map *map, Tile* tile);
+	bool canDraw(Map *map, const Position& position) const override { return true; }
+	void draw(Map *map, Tile* tile, void* parameter) override;
+	void undraw(Map *map, Tile* tile) override;
 
-	virtual bool canDrag() const { return true; }
+	bool canDrag() const override { return true; }
 
 	void setHouse(uint16_t houseId_) { houseId = houseId_; }
 	uint16_t getHouseID() const { return houseId; }
 
-	virtual int getLookID() const { return 0; } // We don't have a graphic
-	virtual std::string getName() const { return "House Brush"; }
+	int getLookID() const override { return 0; } // We don't have a graphic
+	std::string getName() const override { return "House Brush"; }
 
 protected:
 	uint16_t houseId;

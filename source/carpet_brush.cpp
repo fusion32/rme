@@ -42,7 +42,7 @@ bool CarpetBrush::load(pugi::xml_node node)
 {
 	pugi::xml_attribute attribute;
 	if((attribute = node.attribute("lookid"))) {
-		look_id = attribute.as_ushort();
+		look_id = (uint16_t)attribute.as_int();
 	}
 
 	for(pugi::xml_node carpetNode: node.children("carpet")){
@@ -107,7 +107,7 @@ bool CarpetBrush::load(pugi::xml_node node)
 				continue;
 			}
 
-			uint16_t id = attribute.as_ushort();
+			uint16_t id = (uint16_t)attribute.as_int();
 			ItemType *type = GetMutableItemType(id);
 			if(!type) {
 				g_editor.Warning(wxString() << "There is no itemtype with id " << id);

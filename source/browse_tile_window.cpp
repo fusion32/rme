@@ -31,10 +31,10 @@ class BrowseTileListBox : public wxVListBox
 {
 public:
 	BrowseTileListBox(wxWindow* parent, wxWindowID id, Tile* tile_);
-	~BrowseTileListBox();
 
-	void OnDrawItem(wxDC& dc, const wxRect& rect, size_t index) const;
-	wxCoord OnMeasureItem(size_t index) const;
+	void OnDrawItem(wxDC& dc, const wxRect& rect, size_t index) const override;
+	wxCoord OnMeasureItem(size_t index) const override;
+
 	Item* GetSelectedItem();
 	void RemoveSelected();
 
@@ -46,11 +46,6 @@ BrowseTileListBox::BrowseTileListBox(wxWindow* parent, wxWindowID id, Tile* tile
 	wxVListBox(parent, id, wxDefaultPosition, wxSize(200, 180), wxLB_MULTIPLE), tile(tile_)
 {
 	SetItemCount(tile->countItems());
-}
-
-BrowseTileListBox::~BrowseTileListBox()
-{
-	////
 }
 
 void BrowseTileListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const

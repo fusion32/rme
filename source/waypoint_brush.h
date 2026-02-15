@@ -29,30 +29,29 @@ class WaypointBrush : public Brush
 {
 public:
 	WaypointBrush();
-	virtual ~WaypointBrush();
 
-	bool isWaypoint() const { return true; }
-	WaypointBrush* asWaypoint() { return static_cast<WaypointBrush*>(this); }
+	bool isWaypoint() const override { return true; }
+	WaypointBrush* asWaypoint() override { return static_cast<WaypointBrush*>(this); }
 
 	// Not used
-	virtual bool load(pugi::xml_node node) { return true; }
+	bool load(pugi::xml_node node) override { return true; }
 
-	virtual bool canDraw(Map *map, const Position& position) const;
-	// Will ASSERT
-	virtual void draw(Map *map, Tile* tile, void* parameter);
-	virtual void undraw(Map *map, Tile* tile);
+	bool canDraw(Map *map, const Position& position) const override;
+	void draw(Map *map, Tile* tile, void* parameter) override;
+	void undraw(Map *map, Tile* tile) override;
 
-	virtual bool canDrag() const { return false; }
-	virtual bool canSmear() const { return false; }
-	virtual bool oneSizeFitsAll() const { return true; }
+	bool canDrag() const override { return false; }
+	bool canSmear() const override { return false; }
+	bool oneSizeFitsAll() const override { return true; }
 
-	std::string getWaypoint() const;
-	void setWaypoint(Waypoint* wp);
-	virtual int getLookID() const { return 0; } // We don't have a graphic
-	virtual std::string getName() const { return "Waypoint Brush"; }
+	const std::string &getWaypoint() const { return waypoint; }
+	void setWaypoint(std::string name) { waypoint = std::move(name); };
+
+	int getLookID() const override { return 0; } // We don't have a graphic
+	std::string getName() const override { return "Waypoint Brush"; }
 
 protected:
-	std::string waypoint_name;
+	std::string waypoint;
 };
 
 #endif

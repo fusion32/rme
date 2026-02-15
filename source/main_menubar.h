@@ -33,14 +33,14 @@ class MainMenuBar : public wxMenuBar //public wxEvtHandler
 {
 public:
 	MainMenuBar(MainFrame* frame);
-	virtual ~MainMenuBar();
+	~MainMenuBar() override;
 
 	void LoadDefault(void);
 	bool Load(const wxString &projectDir);
 
 	// Update
 	// Turn on/off all buttons according to current editor state
-	void Update();
+	void Update() override;
 	void UpdateFloorMenu(); // Only concerns the floor menu
 	void UpdateIndicatorsMenu();
 

@@ -29,10 +29,9 @@ class DatDebugViewListBox : public wxVListBox
 {
 public:
 	DatDebugViewListBox(wxWindow* parent, wxWindowID id);
-	~DatDebugViewListBox();
 
-	void OnDrawItem(wxDC& dc, const wxRect& rect, size_t index) const;
-	wxCoord OnMeasureItem(size_t index) const;
+	void OnDrawItem(wxDC& dc, const wxRect& rect, size_t index) const override;
+	wxCoord OnMeasureItem(size_t index) const override;
 
 protected:
 	std::vector<Sprite*> sprites;
@@ -49,11 +48,6 @@ DatDebugViewListBox::DatDebugViewListBox(wxWindow* parent, wxWindowID id) :
 		sprites.push_back(g_editor.gfx.getSprite(typeId));
 	}
 	SetItemCount(sprites.size());
-}
-
-DatDebugViewListBox::~DatDebugViewListBox()
-{
-	////
 }
 
 void DatDebugViewListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const

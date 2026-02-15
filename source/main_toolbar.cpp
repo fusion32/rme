@@ -15,8 +15,8 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
-#include "const.h"
 #include "main.h"
+#include "const.h"
 #include "main_toolbar.h"
 #include "application.h"
 #include "editor.h"

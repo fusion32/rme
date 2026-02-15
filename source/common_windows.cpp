@@ -112,8 +112,6 @@ ImportMapWindow::ImportMapWindow(wxWindow* parent) :
 	Centre(wxBOTH);
 }
 
-ImportMapWindow::~ImportMapWindow() = default;
-
 void ImportMapWindow::OnClickBrowse(wxCommandEvent& WXUNUSED(event))
 {
 	wxFileDialog dialog(this, "Import...", "", "", "*.otbm", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
@@ -224,8 +222,6 @@ ExportMiniMapWindow::ExportMiniMapWindow(wxWindow* parent) :
 	Centre(wxBOTH);
 	CheckValues();
 }
-
-ExportMiniMapWindow::~ExportMiniMapWindow() = default;
 
 void ExportMiniMapWindow::OnExportTypeChange(wxCommandEvent& event)
 {
@@ -370,8 +366,6 @@ FindDialog::FindDialog(wxWindow* parent, wxString title) :
 	// RefreshContents();
 }
 
-FindDialog::~FindDialog() = default;
-
 void FindDialog::OnKeyDown(wxKeyEvent& event)
 {
 	int h, delta;
@@ -438,8 +432,6 @@ FindBrushDialog::FindBrushDialog(wxWindow* parent, wxString title) : FindDialog(
 {
 	RefreshContents();
 }
-
-FindBrushDialog::~FindBrushDialog() = default;
 
 void FindBrushDialog::OnClickListInternal(wxCommandEvent& event)
 {
@@ -582,11 +574,6 @@ FindDialogListBox::FindDialogListBox(wxWindow* parent, wxWindowID id) :
 	no_matches(false)
 {
 	Clear();
-}
-
-FindDialogListBox::~FindDialogListBox()
-{
-	////
 }
 
 void FindDialogListBox::Clear()

@@ -40,7 +40,7 @@ bool WallBrush::load(pugi::xml_node node)
 {
 	pugi::xml_attribute attribute;
 	if((attribute = node.attribute("lookid"))) {
-		look_id = attribute.as_ushort();
+		look_id = (uint16_t)attribute.as_int();
 	}
 
 	for(pugi::xml_node childNode: node.children()){
@@ -97,7 +97,7 @@ bool WallBrush::load(pugi::xml_node node)
 			for(pugi::xml_node itemNode: childNode.children()){
 				std::string_view itemTag = itemNode.name();
 				if(itemTag == "item") {
-					uint16_t id = itemNode.attribute("id").as_ushort();
+					uint16_t id = (uint16_t)itemNode.attribute("id").as_int();
 					if(id == 0) {
 						g_editor.Warning("Could not read id tag of item node");
 						break;
@@ -124,7 +124,7 @@ bool WallBrush::load(pugi::xml_node node)
 
 					wall_items[alignment].items.push_back(wt);
 				} else if(itemTag == "door") {
-					uint16_t id = itemNode.attribute("id").as_ushort();
+					uint16_t id = (uint16_t)itemNode.attribute("id").as_int();
 					if(id == 0) {
 						g_editor.Warning("Could not read id tag of door node");
 						break;

@@ -36,12 +36,22 @@ PalettePanel::PalettePanel(wxWindow* parent, wxWindowID id, long style) :
 	refresh_timer(this, PALETTE_DELAYED_REFRESH_TIMER),
 	last_brush_size(0)
 {
-	////
+	// no-op
 }
 
-PalettePanel::~PalettePanel()
+wxString PalettePanel::GetName() const
 {
-	////
+	switch(GetType()) {
+		case TILESET_TERRAIN: return "Terrain Palette";
+		case TILESET_DOODAD: return "Doodad Palette";
+		case TILESET_ITEM: return "Item Palette";
+		case TILESET_CREATURE: return "Creature Palette";
+		case TILESET_HOUSE: return "House Palette";
+		case TILESET_RAW: return "RAW Palette";
+		case TILESET_WAYPOINT: return "Waypoint Palette";
+		case TILESET_UNKNOWN: return "Unknown";
+	}
+	return wxEmptyString;
 }
 
 PaletteWindow* PalettePanel::GetParentPalette() const
@@ -92,21 +102,6 @@ void PalettePanel::SetToolbarIconSize(bool large_icons)
 	for(ToolBarList::iterator iter = tool_bars.begin(); iter != tool_bars.end(); ++iter) {
 		(*iter)->SetToolbarIconSize(large_icons);
 	}
-}
-
-wxString PalettePanel::GetName() const
-{
-	switch(GetType()) {
-		case TILESET_TERRAIN: return "Terrain Palette";
-		case TILESET_DOODAD: return "Doodad Palette";
-		case TILESET_ITEM: return "Item Palette";
-		case TILESET_CREATURE: return "Creature Palette";
-		case TILESET_HOUSE: return "House Palette";
-		case TILESET_RAW: return "RAW Palette";
-		case TILESET_WAYPOINT: return "Waypoint Palette";
-		case TILESET_UNKNOWN: return "Unknown";
-	}
-	return wxEmptyString;
 }
 
 PaletteType PalettePanel::GetType() const
@@ -295,11 +290,6 @@ void BrushSizePanel::LoadAllContents()
 	loaded = true;
 }
 
-wxString BrushSizePanel::GetName() const
-{
-	return "Brush Size";
-}
-
 void BrushSizePanel::SetToolbarIconSize(bool d)
 {
 	InvalidateContents();
@@ -409,12 +399,7 @@ BrushToolPanel::BrushToolPanel(wxWindow* parent) :
 	nologBrushButton(nullptr),
 	pzBrushButton(nullptr)
 {
-	////
-}
-
-BrushToolPanel::~BrushToolPanel()
-{
-	////
+	// no-op
 }
 
 void BrushToolPanel::InvalidateContents()
@@ -570,11 +555,6 @@ void BrushToolPanel::LoadAllContents()
 	SetSizerAndFit(size_sizer);
 
 	loaded = true;
-}
-
-wxString BrushToolPanel::GetName() const
-{
-	return "Tools";
 }
 
 void BrushToolPanel::SetToolbarIconSize(bool d)
@@ -795,16 +775,6 @@ BrushThicknessPanel::BrushThicknessPanel(wxWindow* parent) :
 	thickness_sizer->Add(slider, 1, wxEXPAND);
 
 	SetSizerAndFit(thickness_sizer);
-}
-
-BrushThicknessPanel::~BrushThicknessPanel()
-{
-	////
-}
-
-wxString BrushThicknessPanel::GetName() const
-{
-	return "Brush Thickness";
 }
 
 void BrushThicknessPanel::OnScroll(wxScrollEvent& event)

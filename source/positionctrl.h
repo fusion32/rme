@@ -25,7 +25,7 @@ class PositionCtrl : public wxControl
 {
 public:
 	PositionCtrl(wxWindow *parent, Position minPos, Position maxPos, Position pos);
-	~PositionCtrl();
+	~PositionCtrl() override;
 
 	long GetX() const { return x_field->GetIntValue(); }
 	long GetY() const { return y_field->GetIntValue(); }
@@ -37,7 +37,7 @@ public:
 	void SetZ(int value) { z_field->SetIntValue(value); }
 	void SetPosition(Position pos);
 
-	bool Enable(bool enable = true);
+	bool Enable(bool enable = true) override;
 
 	void OnClipboardText(wxClipboardTextEvent &event);
 

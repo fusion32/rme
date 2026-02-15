@@ -24,19 +24,19 @@
 
 class MapWindow;
 class MapPopupMenu;
-class AnimationTimer;
 class MapDrawer;
 
 class MapCanvas : public wxGLCanvas
 {
 public:
 	MapCanvas(MapWindow* parent);
-	virtual ~MapCanvas();
+	~MapCanvas() override;
 	void Reset();
 
 	// All events
 	void OnPaint(wxPaintEvent& event);
 	void OnEraseBackground(wxEraseEvent& event) {}
+	void OnAnimationTimer(wxTimerEvent &event);
 
 	void OnMouseMove(wxMouseEvent& event);
 	void OnMouseLeftRelease(wxMouseEvent& event);
@@ -88,7 +88,7 @@ public:
 	// ---
 	void OnProperties(wxCommandEvent& event);
 
-	void Refresh();
+	void Refresh(bool eraseBackground = false, const wxRect *rect = NULL) override;
 
 	void ScreenToMap(int screen_x, int screen_y, int* map_x, int* map_y);
 	void MouseToMap(int* map_x, int* map_y) { ScreenToMap(cursor_x, cursor_y, map_x, map_y); }
@@ -174,7 +174,7 @@ private:
 
 	wxStopWatch refresh_watch;
 	MapPopupMenu* popup_menu;
-	AnimationTimer* animation_timer;
+	wxTimer *animation_timer;
 
 	friend class MapDrawer;
 
@@ -185,22 +185,7 @@ private:
 class MapPopupMenu : public wxMenu {
 public:
 	MapPopupMenu(void) : wxMenu() {}
-	virtual ~MapPopupMenu(void) {}
 	void Update();
-};
-
-class AnimationTimer : public wxTimer
-{
-public:
-	AnimationTimer(MapCanvas *canvas);
-
-	void Notify();
-	void Start();
-	void Stop();
-
-private:
-	MapCanvas *map_canvas;
-	bool started;
 };
 
 #endif

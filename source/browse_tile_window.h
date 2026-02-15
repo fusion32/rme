@@ -28,7 +28,7 @@ class BrowseTileWindow : public wxDialog
 {
 public:
 	BrowseTileWindow(wxWindow* parent, Tile* tile, wxPoint position = wxDefaultPosition);
-	~BrowseTileWindow();
+	~BrowseTileWindow() override;
 
 	void OnItemSelected(wxCommandEvent&);
 	void OnClickDelete(wxCommandEvent&);
@@ -42,7 +42,7 @@ protected:
 	wxButton* delete_button;
 	wxButton* select_raw_button;
 
-	DECLARE_EVENT_TABLE();
+	DECLARE_EVENT_TABLE()
 };
 
 #endif

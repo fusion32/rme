@@ -14,6 +14,8 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU|Clang")
 		-Wpedantic
 		-Wextra
 		-Wno-unused-parameter
+		-Wno-nested-anon-types
+		-Wsuggest-override
 	)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	# TODO(fusion): Enable MSVC warnings.

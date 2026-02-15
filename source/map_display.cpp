@@ -66,6 +66,7 @@ BEGIN_EVENT_TABLE(MapCanvas, wxGLCanvas)
 	//Drawing events
 	EVT_PAINT(MapCanvas::OnPaint)
 	EVT_ERASE_BACKGROUND(MapCanvas::OnEraseBackground)
+	EVT_TIMER(MAP_ANIMATION_TIMER, MapCanvas::OnAnimationTimer)
 
 	// Menu events
 	EVT_MENU(MAP_POPUP_MENU_CUT, MapCanvas::OnCut)
@@ -133,7 +134,7 @@ MapCanvas::MapCanvas(MapWindow* parent) :
 	last_mmb_click_y(-1)
 {
 	popup_menu = newd MapPopupMenu();
-	animation_timer = newd AnimationTimer(this);
+	animation_timer = newd wxTimer(this, MAP_ANIMATION_TIMER);
 	drawer = new MapDrawer(this);
 	keyCode = WXK_NONE;
 }
@@ -146,13 +147,14 @@ MapCanvas::~MapCanvas()
 	free(screenshot_buffer);
 }
 
-void MapCanvas::Refresh()
+void MapCanvas::Refresh(bool eraseBackground /*= false*/, const wxRect *rect /*= NULL*/)
 {
 	if(refresh_watch.Time() > g_settings.getInteger(Config::HARD_REFRESH_RATE)) {
 		refresh_watch.Start();
 		wxGLCanvas::Update();
 	}
-	wxGLCanvas::Refresh();
+
+	wxGLCanvas::Refresh(eraseBackground, rect);
 }
 
 void MapCanvas::SetZoom(double value)
@@ -224,10 +226,11 @@ void MapCanvas::OnPaint(wxPaintEvent& event)
 
 		options.dragging = boundbox_selection;
 
-		if(options.show_preview || drawer->GetPositionIndicatorTime() != 0)
-			animation_timer->Start();
-		else
+		if(!options.show_preview && drawer->GetPositionIndicatorTime() == 0){
 			animation_timer->Stop();
+		}else if(!animation_timer->IsRunning()){
+			animation_timer->Start(100, wxTIMER_CONTINUOUS);
+		}
 
 		drawer->SetupVars();
 		drawer->SetupGL();
@@ -244,6 +247,12 @@ void MapCanvas::OnPaint(wxPaintEvent& event)
 
 	// Swap buffer
 	SwapBuffers();
+}
+
+void MapCanvas::OnAnimationTimer(wxTimerEvent &event)
+{
+	if(GetZoom() <= 2.0)
+		Refresh();
 }
 
 void MapCanvas::ShowPositionIndicator(const Position& position)
@@ -1316,31 +1325,34 @@ void MapCanvas::OnMousePropertiesRelease(wxMouseEvent& event)
 
 void MapCanvas::OnWheel(wxMouseEvent& event)
 {
+	// TODO(fusion): Is it even reasonable to use these static variables for
+	// accumulating wheel rotation?
 	if(event.ControlDown()) {
-		static double diff = 0.0;
-		diff += event.GetWheelRotation();
-		if(diff <= 1.0 || diff >= 1.0) {
-			if(diff < 0.0) {
+		static int accumulator = 0.0;
+		accumulator += event.GetWheelRotation();
+		if(accumulator <= event.GetWheelDelta() || accumulator >= event.GetWheelDelta()){
+			if(accumulator < 0){
 				g_editor.ChangeFloor(floor - 1);
-			} else {
+			}else{
 				g_editor.ChangeFloor(floor + 1);
 			}
-			diff = 0.0;
+			accumulator = 0;
 		}
 		UpdatePositionStatus();
 	} else if(event.AltDown()) {
-		static double diff = 0.0;
-		diff += event.GetWheelRotation();
-		if(diff <= 1.0 || diff >= 1.0) {
-			if(diff < 0.0) {
+		static int accumulator = 0.0;
+		accumulator += event.GetWheelRotation();
+		if(accumulator <= event.GetWheelDelta() || accumulator >= event.GetWheelDelta()){
+			if(accumulator < 0){
 				g_editor.IncreaseBrushSize();
-			} else {
+			}else{
 				g_editor.DecreaseBrushSize();
 			}
-			diff = 0.0;
+			accumulator = 0;
 		}
 	} else {
-		double diff = -event.GetWheelRotation() * g_settings.getFloat(Config::ZOOM_SPEED) / 640.0;
+		double diff = -((double)event.GetWheelRotation() / (double)event.GetWheelDelta())
+				* g_settings.getFloat(Config::ZOOM_SPEED);
 		double oldzoom = zoom;
 		zoom += diff;
 
@@ -2260,34 +2272,3 @@ bool MapCanvas::floodFill(Map *map, const Position& center, int x, int y, Ground
 	return deny;
 }
 
-// ============================================================================
-// AnimationTimer
-
-AnimationTimer::AnimationTimer(MapCanvas *canvas) : wxTimer(),
-	map_canvas(canvas),
-	started(false)
-{
-	////
-};
-
-void AnimationTimer::Notify()
-{
-	if(map_canvas->GetZoom() <= 2.0)
-		map_canvas->Refresh();
-};
-
-void AnimationTimer::Start()
-{
-	if(!started) {
-		started = true;
-		wxTimer::Start(100);
-	}
-};
-
-void AnimationTimer::Stop()
-{
-	if(started) {
-		started = false;
-		wxTimer::Stop();
-	}
-};

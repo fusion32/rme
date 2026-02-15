@@ -26,52 +26,52 @@
 
 class CarpetBrush : public Brush
 {
-	public:
-		static void init();
+public:
+	static void init();
 
-		CarpetBrush();
-		virtual ~CarpetBrush();
+	CarpetBrush();
+	~CarpetBrush() override;
 
-		bool isCarpet() const { return true; }
-		CarpetBrush* asCarpet() { return static_cast<CarpetBrush*>(this); }
+	bool isCarpet() const override { return true; }
+	CarpetBrush* asCarpet() override { return static_cast<CarpetBrush*>(this); }
 
-		virtual bool load(pugi::xml_node node);
+	bool load(pugi::xml_node node) override;
 
-		virtual bool canDraw(Map *map, const Position& position) const;
-		virtual void draw(Map *map, Tile* tile, void* parameter);
-		virtual void undraw(Map *map, Tile* tile);
+	bool canDraw(Map *map, const Position& position) const override;
+	void draw(Map *map, Tile* tile, void* parameter) override;
+	void undraw(Map *map, Tile* tile) override;
 
-		static void doCarpets(Map *map, Tile* tile);
+	static void doCarpets(Map *map, Tile* tile);
 
-		virtual bool canDrag() const { return true; }
-		virtual bool needBorders() const { return true; }
+	bool canDrag() const override { return true; }
+	bool needBorders() const override { return true; }
 
-		virtual int getLookID() const { return look_id; }
+	int getLookID() const override { return look_id; }
 
-		virtual std::string getName() const { return name; }
-		virtual void setName(const std::string& newName) { name = newName; }
+	std::string getName() const override { return name; }
+	void setName(const std::string& newName) override { name = newName; }
 
-	protected:
-		uint16_t getRandomCarpet(BorderType alignment);
+protected:
+	uint16_t getRandomCarpet(BorderType alignment);
 
-		struct CarpetType {
-			int32_t chance;
-			uint16_t id;
-		};
+	struct CarpetType {
+		int32_t chance;
+		uint16_t id;
+	};
 
-		struct CarpetNode {
-			std::vector<CarpetType> items;
-			int32_t total_chance;
+	struct CarpetNode {
+		std::vector<CarpetType> items;
+		int32_t total_chance;
 
-			CarpetNode() :
-				items(), total_chance(0) {}
-		};
+		CarpetNode() :
+			items(), total_chance(0) {}
+	};
 
-		CarpetNode carpet_items[14];
-		std::string name;
-		uint16_t look_id;
+	CarpetNode carpet_items[14];
+	std::string name;
+	uint16_t look_id;
 
-		static uint32_t carpet_types[256];
+	static uint32_t carpet_types[256];
 };
 
 #endif

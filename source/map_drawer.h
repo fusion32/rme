@@ -162,8 +162,8 @@ protected:
 	void DrawTileIndicators(Tile *tile);
 	void DrawIndicator(int x, int y, int indicator, float red = 1.0f, float green = 1.0f, float blue = 1.0f, float alpha = 1.0f);
 	void DrawPositionIndicator(int z);
-	void WriteTooltip(const Item* item, std::ostringstream& stream);
-	void WriteTooltip(const Waypoint* item, std::ostringstream& stream);
+	void WriteItemTooltip(const Item* item, std::ostringstream& stream);
+	void WriteWaypointTooltip(const wxString &name, std::ostringstream& stream);
 	void MakeTooltip(int screenx, int screeny, const std::string& text, float red = 1.0f, float green = 1.0f, float blue = 1.0f);
 	void AddLight(Tile *tile);
 

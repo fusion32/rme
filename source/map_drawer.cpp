@@ -1327,7 +1327,7 @@ void MapDrawer::BlitCreature(int screenx, int screeny, const Creature* creature,
 	BlitCreature(screenx, screeny, creature->getOutfit(), SOUTH, red, green, blue, alpha);
 }
 
-void MapDrawer::WriteTooltip(const Item* item, std::ostringstream& stream)
+void MapDrawer::WriteItemTooltip(const Item* item, std::ostringstream& stream)
 {
 	if(!item || !ItemTypeExists(item->getID())) return;
 
@@ -1343,11 +1343,11 @@ void MapDrawer::WriteTooltip(const Item* item, std::ostringstream& stream)
 #endif
 }
 
-void MapDrawer::WriteTooltip(const Waypoint* waypoint, std::ostringstream& stream)
+void MapDrawer::WriteWaypointTooltip(const wxString &name, std::ostringstream& stream)
 {
 	if(stream.tellp() > 0)
 		stream << "\n";
-	stream << "wp: " << waypoint->name << "\n";
+	stream << "wp: " << name << "\n";
 }
 
 void MapDrawer::DrawTile(Tile *tile)
@@ -1430,7 +1430,7 @@ void MapDrawer::DrawTile(Tile *tile)
 			glEnable(GL_TEXTURE_2D);
 		}else if(const Item *ground = tile->getFirstItem(BANK)){
 			if(show_tooltips && pos.z == floor)
-				WriteTooltip(ground, tooltip);
+				WriteItemTooltip(ground, tooltip);
 			BlitItem(draw_x, draw_y, tile, ground, false, r, g, b);
 		}
 	}
@@ -1445,7 +1445,7 @@ void MapDrawer::DrawTile(Tile *tile)
 			}
 
 			if(show_tooltips && pos.z == floor)
-				WriteTooltip(item, tooltip);
+				WriteItemTooltip(item, tooltip);
 
 			if(item->getFlag(CLIP)) {
 				BlitItem(draw_x, draw_y, tile, item, false, r, g, b);

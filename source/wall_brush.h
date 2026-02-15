@@ -29,20 +29,20 @@ public:
 	static void init();
 
 	WallBrush();
-	virtual ~WallBrush();
+	~WallBrush() override;
 
-	bool isWall() const { return true; }
-	WallBrush* asWall() { return static_cast<WallBrush*>(this); }
+	bool isWall() const override { return true; }
+	WallBrush* asWall() override { return static_cast<WallBrush*>(this); }
 
-	virtual bool load(pugi::xml_node node);
+	bool load(pugi::xml_node node) override;
 
-	virtual bool canDraw(Map *map, const Position& position) const { return true; }
+	bool canDraw(Map *map, const Position& position) const override { return true; }
 
 	// Draw to the target tile
 	// Note that this actually only puts the first WALL_NORMAL item on the tile.
 	// It's up to the doWalls function to change it to the correct alignment
-	virtual void draw(Map *map, Tile* tile, void* parameter);
-	virtual void undraw(Map *map, Tile* tile);
+	void draw(Map *map, Tile* tile, void* parameter) override;
+	void undraw(Map *map, Tile* tile) override;
 	// Creates walls on the target tile (does not depend on brush in any way)
 	static void doWalls(Map *map, Tile* tile);
 
@@ -50,8 +50,8 @@ public:
 	bool hasWall(const Item* item);
 	::DoorType getDoorTypeFromID(uint16_t id);
 
-	virtual bool canSmear() const { return false; }
-	virtual bool canDrag() const { return true; }
+	bool canSmear() const override { return false; }
+	bool canDrag() const override { return true; }
 
 protected:
 	struct WallType {
@@ -86,14 +86,14 @@ class WallDecorationBrush : public WallBrush
 {
 public:
 	WallDecorationBrush();
-	virtual ~WallDecorationBrush();
+	~WallDecorationBrush() override;
 
-	bool isWallDecoration() const { return true; }
-	WallDecorationBrush* asWallDecoration() { return static_cast<WallDecorationBrush*>(this); }
+	bool isWallDecoration() const override { return true; }
+	WallDecorationBrush* asWallDecoration() override { return static_cast<WallDecorationBrush*>(this); }
 
 	// We use the exact same loading algorithm as normal walls
 
-	virtual void draw(Map *map, Tile* tile, void* parameter);
+	void draw(Map *map, Tile* tile, void* parameter) override;
 };
 
 #endif

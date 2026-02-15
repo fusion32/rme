@@ -30,25 +30,25 @@ public:
 	static void init();
 
 	TableBrush();
-	virtual ~TableBrush();
+	~TableBrush() override;
 
-	bool isTable() const { return true; }
-	TableBrush* asTable() { return static_cast<TableBrush*>(this); }
+	bool isTable() const override { return true; }
+	TableBrush* asTable() override { return static_cast<TableBrush*>(this); }
 
-	virtual bool load(pugi::xml_node node);
+	bool load(pugi::xml_node node) override;
 
-	virtual bool canDraw(Map *map, const Position& position) const;
-	virtual void draw(Map *map, Tile* tile, void* parameter);
-	virtual void undraw(Map *map, Tile* tile);
+	bool canDraw(Map *map, const Position& position) const override;
+	void draw(Map *map, Tile* tile, void* parameter) override;
+	void undraw(Map *map, Tile* tile) override;
 
 	static void doTables(Map *map, Tile* tile);
 
-	virtual int getLookID() const { return look_id; }
+	int getLookID() const override { return look_id; }
 
-	virtual std::string getName() const { return name; }
-	virtual void setName(const std::string& newName) { name = newName; }
+	std::string getName() const override { return name; }
+	void setName(const std::string& newName) override { name = newName; }
 
-	virtual bool needBorders() const { return true; }
+	bool needBorders() const override { return true; }
 
 protected:
 	struct TableType

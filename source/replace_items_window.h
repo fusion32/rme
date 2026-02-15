@@ -24,8 +24,7 @@
 
 struct ReplacingItem
 {
-	ReplacingItem() :
-		replaceId(0), withId(0), total(0), complete(false) { }
+	ReplacingItem() : replaceId(0), withId(0), total(0), complete(false) { }
 
 	bool operator==(const ReplacingItem& other) const
 	{
@@ -45,7 +44,6 @@ class ReplaceItemsButton : public DCButton
 {
 public:
 	ReplaceItemsButton(wxWindow* parent);
-	~ReplaceItemsButton() { }
 
 	uint16_t GetItemId() const { return m_id; }
 	void SetItemId(uint16_t id);
@@ -67,8 +65,8 @@ public:
 	void RemoveSelected();
 	bool CanAdd(uint16_t replaceId, uint16_t withId) const;
 
-	void OnDrawItem(wxDC& dc, const wxRect& rect, size_t index) const;
-	wxCoord OnMeasureItem(size_t index) const;
+	void OnDrawItem(wxDC& dc, const wxRect& rect, size_t index) const override;
+	wxCoord OnMeasureItem(size_t index) const override;
 
 	const std::vector<ReplacingItem>& GetItems() const { return m_items; }
 	size_t GetCount() const { return m_items.size(); }
@@ -109,7 +107,7 @@ class ReplaceItemsDialog : public wxDialog
 {
 public:
 	ReplaceItemsDialog(wxWindow* parent, bool selectionOnly);
-	~ReplaceItemsDialog();
+	~ReplaceItemsDialog() override;
 
 	void OnListSelected(wxCommandEvent& event);
 	void OnReplaceItemClicked(wxMouseEvent& event);

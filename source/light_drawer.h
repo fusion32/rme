@@ -32,7 +32,7 @@ class LightDrawer
 
 public:
 	LightDrawer();
-	virtual ~LightDrawer();
+	~LightDrawer();
 
 	void draw(int map_x, int map_y, int scroll_x, int scroll_y);
 

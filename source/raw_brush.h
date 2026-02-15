@@ -27,18 +27,18 @@ class RAWBrush : public Brush
 {
 public:
 	RAWBrush(uint16_t itemid); // Create a RAWBrush of the specified type
-	virtual ~RAWBrush();
+	~RAWBrush() override;
 
-	bool isRaw() const { return true; }
-	RAWBrush* asRaw() { return static_cast<RAWBrush*>(this); }
+	bool isRaw() const override { return true; }
+	RAWBrush* asRaw() override { return static_cast<RAWBrush*>(this); }
 
-	virtual bool canDraw(Map *map, const Position& position) const { return true; }
-	virtual void draw(Map *map, Tile* tile, void* parameter);
-	virtual void undraw(Map *map, Tile* tile);
+	bool canDraw(Map *map, const Position& position) const override { return true; }
+	void draw(Map *map, Tile* tile, void* parameter) override;
+	void undraw(Map *map, Tile* tile) override;
 
-	virtual bool canDrag() const { return true; }
-	virtual int getLookID() const;
-	virtual std::string getName() const;
+	bool canDrag() const override { return true; }
+	int getLookID() const override;
+	std::string getName() const override;
 	ItemType* getItemType() const { return itemtype; }
 	uint16_t getItemID() const;
 

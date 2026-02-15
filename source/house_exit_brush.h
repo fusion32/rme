@@ -29,28 +29,28 @@ class HouseExitBrush : public Brush
 {
 public:
 	HouseExitBrush();
-	virtual ~HouseExitBrush();
+	~HouseExitBrush() override;
 
-	bool isHouseExit() const { return true; }
-	HouseExitBrush* asHouseExit() { return static_cast<HouseExitBrush*>(this); }
+	bool isHouseExit() const override { return true; }
+	HouseExitBrush* asHouseExit() override { return static_cast<HouseExitBrush*>(this); }
 
 	// Not used
-	virtual bool load(pugi::xml_node node) { return true; }
+	bool load(pugi::xml_node node) override { return true; }
 
-	virtual bool canDraw(Map *map, const Position& position) const;
+	bool canDraw(Map *map, const Position& position) const override;
 	// Will ASSERT
-	virtual void draw(Map *map, Tile* tile, void* parameter);
-	virtual void undraw(Map *map, Tile* tile);
+	void draw(Map *map, Tile* tile, void* parameter) override;
+	void undraw(Map *map, Tile* tile) override;
 
-	virtual bool canDrag() const { return false; }
-	virtual bool canSmear() const { return false; }
-	virtual bool oneSizeFitsAll() const { return true; }
+	bool canDrag() const override { return false; }
+	bool canSmear() const override { return false; }
+	bool oneSizeFitsAll() const override { return true; }
 
 	void setHouse(uint16_t houseId_) { houseId = houseId_; }
 	uint16_t getHouseID() const { return houseId; }
 
-	virtual int getLookID() const { return 0; } // We don't have a graphic
-	virtual std::string getName() const { return "House Exit Brush"; } // We don't have a name
+	int getLookID() const override { return 0; } // We don't have a graphic
+	std::string getName() const override { return "House Exit Brush"; } // We don't have a name
 
 protected:
 	uint16_t houseId;

@@ -37,11 +37,11 @@ class BrushButton : public ItemToggleButton {
 public:
 	BrushButton(wxWindow* parent, Brush* brush, RenderSize, uint32_t id = wxID_ANY);
 	BrushButton(wxWindow* parent, Brush* brush, RenderSize, EditorSprite* espr, uint32_t id = wxID_ANY);
-	virtual ~BrushButton();
-
-	Brush* brush;
+	~BrushButton() override;
 
 	void OnKey(wxKeyEvent& event);
+
+	Brush* brush;
 
 	DECLARE_EVENT_TABLE()
 };
@@ -49,7 +49,10 @@ public:
 class PalettePanel : public wxPanel {
 public:
 	PalettePanel(wxWindow* parent, wxWindowID id = wxID_ANY, long style = wxTAB_TRAVERSAL);
-	~PalettePanel();
+
+	// NOTE(fusion): This is also a method from wxWindow so not one of the
+	// virtual functions specific to PalettePanel.
+	wxString GetName() const override;
 
 	// Interface
 	// Flushes this panel and consequent views will feature reloaded data
@@ -60,7 +63,6 @@ public:
 	virtual void LoadAllContents();
 
 	PaletteWindow* GetParentPalette() const;
-	virtual wxString GetName() const;
 	virtual PaletteType GetType() const;
 
 	// Add a tool panel!
@@ -95,30 +97,29 @@ protected:
 	wxTimer refresh_timer;
 	int last_brush_size;
 
-	DECLARE_EVENT_TABLE();
+	DECLARE_EVENT_TABLE()
 };
 
 class BrushSizePanel : public PalettePanel {
 public:
 	BrushSizePanel(wxWindow* parent);
-	~BrushSizePanel() {}
 
+	wxString GetName() const override { return "Brush Size"; }
 
 	// Interface
 	// Flushes this panel and consequent views will feature reloaded data
-	void InvalidateContents();
+	void InvalidateContents() override;
 	// Loads the currently displayed page
-	void LoadCurrentContents();
+	void LoadCurrentContents() override;
 	// Loads all content in this panel
-	void LoadAllContents();
+	void LoadAllContents() override;
 
-	wxString GetName() const;
-	void SetToolbarIconSize(bool large);
+	void SetToolbarIconSize(bool large) override;
 
 	// Updates the palette window to use the current brush size
-	void OnUpdateBrushSize(BrushShape shape, int size);
+	void OnUpdateBrushSize(BrushShape shape, int size) override;
 	// Called when this page is displayed
-	void OnSwitchIn();
+	void OnSwitchIn() override;
 
 	// wxWidgets event handling
 	void OnClickSquareBrush(wxCommandEvent& event);
@@ -154,26 +155,26 @@ protected:
 class BrushToolPanel : public PalettePanel {
 public:
 	BrushToolPanel(wxWindow* parent);
-	~BrushToolPanel();
+
+	wxString GetName() const override { return "Tools"; }
 
 	// Interface
 	// Flushes this panel and consequent views will feature reloaded data
-	void InvalidateContents();
+	void InvalidateContents() override;
 	// Loads the currently displayed page
-	void LoadCurrentContents();
+	void LoadCurrentContents() override;
 	// Loads all content in this panel
-	void LoadAllContents();
+	void LoadAllContents() override;
 
-	wxString GetName() const;
-	void SetToolbarIconSize(bool large);
+	void SetToolbarIconSize(bool large) override;
 
 	// Returns the currently selected brush (First brush if panel is not loaded)
-	Brush* GetSelectedBrush() const;
+	Brush* GetSelectedBrush() const override;
 	// Select the brush in the parameter, this only changes the look of the panel
-	bool SelectBrush(const Brush* whatbrush);
+	bool SelectBrush(const Brush* whatbrush) override;
 
 	// Called when this page is displayed
-	void OnSwitchIn();
+	void OnSwitchIn() override;
 
 	// wxWidgets event handling
 	void OnClickGravelButton(wxCommandEvent& event);
@@ -189,6 +190,7 @@ public:
 	void OnClickRefreshBrushButton(wxCommandEvent& event);
 	void OnClickNoLogoutBrushButton(wxCommandEvent& event);
 	void OnClickPZBrushButton(wxCommandEvent& event);
+
 public:
 	void DeselectAll();
 
@@ -215,13 +217,12 @@ public:
 class BrushThicknessPanel : public PalettePanel {
 public:
 	BrushThicknessPanel(wxWindow* parent);
-	~BrushThicknessPanel();
+
+	wxString GetName() const override { return "Brush Thickness"; }
 
 	// Interface
-	wxString GetName() const;
-
 	// Called when this page is displayed
-	void OnSwitchIn();
+	void OnSwitchIn() override;
 
 	// wxWidgets event handling
 	void OnScroll(wxScrollEvent& event);

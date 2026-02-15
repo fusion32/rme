@@ -19,10 +19,10 @@
 #define RME_MAP_H_
 
 #include "const.h"
+#include "forward.h"
 #include "tile.h"
 #include "town.h"
 #include "house.h"
-#include "waypoints.h"
 
 #define MAP_SECTOR_SIZE 32
 #define MAP_SECTOR_MASK (MAP_SECTOR_SIZE - 1)
@@ -88,7 +88,6 @@ struct MapSector{
 	Tile tiles[MAP_SECTOR_SIZE * MAP_SECTOR_SIZE];
 };
 
-struct Script;
 struct Map {
 	wxString mapDir;
 	wxString saveDir;
@@ -110,7 +109,6 @@ struct Map {
 
 	//std::vector<House> houses;
 	//std::vector<Waypoint> waypoints;
-
 
 	void loadSector(SectorType type, MapSector *sector, Script *script);
 	bool loadSector(SectorType type, const wxFileName &filename);

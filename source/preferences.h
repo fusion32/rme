@@ -28,7 +28,7 @@ class PreferencesWindow : public wxDialog
 {
 public:
 	explicit PreferencesWindow(wxWindow* parent);
-	virtual ~PreferencesWindow();
+	~PreferencesWindow() override;
 
 	void OnClickDefaults(wxCommandEvent&);
 	void OnClickApply(wxCommandEvent&);

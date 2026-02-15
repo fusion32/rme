@@ -18,35 +18,13 @@
 #include "main.h"
 
 #include "waypoint_brush.h"
-#include "waypoints.h"
 #include "map.h"
 
-//=============================================================================
-// Waypoint Brush
+// TODO(fusion): Review this brush or any other that doesn't use draw/undraw ??
 
-WaypointBrush::WaypointBrush() :
-	Brush()
+WaypointBrush::WaypointBrush() : Brush()
 {
-	////
-}
-
-WaypointBrush::~WaypointBrush()
-{
-	////
-}
-
-void WaypointBrush::setWaypoint(Waypoint* wp)
-{
-	if(wp) {
-		waypoint_name = wp->name;
-	} else {
-		waypoint_name = "";
-	}
-}
-
-std::string WaypointBrush::getWaypoint() const
-{
-	return waypoint_name;
+	// no-op
 }
 
 bool WaypointBrush::canDraw(Map *map, const Position& position) const
@@ -56,12 +34,10 @@ bool WaypointBrush::canDraw(Map *map, const Position& position) const
 
 void WaypointBrush::undraw(Map *map, Tile* tile)
 {
-	// Never called
 	ASSERT(false);
 }
 
 void WaypointBrush::draw(Map *map, Tile* tile, void* parameter)
 {
-	// Never called
 	ASSERT(false);
 }

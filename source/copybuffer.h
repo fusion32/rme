@@ -23,7 +23,6 @@
 #include "position.h"
 #include "map.h"
 
-class Map;
 class CopyBuffer
 {
 public:

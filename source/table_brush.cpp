@@ -40,7 +40,7 @@ TableBrush::~TableBrush()
 bool TableBrush::load(pugi::xml_node node)
 {
 	if(pugi::xml_attribute attribute = node.attribute("lookid")){
-		look_id = attribute.as_ushort();
+		look_id = (uint16_t)attribute.as_int();
 	}
 
 	for(pugi::xml_node tableNode: node.children("table")){
@@ -71,7 +71,7 @@ bool TableBrush::load(pugi::xml_node node)
 		}
 
 		for(pugi::xml_node itemNode: tableNode.children("item")){
-			uint16_t id = itemNode.attribute("id").as_ushort();
+			uint16_t id = (uint16_t)itemNode.attribute("id").as_int();
 			if(id == 0) {
 				g_editor.Warning("Could not read id tag of item node");
 				break;

@@ -20,28 +20,26 @@
 
 #include "palette_common.h"
 
-class House;
-
 class HousePalettePanel : public PalettePanel {
 public:
 	HousePalettePanel(wxWindow* parent, wxWindowID id = wxID_ANY);
-	~HousePalettePanel();
+	~HousePalettePanel() override;
 
-	PaletteType GetType() const;
+	PaletteType GetType() const override;
 
 	// Select the first brush
-	void SelectFirstBrush();
+	void SelectFirstBrush() override;
 	// Returns the currently selected brush (first brush if panel is not loaded)
-	Brush* GetSelectedBrush() const;
+	Brush* GetSelectedBrush() const override;
 	// Returns the currently selected brush size
-	int GetSelectedBrushSize() const;
+	int GetSelectedBrushSize() const override;
 	// Select the brush in the parameter, this only changes the look of the panel
-	bool SelectBrush(const Brush* whatbrush);
+	bool SelectBrush(const Brush* whatbrush) override;
 
 	// Called sometimes?
-	void OnUpdate();
+	void OnUpdate() override;
 	// Called when this page is about to be displayed
-	void OnSwitchIn();
+	void OnSwitchIn() override;
 
 	void OnLayoutFixTimer(wxTimerEvent& event);
 
@@ -93,7 +91,7 @@ class EditHouseDialog : public wxDialog
 {
 public:
 	EditHouseDialog(wxWindow* parent, Map* map, House* house);
-	virtual ~EditHouseDialog();
+	~EditHouseDialog() override;
 
 	void OnClickOK(wxCommandEvent&);
 	void OnClickCancel(wxCommandEvent&);
@@ -108,7 +106,7 @@ protected:
 	wxTextCtrl* rent_field;
 	wxCheckBox* guildhall_field;
 
-	DECLARE_EVENT_TABLE();
+	DECLARE_EVENT_TABLE()
 };
 
 #endif
