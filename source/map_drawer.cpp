@@ -400,11 +400,11 @@ void MapDrawer::DrawSecondaryMap(int map_z)
 				}
 
 				if(options.show_special_tiles && tile->getTileFlag(TILE_FLAG_REFRESH)){
-					r *= 0.67f; g *= 1.0f; b *= 0.67f;
+					r *= 1.00f; g *= 0.98f; b *= 0.00f;
 				}
 
 				if(options.show_special_tiles && tile->getTileFlag(TILE_FLAG_NOLOGOUT)){
-					r *= 1.0f; g *= 1.0f; b *= 0.5f;
+					r *= 0.80f; g *= 0.00f; b *= 0.12f;
 				}
 
 				if(options.show_houses && tile->houseId != 0){
@@ -412,7 +412,7 @@ void MapDrawer::DrawSecondaryMap(int map_z)
 					g *= (tile->houseId == current_house_id ? 1.0f : 0.5f);
 					b *= 1.0f;
 				}else if(options.show_special_tiles && tile->getTileFlag(TILE_FLAG_PROTECTIONZONE)){
-					r *= 0.5f; g *= 1.0f; b *= 0.5f;
+					r *= 0.15f; g *= 0.40f; b *= 0.97f;
 				}
 
 				BlitItem(draw_x, draw_y, tile, ground, true, r, g, b, 0.6f);
@@ -1402,10 +1402,8 @@ void MapDrawer::DrawTile(Tile *tile)
 		if(!options.show_as_minimap) {
 			bool showspecial = options.show_only_colors || options.show_special_tiles;
 
-			if(options.show_blocking && tile->getFlag(UNPASS) && tile->size() > 0) {
-				r *= 1.00f;
-				g *= 0.67f;
-				b *= 0.67f;
+			if(options.show_blocking && tile->getFlag(UNPASS)) {
+				r *= 1.00f; g *= 0.67f; b *= 0.67f;
 			}
 
 			{
@@ -1428,15 +1426,11 @@ void MapDrawer::DrawTile(Tile *tile)
 			}
 
 			if(showspecial && tile->getTileFlag(TILE_FLAG_REFRESH)){
-				r *= 0.85f;
-				g *= 0.90f;
-				b *= 0.10f;
+				r *= 1.00f; g *= 0.98f; b *= 0.00f;
 			}
 
 			if(showspecial && tile->getTileFlag(TILE_FLAG_NOLOGOUT)){
-				r *= 1.00f;
-				g *= 1.00f;
-				b *= 0.50f;
+				r *= 0.80f; g *= 0.00f; b *= 0.12f;
 			}
 
 			if(options.show_houses && tile->houseId != 0){
@@ -1444,9 +1438,7 @@ void MapDrawer::DrawTile(Tile *tile)
 				g *= (tile->houseId == current_house_id ? 1.00f : 0.50f);
 				b *= 1.00f;
 			}else if(showspecial && tile->getTileFlag(TILE_FLAG_PROTECTIONZONE)){
-				r *= 0.50f;
-				g *= 1.00f;
-				b *= 0.50f;
+				r *= 0.15f; g *= 0.40f; b *= 0.97f;
 			}
 		}
 

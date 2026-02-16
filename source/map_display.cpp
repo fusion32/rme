@@ -658,7 +658,7 @@ void MapCanvas::OnMouseActionClick(wxMouseEvent& event)
 
 	if(event.ControlDown() && event.AltDown()) {
 		Tile* tile = g_editor.map.getTile(mouse_map_x, mouse_map_y, floor);
-		if(tile && tile->size() > 0) {
+		if(tile && !tile->empty()) {
 			Item* item = tile->getTopItem();
 			if(item && item->getRAWBrush())
 				g_editor.SelectBrush(item->getRAWBrush(), TILESET_RAW);

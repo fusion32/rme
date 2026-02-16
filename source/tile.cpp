@@ -129,15 +129,9 @@ int Tile::countItems(void) const
 
 uint32_t Tile::memsize() const
 {
-	// TODO(fusion): This is missing some stuff...
-	return sizeof(Tile) + countItems() * sizeof(Item);
-}
-
-int Tile::size() const
-{
-	int result = countItems();
-	if(creature){
-		result += 1;
+	uint32_t result = sizeof(Tile) + countItems() * sizeof(Item);
+	if(creature != NULL){
+		result += sizeof(Creature);
 	}
 	return result;
 }

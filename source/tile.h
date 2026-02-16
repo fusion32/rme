@@ -60,7 +60,6 @@ struct Tile {
 	void merge(Tile &&other);
 	uint32_t memsize(void) const;
 	int countItems(void) const;
-	int size(void) const;
 	bool empty(void) const;
 
 	void select();

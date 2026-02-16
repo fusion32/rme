@@ -366,7 +366,7 @@ void WallBrush::doWalls(Map *map, Tile* tile)
 			return wb && !wb->isWallDecoration();
 		});
 
-	if(wall != NULL){
+	if(wall != NULL && wall->getWallAlignment() != WALL_UNTOUCHABLE){
 		WallBrush *wb = wall->getWallBrush();
 
 		bool neighbours[4] = {};
@@ -382,18 +382,68 @@ void WallBrush::doWalls(Map *map, Tile* tile)
 			}
 		}
 
-		// TODO(fusion): We still need to figure out why there are two border
-		// type tables.
-		BorderType bt = (BorderType)full_border_types[tileConfig];
-		if(wall->getWallAlignment() != bt && wall->getWallAlignment() != WALL_UNTOUCHABLE){
-			uint16_t newId = 0;
-			WallBrush *curBrush = wb;
-			while(newId == 0 && curBrush != NULL){
-				WallNode &wn = curBrush->wall_items[int(bt)];
+		// NOTE(fusion): It seems that there are two types of wall brushes. One
+		// for regular walls and another for wall-like objects like ant trails,
+		// store counters, fishing nets, and vine trails. These "full" border
+		// types are used by these wall-like objects but I'm not exactly sure
+		// how they compose and some of them seem to yield weird results.
+
+		BorderType borderTypes[] = {
+			(BorderType)full_border_types[tileConfig],
+			(BorderType)half_border_types[tileConfig],
+		};
+
+		for(BorderType bt: borderTypes){
+			bool optimal = (wall->getWallAlignment() == bt);
+
+			if(!optimal){
+				uint16_t newId = 0;
+				WallBrush *curBrush = wb;
+				while(newId == 0 && curBrush != NULL){
+					WallNode &wn = curBrush->wall_items[int(bt)];
+					if(wn.total_chance > 0){
+						int chance = random(1, wn.total_chance);
+						for(const WallType &wt: wn.items){
+							if(chance <= wt.chance) {
+								newId = wt.id;
+								break;
+							}
+						}
+					}else if(!wn.items.empty()){
+						newId = wn.items.front().id;
+					}
+
+					curBrush = curBrush->redirect_to;
+					if(curBrush == wb){ // prevent infinite loop
+						break;
+					}
+				}
+
+				if(newId != 0){
+					wall->transform(newId);
+					optimal = true;
+				}
+			}
+
+			// NOTE(fusion): The original function would check for decoration alignment
+			// regardless of whether the wall alignment has changed or not so I'm keeping
+			// that behaviour here.
+			for(Item *decor = tile->items; decor != NULL; decor = decor->next){
+				WallBrush *decorBrush = decor->getWallBrush();
+				if(!decorBrush || !decorBrush->isWallDecoration()){
+					continue;
+				}
+
+				if(decor->getWallAlignment() == bt){
+					continue;
+				}
+
+				uint16_t newId = 0;
+				WallNode &wn = decorBrush->wall_items[int(bt)];
 				if(wn.total_chance > 0){
 					int chance = random(1, wn.total_chance);
 					for(const WallType &wt: wn.items){
-						if(chance <= wt.chance) {
+						if(chance <= wt.chance){
 							newId = wt.id;
 							break;
 						}
@@ -402,46 +452,13 @@ void WallBrush::doWalls(Map *map, Tile* tile)
 					newId = wn.items.front().id;
 				}
 
-				curBrush = curBrush->redirect_to;
-				if(curBrush == wb){ // prevent infinite loop
-					break;
+				if(newId != 0){
+					decor->transform(newId);
 				}
 			}
 
-			if(newId != 0){
-				wall->transform(newId);
-			}
-		}
-
-		// NOTE(fusion): The original function would check for decoration alignment
-		// regardless of whether the wall alignment has changed or not so I'm keeping
-		// that behaviour here.
-		for(Item *decor = tile->items; decor != NULL; decor = decor->next){
-			WallBrush *decorBrush = decor->getWallBrush();
-			if(!decorBrush || !decorBrush->isWallDecoration()){
-				continue;
-			}
-
-			if(decor->getWallAlignment() == bt || decor->getWallAlignment() == WALL_UNTOUCHABLE){
-				continue;
-			}
-
-			uint16_t newId = 0;
-			WallNode &wn = decorBrush->wall_items[int(bt)];
-			if(wn.total_chance > 0){
-				int chance = random(1, wn.total_chance);
-				for(const WallType &wt: wn.items){
-					if(chance <= wt.chance){
-						newId = wt.id;
-						break;
-					}
-				}
-			}else if(!wn.items.empty()){
-				newId = wn.items.front().id;
-			}
-
-			if(newId != 0){
-				decor->transform(newId);
+			if(optimal){
+				break;
 			}
 		}
 	}
