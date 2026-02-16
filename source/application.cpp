@@ -172,7 +172,6 @@ void Application::Unload()
 {
 	g_editor.CloseProject();
 	g_editor.SaveHotkeys();
-	g_editor.SavePerspective();
 	g_editor.SaveRecentFiles();
 	g_settings.save();
 }
