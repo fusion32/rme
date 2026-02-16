@@ -113,12 +113,6 @@ bool Application::OnInit()
 	// Set idle event handling mode
 	wxIdleEvent::SetMode(wxIDLE_PROCESS_SPECIFIED);
 
-	// Goto RME website?
-	if(g_settings.getInteger(Config::GOTO_WEBSITE_ON_BOOT) == 1) {
-		::wxLaunchDefaultBrowser(__RME_WEBSITE_URL__, wxBROWSER_NEW_WINDOW);
-		g_settings.setInteger(Config::GOTO_WEBSITE_ON_BOOT, 0);
-	}
-
 	return true;
 }
 

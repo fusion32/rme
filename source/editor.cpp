@@ -139,10 +139,19 @@ bool Editor::OpenProject(const wxString &dir)
 		UpdateMenubar();
 		root->Refresh();
 
-		// TODO(fusion): Just save session info like palettes, map position, zoom,
-		// on a file inside the project directory...
 		mapWindow->FitToMap();
-		mapWindow->SetScreenCenterPosition(map.getCenterPosition());
+
+		{ // NOTE(fusion): Load map position.
+			Position mapPosition;
+			std::istringstream ss(g_settings.getString(Config::MAP_POSITION));
+			ss >> mapPosition;
+
+			if(!PositionValid(mapPosition.x, mapPosition.y, mapPosition.z)){
+				mapPosition = map.getCenterPosition();
+			}
+
+			mapWindow->SetScreenCenterPosition(mapPosition);
+		}
 	}
 
 	return true;
@@ -160,6 +169,12 @@ bool Editor::CloseProject(void)
 				wxYES | wxNO | wxCANCEL);
 		if(ret == wxID_CANCEL) return false;
 		if(ret == wxID_YES)    SaveProject();
+	}
+
+	{ // NOTE(fusion): Save map position.
+		std::ostringstream ss;
+		ss << mapWindow->GetScreenCenterPosition();
+		g_settings.setString(Config::MAP_POSITION, ss.str());
 	}
 
 	SavePerspective();

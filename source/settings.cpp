@@ -212,7 +212,6 @@ void Settings::IO(IOMode mode)
 	Int(SHOW_MOVEABLES, 0);
 
 	section("Editor");
-	String(RECENT_FILES, "");
 	Int(MERGE_MOVE, 0);
 	Int(MERGE_PASTE, 0);
 	Int(UNDO_SIZE, 400);
@@ -243,6 +242,8 @@ void Settings::IO(IOMode mode)
 	Int(ONLY_ONE_INSTANCE, 1);
 	Int(REPLACE_SIZE, 500);
 	Int(COPY_POSITION_FORMAT, 0);
+	Int(FIND_ITEM_MODE, 0);
+	Int(JUMP_TO_ITEM_MODE, 0);
 
 	section("Graphics");
 	Int(TEXTURE_MANAGEMENT, 1);
@@ -286,6 +287,7 @@ void Settings::IO(IOMode mode)
 	String(PALETTE_RAW_STYLE, "listbox");
 
 	section("Window");
+	String(MAP_POSITION, "");
 	String(PALETTE_LAYOUT, "name=02c30f6048629894000011bc00000002;caption=Palette;state=2099148;dir=4;layer=0;row=0;pos=0;prop=100000;bestw=245;besth=100;minw=-1;minh=-1;maxw=-1;maxh=-1;floatx=-1;floaty=-1;floatw=-1;floath=-1");
 	Int(MINIMAP_VISIBLE, 0);
 	String(MINIMAP_LAYOUT, "name=066e2bc8486298990000259a00000003;caption=Minimap;state=2099151;dir=4;layer=0;row=0;pos=0;prop=100000;bestw=170;besth=130;minw=-1;minh=-1;maxw=-1;maxh=-1;floatx=-1;floaty=-1;floatw=221;floath=164");
@@ -310,10 +312,6 @@ void Settings::IO(IOMode mode)
 	String(TOOLBAR_SIZES_LAYOUT, "");
 
 	section("");
-	Int(GOTO_WEBSITE_ON_BOOT, 0);
-
-	Int(FIND_ITEM_MODE, 0);
-	Int(JUMP_TO_ITEM_MODE, 0);
 
 #undef section
 #undef Int
