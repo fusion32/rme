@@ -25,18 +25,80 @@
 #include <wx/zipstrm.h>
 #include <wx/wfstream.h>
 
+static wxFileName BackupFileName(const wxString &filename){
+	wxFileName fn(filename);
+	fn.SetFullName(fn.GetFullName() + wxDateTime().UNow().Format("-%Y-%m-%d-%H%M%S%l.zip"));
+	return fn;
+}
+
+static wxFileName BackupDirName(const wxString &dir){
+	wxFileName fn(dir, "");
+	const wxArrayString &dirs = fn.GetDirs();
+	if(!dirs.IsEmpty()){
+		fn.SetFullName(dirs.Last() + wxDateTime().UNow().Format("-%Y-%m-%d-%H%M%S%l.zip"));
+	}else{
+		fn.SetFullName(wxDateTime().UNow().Format("%Y-%m-%d-%H%M%S%l.zip"));
+	}
+	return fn;
+}
+
+static bool BackupFile(const wxString &filename){
+	if(!wxFileName::Exists(filename)){
+		return true;
+	}
+
+	wxFileName outputName = BackupFileName(filename);
+	wxTempFileOutputStream outputFile(outputName.GetFullPath());
+	if(!outputFile.IsOk()){
+		g_editor.Error(wxString() << "Failed to create backup file " << outputName.GetFullName());
+		return false;
+	}
+
+	{
+		wxZipOutputStream zip(outputFile, 9);
+		{
+			wxFileInputStream inputStream(filename);
+			if(!inputStream.IsOk()){
+				g_editor.Error(wxString() << "Failed to open file " << filename << " for reading");
+				return false;
+			}
+
+			wxString entryName = wxFileNameFromPath(filename);
+			if(!zip.PutNextEntry(entryName)){
+				g_editor.Error(wxString() << "Failed to append ZIP entry for " << entryName);
+				return false;
+			}
+
+			zip << inputStream;
+		}
+
+		if(!zip.Close()){
+			g_editor.Error(wxString() << "Failed to wrap backup file " << outputName.GetFullName());
+			return false;
+		}
+	}
+
+	if(!outputFile.Commit()){
+		g_editor.Error(wxString() << "Failed to commit backup file " << outputName.GetFullName());
+		return false;
+	}
+
+	wxRemoveFile(filename);
+	return true;
+}
+
 static bool BackupSectorsAndPatches(const wxString &dir){
 	wxArrayString filenames;
-	wxDir::GetAllFiles(dir, &filenames, "*.sec", wxDIR_FILES);
-	wxDir::GetAllFiles(dir, &filenames, "*.pat", wxDIR_FILES);
+	wxDir::GetAllFiles(dir, &filenames, "*.sec", wxDIR_FILES | wxDIR_HIDDEN);
+	wxDir::GetAllFiles(dir, &filenames, "*.pat", wxDIR_FILES | wxDIR_HIDDEN);
 	if(filenames.IsEmpty()){
 		return true;
 	}
 
-	wxFileName backupName(dir, wxDateTime().UNow().Format("%Y-%m-%d-%H%M%S%l.bak.zip"));
-	wxTempFileOutputStream outputFile(backupName.GetFullPath());
+	wxFileName outputName = BackupDirName(dir);
+	wxTempFileOutputStream outputFile(outputName.GetFullPath());
 	if(!outputFile.IsOk()){
-		g_editor.Error(wxString() << "Failed to create backup file " << backupName.GetFullName());
+		g_editor.Error(wxString() << "Failed to create backup file " << outputName.GetFullName());
 		return false;
 	}
 
@@ -59,13 +121,13 @@ static bool BackupSectorsAndPatches(const wxString &dir){
 		}
 
 		if(!zip.Close()){
-			g_editor.Error(wxString() << "Failed to wrap backup file " << backupName.GetFullName());
+			g_editor.Error(wxString() << "Failed to wrap backup file " << outputName.GetFullName());
 			return false;
 		}
 	}
 
 	if(!outputFile.Commit()){
-		g_editor.Error(wxString() << "Failed to commit backup file " << backupName.GetFullName());
+		g_editor.Error(wxString() << "Failed to commit backup file " << outputName.GetFullName());
 		return false;
 	}
 
@@ -350,9 +412,15 @@ bool Map::loadSpawns(const wxString &projectDir){
 		int amount = script.readNumber();
 		int interval = script.readNumber();
 		if(Tile *tile = getTile(x, y, z)){
+			if(Creature *creature = tile->creature){
+				g_editor.Warning(wxString() << "Spawn of " << GetCreatureType(raceId).name
+						<< " overriding spawn of " << GetCreatureType(creature->raceId).name,
+						ProblemSource::FromPosition(x, y, z));
+			}
 			tile->placeCreature(raceId, radius, amount, interval);
 		}else{
-			g_editor.Warning(wxString() << "Spawn " << raceId << " is out of bounds",
+			g_editor.Warning(wxString()
+					<< "Spawn of " << GetCreatureType(raceId).name << " is out of bounds",
 					ProblemSource::FromPosition(x, y, z));
 		}
 	}
@@ -587,9 +655,80 @@ bool Map::saveSpawns(void){
 		return false;
 	}
 
-	// TODO(fusion): Save spawns.
+	// TODO(fusion): Probably backup the whole dat directory to reduce the number
+	// of files once we're actually modifying houses and marks?
+	if(true){ //if(g_settings.getBoolean(Config::BACKUP_SPAWNS)){
+		while(!BackupFile(spawnsFile)){
+			int ret = g_editor.PopupDialog("Backup error",
+					"There was an error while backing up spawns, do you want to retry?",
+					wxYES | wxNO | wxCANCEL);
+			if(ret == wxID_CANCEL) return false;
+			if(ret == wxID_NO)     break;
+		}
+	}
 
-	return false;
+	ScriptWriter script;
+	if(!script.begin(spawnsFile.mb_str())){
+		g_editor.Warning(wxString() << "Failed to open spawn file " << spawnsFile << " for writing");
+		return false;
+	}
+
+	script.writeText("# Tibia - graphical Multi-User-Dungeon");
+	script.writeLn();
+	script.writeText("# MonsterHomes File");
+	script.writeLn();
+	script.writeLn();
+	script.writeText("# Race     X     Y  Z Radius Amount Regen.");
+	script.writeLn();
+	script.writeLn();
+
+	// TODO(fusion): I actually wanted to have creatures/spawns separate from
+	// the tile, but that may turn out to be a large endeavour. This is probably
+	// the simplest and should be "reasonably" fast.
+
+	// TODO(fusion): The output is also not sorted because we're using a hash
+	// table instead of a grid for storing sectors, which is more flexible but
+	// has this downside (?).
+
+	char line[256] = {};
+	for(const auto &[sectorId, sector]: sectors){
+		bool sectorHeader = false;
+		for(const Tile &tile: sector.tiles){
+			if(Creature *creature = tile.creature){
+				if(!sectorHeader){
+					int sectorX = sector.tiles[0].pos.x / MAP_SECTOR_SIZE;
+					int sectorY = sector.tiles[0].pos.y / MAP_SECTOR_SIZE;
+					int sectorZ = sector.tiles[0].pos.z;
+
+					snprintf(line, sizeof(line),
+							"# ====== %04d,%04d,%02d ====================",
+							sectorX, sectorY, sectorZ);
+					script.writeText(line);
+					script.writeLn();
+					sectorHeader = true;
+				}
+
+				snprintf(line, sizeof(line), "%6d %5d %5d %2d %6d %6d %6d",
+						creature->raceId, tile.pos.x, tile.pos.y, tile.pos.z,
+						creature->spawnRadius, creature->spawnAmount,
+						creature->spawnInterval);
+				script.writeText(line);
+				script.writeLn();
+			}
+		}
+	}
+
+	script.writeText("0 # zero for end of file");
+	script.writeLn();
+
+	if(!script.end()){
+		g_editor.Warning(wxString()
+				<< "Failed to wrap spawn file " << spawnsFile
+					<<  ", it may not have been properly stored.");
+		return false;
+	}
+
+	return true;
 }
 
 bool Map::saveHouses(void){
@@ -602,11 +741,14 @@ bool Map::saveHouses(void){
 	return false;
 }
 
-bool Map::save(void)
+bool Map::save(void) // datDir, saveDir, backupDir
 {
 	if(saveDir.IsEmpty()){
 		return false;
 	}
+
+	// TODO(fusion): Probably have a way to put all relevant files into the same
+	// backup zip, including patches, spawns, houses, etc...
 
 	if(true){ //if(g_settings.getBoolean(Config::BACKUP_PATCHES)){
 		while(!BackupSectorsAndPatches(saveDir)){
@@ -645,6 +787,11 @@ bool Map::save(void)
 	// TODO(fusion): Modify map.dat as well since the size of the map may have
 	// changed. We'll also want to modify it to parse and save waypoints but
 	// that's also pending.
+
+	saveSpawns();
+	//saveHouses();
+	//saveHouseAreas();
+	//saveMapMetadata(); // ??
 
 	return true;
 }
