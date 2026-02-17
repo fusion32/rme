@@ -291,7 +291,7 @@ void ExportMiniMapWindow::CheckValues()
 		return;
 	}
 
-	FileName directory(directory_text_field->GetValue());
+	wxFileName directory(directory_text_field->GetValue(), "");
 
 	if(!directory.Exists()) {
 		error_field->SetLabel("Output folder not found.");

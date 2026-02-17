@@ -34,16 +34,5 @@
 #define STRINGIFY(x) STRINGIFY_(x)
 #define __RME_VERSION__ ("v" STRINGIFY(__RME_VERSION_MAJOR__) "." STRINGIFY(__RME_VERSION_MINOR__) "." STRINGIFY(__RME_VERSION_PATCH__) "T")
 
-#if defined(__DEBUG__) && defined(NDEBUG)
-#	undef NDEBUG
-#endif
-
-#if defined(_MSC_VER) && !defined(__DEBUG__)
-#	define _ITERATOR_DEBUG_LEVEL 0
-#endif
-
-// wxString conversions
-#define nstr(str) std::string((const char*)(str.mb_str(wxConvUTF8)))
-#define wxstr(str) wxString((str).c_str(), wxConvUTF8)
 
 #endif

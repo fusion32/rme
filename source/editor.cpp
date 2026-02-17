@@ -1996,7 +1996,7 @@ void Editor::drawInternal(const std::vector<Position> &tilesToDraw, bool alt, bo
 		return;
 	}
 
-#ifdef __DEBUG__
+#ifdef _DEBUG
 	if(brush->isGround() || brush->isWall()){
 		// Wrong function, end call
 		return;

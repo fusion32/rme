@@ -330,7 +330,7 @@ bool LoadCreatureTypes(const wxString &projectDir){
 	wxDir dir(monsterDir);
 	if(dir.GetFirst(&filename, "*.mon", wxDIR_FILES)){
 		do{
-			FileName fn(monsterDir, filename);
+			wxFileName fn(monsterDir, filename);
 			if(!LoadCreatureType(fn.GetFullPath())){
 				g_editor.Error(wxString() << "Unable to load monster " << filename);
 				return false;

@@ -508,7 +508,7 @@ bool Map::load(const wxString &projectDir)
 			do{
 				g_editor.SetLoadDone(94, wxString::Format("Loading sector patch %s (%d)", filename, numLoaded));
 
-				FileName fn(saveDir, filename);
+				wxFileName fn(saveDir, filename);
 				if(!loadSector(SECTOR_FULL_PATCH, fn)){
 					g_editor.Error(wxString() << "Unable to load full patch " << fn.GetFullPath());
 				}
@@ -521,7 +521,7 @@ bool Map::load(const wxString &projectDir)
 			do{
 				g_editor.SetLoadDone(95, wxString::Format("Loading sector patch %s (%d)", filename, numLoaded));
 
-				FileName fn(saveDir, filename);
+				wxFileName fn(saveDir, filename);
 				if(!loadPatch(SECTOR_PATCH, fn)){
 					g_editor.Error(wxString() << "Unable to load patch " << fn.GetFullPath());
 				}
@@ -915,7 +915,7 @@ void Map::cleanInvalidTiles(bool showDialog /*= false*/)
 		g_editor.DestroyLoadBar();
 }
 
-bool Map::exportMinimap(const FileName &filename,
+bool Map::exportMinimap(const wxFileName &filename,
 						int floor /*= rme::MapGroundLayer*/,
 						bool showDialog /*= false*/)
 {

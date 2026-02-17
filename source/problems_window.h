@@ -51,8 +51,8 @@ struct ProblemSource {
 		ProblemSource source = {};
 		source.type = PROBLEM_SOURCE_POSITION;
 		source.position.x = x;
-		source.position.x = y;
-		source.position.x = z;
+		source.position.y = y;
+		source.position.z = z;
 		return source;
 	}
 

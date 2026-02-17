@@ -182,7 +182,7 @@ struct Map {
 
 
 	void cleanInvalidTiles(bool showDialog = false);
-	bool exportMinimap(const FileName &filename,
+	bool exportMinimap(const wxFileName &filename,
 						int floor = rme::MapGroundLayer,
 						bool showDialog = false);
 

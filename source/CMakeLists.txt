@@ -141,4 +141,5 @@ ${CMAKE_CURRENT_LIST_DIR}/wall_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/waypoint_brush.cpp
 ${CMAKE_CURRENT_LIST_DIR}/welcome_dialog.cpp
 ${CMAKE_CURRENT_LIST_DIR}/ext/pugixml.cpp
+${CMAKE_CURRENT_LIST_DIR}/rme.rc
 )

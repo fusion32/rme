@@ -18,34 +18,67 @@
 #ifndef RME_MAIN_H_
 #define RME_MAIN_H_
 
+#if defined(_DEBUG) && defined(NDEBUG)
+#	undef NDEBUG
+#endif
+
+#if defined(_MSC_VER) && !defined(_DEBUG)
+#	define _ITERATOR_DEBUG_LEVEL 0
+#endif
+
 #ifdef _WIN32
 #	define WIN32_LEAN_AND_MEAN
 #	ifdef _WIN32_WINNT
 #		undef _WIN32_WINNT
 #	endif
 #	define _WIN32_WINNT 0x0501
+#	include <crtdbg.h>
 #endif
 
 #ifdef DEBUG_MEM
-
 #define _CRTDBG_MAP_ALLOC
-
 #pragma warning(disable: 4291)
 _Ret_bytecap_(_Size) inline void * __CRTDECL operator new(size_t _Size, const char* file, int line)
         { return ::operator new(_Size, _NORMAL_BLOCK, file, line); }
 _Ret_bytecap_(_Size) inline void* __CRTDECL operator new[](size_t _Size, const char* file, int line)
         { return ::operator new[](_Size, _NORMAL_BLOCK, file, line); }
 #define newd new(__FILE__, __LINE__)
-
 #else
-
 #define newd new
+#endif //DEBUG_MEM
 
-#endif
+// stdlib
+#include <assert.h>
+#include <math.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <time.h>
 
+// stdlib C++
+#include <list>
+#include <vector>
+#include <map>
+#include <string>
+#include <istream>
+#include <ostream>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
+#include <algorithm>
+#include <limits>
+#include <set>
+#include <queue>
+#include <stdexcept>
+#include <fstream>
+#include <memory>
+#include <exception>
+#include <cmath>
+#include <ranges>
+#include <regex>
+
+// wxWidgets
 #include <wx/defs.h>
-#include "definitions.h"
-
 #include <wx/wxprec.h>
 #ifndef WX_PRECOMP
 #   include <wx/wx.h>
@@ -72,59 +105,26 @@ _Ret_bytecap_(_Size) inline void* __CRTDECL operator new[](size_t _Size, const c
 #include <wx/grid.h>
 #include <wx/clipbrd.h>
 
+// pugixml
 #include "ext/pugixml.hpp"
 
-#include <assert.h>
-#ifdef __DEBUG__
-#   define ASSERT(expr) assert(expr)
-#else
-#   define ASSERT(expr) (void)(expr)
-#endif
-
-#ifdef _WIN32
-#include <crtdbg.h>
-#endif
-
-#include <math.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <time.h>
-
-#include <list>
-#include <vector>
-#include <map>
-#include <string>
-#include <istream>
-#include <ostream>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
-#include <algorithm>
-#include <limits>
-#include <set>
-#include <queue>
-#include <stdexcept>
-#include <fstream>
-#include <memory>
-#include <exception>
-#include <cmath>
-#include <ranges>
-#include <regex>
-
-typedef std::vector<std::string> StringVector;
-typedef wxFileName FileName;
-
-#include "common.h"
-#include "threads.h"
-
-#include "const.h"
-#include "forward.h"
+#define ASSERT assert
 
 #if wxCHECK_VERSION(3, 1, 0)
-        #define FROM_DIP(widget, size) widget->FromDIP(size)
+#   define FROM_DIP(widget, size) widget->FromDIP(size)
 #else
-        #define FROM_DIP(widget, size) size
+#   define FROM_DIP(widget, size) size
 #endif
+
+// TODO(fusion): Probably get rid of these?
+// wxString conversions
+#define nstr(str) std::string((const char*)(str.mb_str(wxConvUTF8)))
+#define wxstr(str) wxString((str).c_str(), wxConvUTF8)
+
+#include "definitions.h"
+#include "common.h"
+#include "const.h"
+#include "forward.h"
+#include "threads.h"
 
 #endif

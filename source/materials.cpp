@@ -95,7 +95,7 @@ bool Materials::unserializeMaterials(const wxString &filename, pugi::xml_node no
 				continue;
 			}
 
-			FileName includeName = filename;
+			wxFileName includeName = filename;
 			includeName.SetFullName(wxString(attribute.as_string(), wxConvUTF8));
 			if(!loadMaterialsInternal(includeName.GetFullPath())) {
 				g_editor.Error(wxString() << "Error while loading file \"" << includeName.GetFullName() << "\"");

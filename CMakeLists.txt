@@ -28,7 +28,7 @@ add_executable(${PROJECT_NAME} WIN32 ${rme_H} ${rme_SRC})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
-target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:__DEBUG__>)
+target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:_DEBUG;wxDEBUG_LEVEL=1>)
 
 include_directories(
     ${OPENGL_INCLUDE_DIR}

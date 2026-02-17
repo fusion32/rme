@@ -8,5 +8,6 @@
       "name": "wxwidgets",
       "default-features": false
     }
-  ]
+  ],
+  "builtin-baseline": "af752f21c9d79ba3df9cb0250ce2233933f58486"
 }

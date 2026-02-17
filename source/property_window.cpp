@@ -27,7 +27,6 @@
 #include <wx/gdicmn.h>
 #include <wx/grid.h>
 #include <wx/sizer.h>
-#include <wx/stringimpl.h>
 
 // Container Item Button
 //============================================================================

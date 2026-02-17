@@ -52,7 +52,7 @@ Application::~Application()
 
 bool Application::OnInit()
 {
-#if defined(__DEBUG__) && defined(__WINDOWS__)
+#if defined(_DEBUG) && defined(__WINDOWS__)
 	_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
 
@@ -86,7 +86,7 @@ bool Application::OnInit()
 
 	g_editor.gfx.loadEditorSprites();
 
-#ifndef __DEBUG__
+#ifndef _DEBUG
 	//wxHandleFatalExceptions(true);
 #endif
 
