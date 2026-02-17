@@ -75,7 +75,7 @@ struct Tile {
 	void removeCreature(void);
 	int getIndexOf(Item *item) const;
 	Item *getItemAt(int index) const;
-	Item *getTopItem(int *outIndex = NULL) const;
+	Item *getTopItem(void) const;
 	bool getFlag(ObjectFlag flag) const;
 	uint16_t getGroundSpeed(void) const noexcept;
 	uint8_t getMiniMapColor(void) const;

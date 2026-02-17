@@ -356,6 +356,35 @@ void MapDrawer::DrawMap()
 		glEnable(GL_TEXTURE_2D);
 }
 
+template<typename F>
+static void DrawTileItems(const Tile *tile, F &&f, int maxItems = 10){
+	thread_local std::vector<const Item*> buffer;
+	ASSERT(buffer.empty());
+
+	// TODO(fusion): I'm not sure I like this approach too much.
+	int numItems = 0;
+	const Item *item = tile->items;
+	while(item != NULL && numItems < maxItems){
+		int stackPriority = item->getStackPriority();
+		do{
+			buffer.push_back(item);
+			item = item->next;
+		}while(item != NULL && numItems < maxItems
+			&& item->getStackPriority() == stackPriority);
+
+		if(stackPriority == STACK_PRIORITY_CREATURE
+				|| stackPriority == STACK_PRIORITY_LOW){
+			std::reverse(buffer.begin(), buffer.end());
+		}
+
+		for(const Item *x: buffer){
+			f(tile, x);
+		}
+
+		buffer.clear();
+	}
+}
+
 void MapDrawer::DrawSecondaryMap(int map_z)
 {
 	if(options.ingame)
@@ -392,11 +421,12 @@ void MapDrawer::DrawSecondaryMap(int map_z)
 			int draw_x, draw_y;
 			getDrawPosition(final_pos, draw_x, draw_y);
 
-			// Draw ground
-			float r = 0.6f, g = 0.6f, b = 0.6f;
-			if(const Item *ground = tile->getFirstItem(BANK)) {
-				if(options.show_blocking && tile->getFlag(UNPASS)){
-					r *= 1.0f; g *= 0.67f; b *= 0.67f;
+			// TODO(fusion): This is pretty much the same as the one in `DrawTile`.
+			// Maybe have a dedicated function to retrieve the tint of the tile?
+			float r = 1.0f, g = 1.0f, b = 1.0f;
+			if(tile->getFlag(BANK)) {
+				if(options.show_blocking && tile->getFlag(UNPASS)) {
+					r *= 1.00f; g *= 0.67f; b *= 0.67f;
 				}
 
 				if(options.show_special_tiles && tile->getTileFlag(TILE_FLAG_REFRESH)){
@@ -408,37 +438,31 @@ void MapDrawer::DrawSecondaryMap(int map_z)
 				}
 
 				if(options.show_houses && tile->houseId != 0){
-					r *= 0.5f;
-					g *= (tile->houseId == current_house_id ? 1.0f : 0.5f);
-					b *= 1.0f;
+					r *= 0.50f;
+					g *= (tile->houseId == current_house_id ? 1.00f : 0.50f);
+					b *= 1.00f;
 				}else if(options.show_special_tiles && tile->getTileFlag(TILE_FLAG_PROTECTIONZONE)){
 					r *= 0.15f; g *= 0.40f; b *= 0.97f;
 				}
-
-				BlitItem(draw_x, draw_y, tile, ground, true, r, g, b, 0.6f);
 			}
 
-			bool hidden = options.hide_items_when_zoomed && zoom > 10.f;
-
-			// Draw items
-			if(!hidden) {
-				for(const Item *item = tile->items; item != NULL; item = item->next){
-					// NOTE(fusion): Already handled above.
-					if(item->getFlag(BANK)){
-						continue;
-					}
-
-					if(item->getFlag(CLIP)) {
-						BlitItem(draw_x, draw_y, tile, item, true, r, g, b, 0.6f);
-					} else {
-						BlitItem(draw_x, draw_y, tile, item, true, 0.6f, 0.6f, 0.6f, 0.6f);
-					}
+			if(options.hide_items_when_zoomed && zoom > 10.0f){
+				if(Item *ground = tile->getFirstItem(BANK)){
+					BlitItem(draw_x, draw_y, tile, ground, false, r, g, b);
 				}
-			}
+			}else{
+				DrawTileItems(tile,
+					[this, &draw_x, &draw_y, r, g, b](const Tile *tile, const Item *item){
+						if(item->getFlag(BANK) || item->getFlag(CLIP)) {
+							BlitItem(draw_x, draw_y, tile, item, true, r, g, b, 0.6f);
+						} else {
+							BlitItem(draw_x, draw_y, tile, item, true, 0.6f, 0.6f, 0.6f, 0.6f);
+						}
+					});
 
-			// Draw creature
-			if(!hidden && options.show_creatures && tile->creature) {
-				BlitCreature(draw_x, draw_y, tile->creature);
+				if(options.show_creatures && tile->creature) {
+					BlitCreature(draw_x, draw_y, tile->creature);
+				}
 			}
 		}
 	}
@@ -571,20 +595,23 @@ void MapDrawer::DrawDraggingShadow()
 		// On screen and dragging?
 		if(pos_x+2 > start_x && pos_x < end_x && pos_y+2 > start_y && pos_y < end_y) {
 			Position pos(pos_x, pos_y, pos_z);
+
 			int draw_x, draw_y;
 			getDrawPosition(pos, draw_x, draw_y);
 
 			Tile* dest_tile = g_editor.map.getTile(pos);
-			for(Item *item = tile->items; item != NULL; item = item->next){
-				if(!item->isSelected()){
-					continue;
-				}
+			DrawTileItems(tile,
+				[this, &draw_x, &draw_y, pos, dest_tile](const Tile *tile, const Item *item){
+					if(!item->isSelected()){
+						return;
+					}
 
-				if(dest_tile)
-					BlitItem(draw_x, draw_y, dest_tile, item, true, 0.6f, 0.6f, 0.6f, 0.6f);
-				else
-					BlitItem(draw_x, draw_y, pos, item, true, 0.6f, 0.6f, 0.6f, 0.6f);
-			}
+					if(dest_tile){
+						BlitItem(draw_x, draw_y, dest_tile, item, true, 0.6f, 0.6f, 0.6f, 0.6f);
+					}else{
+						BlitItem(draw_x, draw_y, pos, item, true, 0.6f, 0.6f, 0.6f, 0.6f);
+					}
+				});
 
 			if(options.show_creatures && tile->creature && tile->creature->isSelected())
 				BlitCreature(draw_x, draw_y, tile->creature);
@@ -610,24 +637,15 @@ void MapDrawer::DrawHigherFloors()
 			int draw_x, draw_y;
 			getDrawPosition(tile->pos, draw_x, draw_y);
 
-			if(const Item *ground = tile->getFirstItem(BANK)) {
-				if(tile->getTileFlag(TILE_FLAG_PROTECTIONZONE)) {
-					BlitItem(draw_x, draw_y, tile, ground, false, 0.5f, 1.0f, 0.5f, 0.4f);
-				} else {
+			if(options.hide_items_when_zoomed && zoom > 10.0f){
+				if(const Item *ground = tile->getFirstItem(BANK)) {
 					BlitItem(draw_x, draw_y, tile, ground, false, 1.0f, 1.0f, 1.0f, 0.4f);
 				}
-			}
-
-			bool hidden = options.hide_items_when_zoomed && zoom > 10.f;
-			if(!hidden) {
-				for(const Item *item = tile->items; item != NULL; item = item->next){
-					// NOTE(fusion): Already handled above.
-					if(item->getFlag(BANK)){
-						continue;
-					}
-
-					BlitItem(draw_x, draw_y, tile, item, false, 1.0f, 1.0f, 1.0f, 0.4f);
-				}
+			}else{
+				DrawTileItems(tile,
+					[this, &draw_x, &draw_y](const Tile *tile, const Item *item){
+						BlitItem(draw_x, draw_y, tile, item, false, 1.0f, 1.0f, 1.0f, 0.4f);
+					});
 			}
 		}
 	}
@@ -1125,7 +1143,11 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Tile* tile, const Item*
 		alpha *= 0.5f;
 	}
 
-	int frame = item->getFrame();
+	int frame = 0;
+	if(options.show_preview && zoom <= 2.0f){
+		frame = item->getFrame();
+	}
+
 	for(int cx = 0; cx != sprite->width; cx++) {
 		for(int cy = 0; cy != sprite->height; cy++) {
 			for(int cf = 0; cf != sprite->layers; cf++) {
@@ -1226,7 +1248,11 @@ void MapDrawer::BlitItem(int& draw_x, int& draw_y, const Position& pos, const It
 		alpha *= 0.5f;
 	}
 
-	int frame = item->getFrame();
+	int frame = 0;
+	if(options.show_preview && zoom <= 2.0f){
+		frame = item->getFrame();
+	}
+
 	for(int cx = 0; cx != sprite->width; ++cx) {
 		for(int cy = 0; cy != sprite->height; ++cy) {
 			for(int cf = 0; cf != sprite->layers; ++cf) {
@@ -1388,103 +1414,80 @@ void MapDrawer::DrawTile(Tile *tile)
 		return;
 	}
 
-	// TODO(fusion): Pass `animate` as a parameter to BlitItem.
-	//bool animate = options.show_preview && zoom <= 2.0;
-	bool only_colors = options.isOnlyColors();
-	bool show_tooltips = options.isTooltips();
-	Position pos = tile->pos;
-
 	int draw_x, draw_y;
-	getDrawPosition(pos, draw_x, draw_y);
+	getDrawPosition(tile->pos, draw_x, draw_y);
 
 	float r = 1.0f, g = 1.0f, b = 1.0f;
-	if(only_colors || tile->getFlag(BANK)) {
-		if(!options.show_as_minimap) {
-			bool showspecial = options.show_only_colors || options.show_special_tiles;
-
-			if(options.show_blocking && tile->getFlag(UNPASS)) {
-				r *= 1.00f; g *= 0.67f; b *= 0.67f;
-			}
-
-			{
-				int topIndex;
-				Item *topItem = tile->getTopItem(&topIndex);
-				if(options.highlight_items && topItem && !topItem->getFlag(CLIP)){
-					float factor;
-					switch(topIndex){
-						case 0:  factor = 0.75f; break;
-						case 1:  factor = 0.60f; break;
-						case 2:  factor = 0.48f; break;
-						case 3:  factor = 0.40f; break;
-						default: factor = 0.33f; break;
-					}
-
-					r *= factor;
-					g *= factor;
-					b *= 1.0f;
-				}
-			}
-
-			if(showspecial && tile->getTileFlag(TILE_FLAG_REFRESH)){
-				r *= 1.00f; g *= 0.98f; b *= 0.00f;
-			}
-
-			if(showspecial && tile->getTileFlag(TILE_FLAG_NOLOGOUT)){
-				r *= 0.80f; g *= 0.00f; b *= 0.12f;
-			}
-
-			if(options.show_houses && tile->houseId != 0){
-				r *= 0.50f;
-				g *= (tile->houseId == current_house_id ? 1.00f : 0.50f);
-				b *= 1.00f;
-			}else if(showspecial && tile->getTileFlag(TILE_FLAG_PROTECTIONZONE)){
-				r *= 0.15f; g *= 0.40f; b *= 0.97f;
-			}
+	if(!options.show_as_minimap || tile->getFlag(BANK)) {
+		if(options.show_blocking && tile->getFlag(UNPASS)) {
+			r *= 1.00f; g *= 0.67f; b *= 0.67f;
 		}
 
-		if(only_colors){
-			glDisable(GL_TEXTURE_2D);
-			if(options.show_as_minimap){
-				wxColor color = colorFromEightBit(tile->getMiniMapColor());
-				glBlitSquare(draw_x, draw_y, color);
-			}else if(r < 1.0f || g < 1.0f || b < 1.0f){
-				glBlitSquare(draw_x, draw_y, r, g, b, 0.5f);
-			}
-			glEnable(GL_TEXTURE_2D);
-		}else if(const Item *ground = tile->getFirstItem(BANK)){
-			if(show_tooltips && pos.z == floor)
-				WriteItemTooltip(ground, tooltip);
+		if(options.show_special_tiles && tile->getTileFlag(TILE_FLAG_REFRESH)){
+			r *= 1.00f; g *= 0.98f; b *= 0.00f;
+		}
+
+		if(options.show_special_tiles && tile->getTileFlag(TILE_FLAG_NOLOGOUT)){
+			r *= 0.80f; g *= 0.00f; b *= 0.12f;
+		}
+
+		if(options.show_houses && tile->houseId != 0){
+			r *= 0.50f;
+			g *= (tile->houseId == current_house_id ? 1.00f : 0.50f);
+			b *= 1.00f;
+		}else if(options.show_special_tiles && tile->getTileFlag(TILE_FLAG_PROTECTIONZONE)){
+			r *= 0.15f; g *= 0.40f; b *= 0.97f;
+		}
+	}
+
+	if(options.show_as_minimap){
+		glDisable(GL_TEXTURE_2D);
+		wxColor color = colorFromEightBit(tile->getMiniMapColor());
+		glBlitSquare(draw_x, draw_y, color);
+		glEnable(GL_TEXTURE_2D);
+	}else if(options.show_only_colors){
+		glDisable(GL_TEXTURE_2D);
+		glBlitSquare(draw_x, draw_y, r, g, b, 0.5f);
+		glEnable(GL_TEXTURE_2D);
+	}else if(options.hide_items_when_zoomed && zoom > 10.0f){
+		if(Item *ground = tile->getFirstItem(BANK)){
 			BlitItem(draw_x, draw_y, tile, ground, false, r, g, b);
 		}
-	}
-
-	bool hidden = only_colors || (options.hide_items_when_zoomed && zoom > 10.f);
-
-	if(!hidden) {
-		for(const Item *item = tile->items; item != NULL; item = item->next){
-			// NOTE(fusion): Already handled above.
-			if(item->getFlag(BANK)){
-				continue;
-			}
-
-			if(show_tooltips && pos.z == floor)
-				WriteItemTooltip(item, tooltip);
-
-			if(item->getFlag(CLIP)) {
-				BlitItem(draw_x, draw_y, tile, item, false, r, g, b);
-			} else {
-				BlitItem(draw_x, draw_y, tile, item);
-			}
+	}else{
+		const Item *topItem = (options.highlight_items ? tile->getTopItem() : NULL);
+		if(topItem && topItem->getStackPriority() != STACK_PRIORITY_CREATURE
+				&& topItem->getStackPriority() != STACK_PRIORITY_LOW){
+			topItem = NULL;
 		}
-	}
 
-	if(!hidden && options.show_creatures && tile->creature) {
-		BlitCreature(draw_x, draw_y, tile->creature);
-	}
+		DrawTileItems(tile,
+			[this, &draw_x, &draw_y, r, g, b, topItem](const Tile *tile, const Item *item){
+				if(options.show_tooltips && tile->pos.z == floor)
+					WriteItemTooltip(item, tooltip);
 
-	if(show_tooltips) {
-		MakeTooltip(draw_x, draw_y, tooltip.str());
-		tooltip.str("");
+				if(options.highlight_items){
+					if(item == topItem){
+						BlitItem(draw_x, draw_y, tile, item, false, 1.0f, 1.0f, 1.0f);
+					}else{
+						BlitItem(draw_x, draw_y, tile, item, false, 0.5f, 0.5f, 0.5f);
+					}
+				}else{
+					if(item->getFlag(BANK) || item->getFlag(CLIP)){
+						BlitItem(draw_x, draw_y, tile, item, false, r, g, b);
+					}else{
+						BlitItem(draw_x, draw_y, tile, item, false, 1.0f, 1.0f, 1.0f);
+					}
+				}
+			});
+
+		if(options.show_creatures && tile->creature) {
+			BlitCreature(draw_x, draw_y, tile->creature);
+		}
+
+		if(options.show_tooltips) {
+			MakeTooltip(draw_x, draw_y, tooltip.str());
+			tooltip.str("");
+		}
 	}
 }
 

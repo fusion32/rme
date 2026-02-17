@@ -203,10 +203,16 @@ void Tile::addItem(Item *item)
 
 	ASSERT(item->next == NULL);
 	int stackPriority = item->getStackPriority();
+
+	// IMPORTANT(fusion): Objects with CREATURE and LOW priority are stored in
+	// reverse order, to allow the list to contain the most important/immediate
+	// objects in its first ~10 entries.
+
 	bool append = (stackPriority == STACK_PRIORITY_BANK
 			|| stackPriority == STACK_PRIORITY_CLIP
 			|| stackPriority == STACK_PRIORITY_BOTTOM
 			|| stackPriority == STACK_PRIORITY_TOP);
+
 	bool replace = (stackPriority == STACK_PRIORITY_BANK
 			|| stackPriority == STACK_PRIORITY_BOTTOM
 			|| stackPriority == STACK_PRIORITY_TOP);
@@ -229,10 +235,48 @@ void Tile::addItem(Item *item)
 	}
 }
 
+static Item *ReverseItemGroup(Item *first, int stackPriority){
+	Item *prev = NULL;
+	Item *it   = first;
+	while(it != NULL && it->getStackPriority() == stackPriority){
+		Item *next = it->next;
+		it->next = prev;
+		prev = it;
+		it = next;
+	}
+
+	// NOTE(fusion): After reversing, `prev` should contain the new head of the
+	// group, while `first`, the new tail. We still need to make sure we don't
+	// break the link to the remainder of the list so we need to adjust the tail
+	// to point to the first object of the next group.
+	if(prev != NULL && prev != first){
+		ASSERT(first != NULL);
+		first->next = it;
+		first = prev;
+	}
+
+	return first;
+}
+
 int Tile::addItems(Item *first)
 {
+	// NOTE(fusion): We want a stable insertion and we know that CREATURE and LOW
+	// stack priority objects are stored in reverse order. This means we also need
+	// to insert these objects in reverse to get a stable result.
+
 	int count = 0;
+	int prevStackPriority = -1;
 	while(Item *item = first){
+		int stackPriority = item->getStackPriority();
+		if(stackPriority != prevStackPriority){
+			if(stackPriority == STACK_PRIORITY_CREATURE
+					|| stackPriority == STACK_PRIORITY_LOW){
+				item = ReverseItemGroup(item, stackPriority);
+			}
+
+			prevStackPriority = stackPriority;
+		}
+
 		first = item->next;
 		item->next = NULL;
 		addItem(item);
@@ -280,16 +324,17 @@ Item *Tile::getItemAt(int index) const
 	return result;
 }
 
-Item *Tile::getTopItem(int *outIndex /*= NULL*/) const
+Item *Tile::getTopItem(void) const
 {
-	int index = -1;
 	Item *result = NULL;
 	for(Item *it = items; it != NULL; it = it->next){
 		result = it;
-		index += 1;
-	}
-	if(outIndex){
-		*outIndex = index;
+
+		int stackPriority = result->getStackPriority();
+		if(stackPriority == STACK_PRIORITY_CREATURE
+				|| stackPriority == STACK_PRIORITY_LOW){
+			break;
+		}
 	}
 	return result;
 }
