@@ -502,15 +502,15 @@ ProblemsWindow *Editor::ShowProblemsWindow()
 }
 
 void Editor::Notice(wxString message, ProblemSource source /*= {}*/){
-	ShowProblemsWindow()->Insert(SEVERITY_NOTICE, source, std::move(message));
+	ShowProblemsWindow()->Insert(PROBLEM_SEVERITY_NOTICE, source, std::move(message));
 }
 
 void Editor::Warning(wxString message, ProblemSource source /*= {}*/){
-	ShowProblemsWindow()->Insert(SEVERITY_WARNING, source, std::move(message));
+	ShowProblemsWindow()->Insert(PROBLEM_SEVERITY_WARNING, source, std::move(message));
 }
 
 void Editor::Error(wxString message, ProblemSource source /*= {}*/){
-	ShowProblemsWindow()->Insert(SEVERITY_ERROR, source, std::move(message));
+	ShowProblemsWindow()->Insert(PROBLEM_SEVERITY_ERROR, source, std::move(message));
 }
 
 //=============================================================================

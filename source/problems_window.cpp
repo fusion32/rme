@@ -22,9 +22,9 @@ ProblemsWindow::~ProblemsWindow(void){
 static wxString GetSeverityString(ProblemSeverity severity){
 	wxString result = wxEmptyString;
 	switch(severity){
-		case SEVERITY_NOTICE:  result = "Notice"; break;
-		case SEVERITY_WARNING: result = "Warning"; break;
-		case SEVERITY_ERROR:   result = "Error"; break;
+		case PROBLEM_SEVERITY_NOTICE:  result = "Notice"; break;
+		case PROBLEM_SEVERITY_WARNING: result = "Warning"; break;
+		case PROBLEM_SEVERITY_ERROR:   result = "Error"; break;
 	}
 	return result;
 }
@@ -32,11 +32,11 @@ static wxString GetSeverityString(ProblemSeverity severity){
 static wxString GetSourceString(const ProblemSource &source){
 	wxString result = wxEmptyString;
 	switch(source.type){
-		case SOURCE_OBJECT_TYPE:	result << GetItemType(source.typeId).name; break;
-		case SOURCE_MONSTER_TYPE:	result << GetCreatureType(source.raceId).name; break;
-		case SOURCE_POSITION:		result << "(" << source.position.x << "," << source.position.y
-											<< "," << source.position.z << ")"; break;
-		default:					break;
+		case PROBLEM_SOURCE_OBJECT_TYPE:	result << GetItemType(source.typeId).name; break;
+		case PROBLEM_SOURCE_MONSTER_TYPE:	result << GetCreatureType(source.raceId).name; break;
+		case PROBLEM_SOURCE_POSITION:		result << "(" << source.position.x << "," << source.position.y
+													<< "," << source.position.z << ")"; break;
+		default:							break;
 	}
 	return result;
 }
@@ -57,7 +57,7 @@ void ProblemsWindow::OnItemSelected(wxListEvent &event){
 	long item = event.GetIndex();
 	if(item >= 0 && item <= (long)problems.size()){
 		const ProblemSource &source = problems[item].source;
-		if(source.type == SOURCE_POSITION){
+		if(source.type == PROBLEM_SOURCE_POSITION){
 			g_editor.SetScreenCenterPosition(source.position);
 		}
 	}
@@ -66,5 +66,10 @@ void ProblemsWindow::OnItemSelected(wxListEvent &event){
 void ProblemsWindow::Insert(ProblemSeverity severity, ProblemSource source, wxString message){
 	problems.emplace_back(severity, source, std::move(message));
 	SetItemCount((long)problems.size());
+}
+
+void ProblemsWindow::Clear(void){
+	SetItemCount(0);
+	problems.clear();
 }
 
