@@ -426,7 +426,7 @@ void MapDrawer::DrawSecondaryMap(int map_z)
 			float r = 1.0f, g = 1.0f, b = 1.0f;
 			if(tile->getFlag(BANK)) {
 				if(options.show_blocking && tile->getFlag(UNPASS)) {
-					r *= 1.00f; g *= 0.67f; b *= 0.67f;
+					r *= 0.25f; g *= 0.25f; b *= 0.25f;
 				}
 
 				if(options.show_special_tiles && tile->getTileFlag(TILE_FLAG_REFRESH)){
@@ -1420,7 +1420,7 @@ void MapDrawer::DrawTile(Tile *tile)
 	float r = 1.0f, g = 1.0f, b = 1.0f;
 	if(!options.show_as_minimap || tile->getFlag(BANK)) {
 		if(options.show_blocking && tile->getFlag(UNPASS)) {
-			r *= 1.00f; g *= 0.67f; b *= 0.67f;
+			r *= 0.25f; g *= 0.25f; b *= 0.25f;
 		}
 
 		if(options.show_special_tiles && tile->getTileFlag(TILE_FLAG_REFRESH)){
