@@ -152,7 +152,7 @@ void MapDrawer::SetupVars()
 	floor = canvas->GetFloor();
 
 	if(options.show_all_floors){
-		if(floor < 8){
+		if(floor <= rme::MapGroundLayer){
 			start_z = rme::MapGroundLayer;
 		}else{
 			start_z = std::min(rme::MapMaxLayer, floor + 2);
@@ -162,18 +162,13 @@ void MapDrawer::SetupVars()
 	}
 
 	end_z = floor;
-	superend_z = (floor > rme::MapGroundLayer ? 8 : 0);
+	superend_z = (floor > rme::MapGroundLayer ? (rme::MapGroundLayer - 1) : 0);
 
-	start_x = view_scroll_x / rme::TileSize;
-	start_y = view_scroll_y / rme::TileSize;
+	start_x = view_scroll_x / rme::TileSize + (floor - start_z);
+	start_y = view_scroll_y / rme::TileSize + (floor - start_z);
 
-	if(floor > rme::MapGroundLayer){
-		start_x -= 2;
-		start_y -= 2;
-	}
-
-	end_x = start_x + screensize_x / tile_size + 2;
-	end_y = start_y + screensize_y / tile_size + 2;
+	end_x = start_x + screensize_x / tile_size + 1;
+	end_y = start_y + screensize_y / tile_size + 1;
 }
 
 void MapDrawer::SetupGL()
@@ -230,14 +225,6 @@ void MapDrawer::Draw()
 		DrawIngameBox();
 	if(options.isTooltips())
 		DrawTooltips();
-}
-
-inline int getFloorAdjustment(int floor)
-{
-	if(floor > rme::MapGroundLayer) // Underground
-		return 0; // No adjustment
-	else
-		return rme::TileSize * (rme::MapGroundLayer - floor);
 }
 
 void MapDrawer::DrawShade(int map_z)
@@ -726,8 +713,6 @@ void MapDrawer::DrawBrush()
 	else if(brush->isEraser())
 		brushColor = COLOR_ERASER;
 
-	int adjustment = getFloorAdjustment(floor);
-
 	if(dragging_draw) {
 		ASSERT(brush->canDrag());
 
@@ -737,10 +722,10 @@ void MapDrawer::DrawBrush()
 			int last_click_end_map_x = std::max(canvas->last_click_map_x, mouse_map_x)+1;
 			int last_click_end_map_y = std::max(canvas->last_click_map_y, mouse_map_y)+1;
 
-			int last_click_start_sx = last_click_start_map_x * rme::TileSize - view_scroll_x - adjustment;
-			int last_click_start_sy = last_click_start_map_y * rme::TileSize - view_scroll_y - adjustment;
-			int last_click_end_sx = last_click_end_map_x * rme::TileSize - view_scroll_x - adjustment;
-			int last_click_end_sy = last_click_end_map_y * rme::TileSize - view_scroll_y - adjustment;
+			int last_click_start_sx = last_click_start_map_x * rme::TileSize - view_scroll_x;
+			int last_click_start_sy = last_click_start_map_y * rme::TileSize - view_scroll_y;
+			int last_click_end_sx = last_click_end_map_x * rme::TileSize - view_scroll_x;
+			int last_click_end_sy = last_click_end_map_y * rme::TileSize - view_scroll_y;
 
 			int delta_x = last_click_end_sx - last_click_start_sx;
 			int delta_y = last_click_end_sy - last_click_start_sy;
@@ -804,9 +789,9 @@ void MapDrawer::DrawBrush()
 						raw_brush = brush->asRaw();
 
 					for(int y = start_y; y <= end_y; y++) {
-						int cy = y * rme::TileSize - view_scroll_y - adjustment;
+						int cy = y * rme::TileSize - view_scroll_y;
 						for(int x = start_x; x <= end_x; x++) {
-							int cx = x * rme::TileSize - view_scroll_x - adjustment;
+							int cx = x * rme::TileSize - view_scroll_x;
 							if(brush->isOptionalBorder())
 								glColorCheck(brush, Position(x, y, floor));
 							else
@@ -819,10 +804,10 @@ void MapDrawer::DrawBrush()
 					int last_click_end_map_x   = std::max(canvas->last_click_map_x, mouse_map_x)+1;
 					int last_click_end_map_y   = std::max(canvas->last_click_map_y, mouse_map_y)+1;
 
-					int last_click_start_sx = last_click_start_map_x * rme::TileSize - view_scroll_x - adjustment;
-					int last_click_start_sy = last_click_start_map_y * rme::TileSize - view_scroll_y - adjustment;
-					int last_click_end_sx = last_click_end_map_x * rme::TileSize - view_scroll_x - adjustment;
-					int last_click_end_sy = last_click_end_map_y * rme::TileSize - view_scroll_y - adjustment;
+					int last_click_start_sx = last_click_start_map_x * rme::TileSize - view_scroll_x;
+					int last_click_start_sy = last_click_start_map_y * rme::TileSize - view_scroll_y;
+					int last_click_end_sx = last_click_end_map_x * rme::TileSize - view_scroll_x;
+					int last_click_end_sy = last_click_end_map_y * rme::TileSize - view_scroll_y;
 
 					glColor(brushColor);
 					glBegin(GL_QUADS);
@@ -866,10 +851,10 @@ void MapDrawer::DrawBrush()
 					raw_brush = brush->asRaw();
 
 				for(int y = start_y-1; y <= end_y+1; y++) {
-					int cy = y * rme::TileSize - view_scroll_y - adjustment;
+					int cy = y * rme::TileSize - view_scroll_y;
 					float dy = center_y - y;
 					for(int x = start_x-1; x <= end_x+1; x++) {
-						int cx = x * rme::TileSize - view_scroll_x - adjustment;
+						int cx = x * rme::TileSize - view_scroll_x;
 
 						float dx = center_x - x;
 						//printf("%f;%f\n", dx, dy);
@@ -901,10 +886,10 @@ void MapDrawer::DrawBrush()
 			int end_map_x   = mouse_map_x + g_editor.GetBrushSize() + 1;
 			int end_map_y   = mouse_map_y + g_editor.GetBrushSize() + 1;
 
-			int start_sx = start_map_x * rme::TileSize - view_scroll_x - adjustment;
-			int start_sy = start_map_y * rme::TileSize - view_scroll_y - adjustment;
-			int end_sx = end_map_x * rme::TileSize - view_scroll_x - adjustment;
-			int end_sy = end_map_y * rme::TileSize - view_scroll_y - adjustment;
+			int start_sx = start_map_x * rme::TileSize - view_scroll_x;
+			int start_sy = start_map_y * rme::TileSize - view_scroll_y;
+			int end_sx = end_map_x * rme::TileSize - view_scroll_x;
+			int end_sy = end_map_y * rme::TileSize - view_scroll_y;
 
 			int delta_x = end_sx - start_sx;
 			int delta_y = end_sy - start_sy;
@@ -940,8 +925,8 @@ void MapDrawer::DrawBrush()
 				}
 			glEnd();
 		} else if(brush->isDoor()) {
-			int cx = (mouse_map_x) * rme::TileSize - view_scroll_x - adjustment;
-			int cy = (mouse_map_y) * rme::TileSize - view_scroll_y - adjustment;
+			int cx = (mouse_map_x) * rme::TileSize - view_scroll_x;
+			int cy = (mouse_map_y) * rme::TileSize - view_scroll_y;
 
 			glColorCheck(brush, Position(mouse_map_x, mouse_map_y, floor));
 			glBegin(GL_QUADS);
@@ -954,10 +939,10 @@ void MapDrawer::DrawBrush()
 			// TODO(fusion): We might want to add some settings to control whether this is shown or not?
 			{ // draw spawn radius
 				int spawnRadius = g_settings.getInteger(Config::SPAWN_RADIUS);
-				int spawn_start_x = (mouse_map_x - spawnRadius)     * rme::TileSize - view_scroll_x - adjustment;
-				int spawn_start_y = (mouse_map_y - spawnRadius)     * rme::TileSize - view_scroll_y - adjustment;
-				int spawn_end_x   = (mouse_map_x + spawnRadius + 1) * rme::TileSize - view_scroll_x - adjustment;
-				int spawn_end_y   = (mouse_map_y + spawnRadius + 1) * rme::TileSize - view_scroll_y - adjustment;
+				int spawn_start_x = (mouse_map_x - spawnRadius)     * rme::TileSize - view_scroll_x;
+				int spawn_start_y = (mouse_map_y - spawnRadius)     * rme::TileSize - view_scroll_y;
+				int spawn_end_x   = (mouse_map_x + spawnRadius + 1) * rme::TileSize - view_scroll_x;
+				int spawn_end_y   = (mouse_map_y + spawnRadius + 1) * rme::TileSize - view_scroll_y;
 				glColor(brushColor);
 				glBegin(GL_QUADS);
 					glVertex2f(spawn_start_x, spawn_start_y);
@@ -969,8 +954,8 @@ void MapDrawer::DrawBrush()
 
 			{ // draw creature
 				glEnable(GL_TEXTURE_2D);
-				int cx = (mouse_map_x) * rme::TileSize - view_scroll_x - adjustment;
-				int cy = (mouse_map_y) * rme::TileSize - view_scroll_y - adjustment;
+				int cx = (mouse_map_x) * rme::TileSize - view_scroll_x;
+				int cy = (mouse_map_y) * rme::TileSize - view_scroll_y;
 				CreatureBrush* creature_brush = brush->asCreature();
 				if(creature_brush->canDraw(&g_editor.map, Position(mouse_map_x, mouse_map_y, floor))){
 					BlitCreature(cx, cy, creature_brush->getOutfit(), SOUTH, 1.0f, 1.0f, 1.0f, 0.6f);
@@ -989,9 +974,9 @@ void MapDrawer::DrawBrush()
 			}
 
 			for(int y = -g_editor.GetBrushSize()-1; y <= g_editor.GetBrushSize()+1; y++) {
-				int cy = (mouse_map_y + y) * rme::TileSize - view_scroll_y - adjustment;
+				int cy = (mouse_map_y + y) * rme::TileSize - view_scroll_y;
 				for(int x = -g_editor.GetBrushSize()-1; x <= g_editor.GetBrushSize()+1; x++) {
-					int cx = (mouse_map_x + x) * rme::TileSize - view_scroll_x - adjustment;
+					int cx = (mouse_map_x + x) * rme::TileSize - view_scroll_x;
 					if(g_editor.GetBrushShape() == BRUSHSHAPE_SQUARE) {
 						if(x >= -g_editor.GetBrushSize() && x <= g_editor.GetBrushSize() && y >= -g_editor.GetBrushSize() && y <= g_editor.GetBrushSize()) {
 							if(brush->isRaw()){
@@ -1961,12 +1946,7 @@ void MapDrawer::drawFilledRect(int x, int y, int w, int h, const wxColor& color)
 
 void MapDrawer::getDrawPosition(const Position& position, int& x, int& y)
 {
-	int offset;
-	if(position.z <= rme::MapGroundLayer)
-		offset = (rme::MapGroundLayer - position.z) * rme::TileSize;
-	else
-		offset = rme::TileSize * (floor - position.z);
-
+	int offset = rme::TileSize * (floor - position.z);
 	x = ((position.x * rme::TileSize) - view_scroll_x) - offset;
 	y = ((position.y * rme::TileSize) - view_scroll_y) - offset;
 }

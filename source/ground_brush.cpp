@@ -884,11 +884,9 @@ void GroundBrush::doBorders(Map *map, Tile* tile)
 			}
 			*/
 			uint32_t matches = 0;
-			for(Item *item = tile->items; item != NULL; item = item->next){
-				if(!item->getFlag(CLIP)) {
-					break;
-				}
-
+			for(Item *item = tile->getFirstItem(CLIP);
+					item != NULL && item->getFlag(CLIP);
+					item = item->next){
 				if(specificCaseBlock->match_group > 0) {
 					//printf("Matching %d == %d : %d == %d\n", item->getBorderGroup(), specificCaseBlock->match_group, item->getBorderAlignment(), specificCaseBlock->group_match_alignment);
 					if(item->getBorderGroup() == specificCaseBlock->match_group && item->getBorderAlignment() == specificCaseBlock->group_match_alignment) {
@@ -924,16 +922,15 @@ void GroundBrush::doBorders(Map *map, Tile* tile)
 						});
 				} else {
 					// All matched, replace!
-					for(Item *item = tile->items; item != NULL; item = item->next){
-						if(!item->getFlag(CLIP)){
-							return;
-						}
-
+					for(Item *item = tile->getFirstItem(CLIP);
+							item != NULL && item->getFlag(CLIP);
+							item = item->next){
 						if(item->getID() == specificCaseBlock->to_replace_id){
 							item->transform(specificCaseBlock->with_id);
-							return;
+							break;
 						}
 					}
+					return;
 				}
 			}
 		}

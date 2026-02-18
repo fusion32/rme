@@ -1,12 +1,7 @@
 # Convert all .png files in the current working directory to byte arrays for embedding
 # into a C++ project.
 
-import sys
-import os
-import os.path
-import re
-import array
-import glob
+import array, glob, os, os.path, re, sys
 
 header_file = open("pngfiles.h", "wb")
 source_file = open("pngfiles.cpp", "wb")

@@ -259,7 +259,7 @@ std::string FlagBrush::getName() const
 int FlagBrush::getLookID() const
 {
 	switch(flag) {
-		//case TILE_FLAG_REFRESH:        return EDITOR_SPRITE_REFRESH_TOOL;
+		case TILE_FLAG_REFRESH:        return EDITOR_SPRITE_REFRESH_TOOL;
 		case TILE_FLAG_NOLOGOUT:       return EDITOR_SPRITE_NOLOG_TOOL;
 		case TILE_FLAG_PROTECTIONZONE: return EDITOR_SPRITE_PZ_TOOL;
 	}

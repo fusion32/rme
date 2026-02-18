@@ -345,28 +345,9 @@ void MapCanvas::ScreenToMap(int screen_x, int screen_y, int* map_x, int* map_y)
 	int start_x, start_y;
 	GetMapWindow()->GetViewStart(&start_x, &start_y);
 
-	screen_x *= GetContentScaleFactor();
-	screen_y *= GetContentScaleFactor();
-
-	if(screen_x < 0) {
-		*map_x = (start_x + screen_x) / rme::TileSize;
-	} else {
-		*map_x = int(start_x + (screen_x * zoom)) / rme::TileSize;
-	}
-
-	if(screen_y < 0) {
-		*map_y = (start_y + screen_y) / rme::TileSize;
-	} else {
-		*map_y = int(start_y + (screen_y * zoom)) / rme::TileSize;
-	}
-
-	if(floor <= rme::MapGroundLayer) {
-		*map_x += rme::MapGroundLayer - floor;
-		*map_y += rme::MapGroundLayer - floor;
-	}/* else {
-		*map_x += rme::MapMaxLayer - floor;
-		*map_y += rme::MapMaxLayer - floor;
-	}*/
+	double m = zoom * GetContentScaleFactor();
+	*map_x = (int)(start_x + screen_x * m) / rme::TileSize;
+	*map_y = (int)(start_y + screen_y * m) / rme::TileSize;
 }
 
 MapWindow* MapCanvas::GetMapWindow() const
@@ -397,43 +378,63 @@ void MapCanvas::UpdatePositionStatus(int x, int y)
 	int map_x, map_y;
 	ScreenToMap(x, y, &map_x, &map_y);
 
-	wxString ss;
-	ss << "x: " << map_x << " y:" << map_y << " z:" << floor;
-	g_editor.root->SetStatusText(ss,2);
+	wxString status;
 
-	ss = "";
-	Tile* tile = g_editor.map.getTile(map_x, map_y, floor);
-	if(tile) {
-		if(tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
-			ss << "Monster"; //ss << (tile->creature->isNpc()? "NPC" : "Monster");
-			ss << " \"" << wxstr(tile->creature->getName()) << "\" spawntime: " << tile->creature->spawnInterval;
-		} else if(Item* item = tile->getTopItem()) {
-			ss << "Item \"" << wxstr(item->getName()) << "\"";
-			ss << " typeId:" << item->getID();
-			// TODO(fusion): Relevant srv flags/attributes instead?
-			if(item->getFlag(TAKE)){
-				int weight = item->getAttribute(WEIGHT);
-				if(item->getFlag(CUMULATIVE) && item->getAttribute(AMOUNT) > 0){
-					weight *= item->getAttribute(AMOUNT);
+	{ // top object
+		status.Clear();
+		if(Tile *tile = g_editor.map.getTile(map_x, map_y, floor)){
+			if(tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)){
+				status << "Spawn of " << tile->creature->getName() << " (amount: " << tile->creature->spawnAmount << ")";
+			}else if(Item* item = tile->getTopItem()){
+				status << item->getName() << " (typeId: " << item->getID();
+
+				if(item->getID() != item->getLookID()){
+					status << ", lookId: " << item->getLookID();
 				}
-				ss << " weight: " << (weight / 100) << "." << (weight % 100) << "oz";
+
+				if(item->getFlag(TAKE)){
+					int weight = item->getAttribute(WEIGHT);
+					if(item->getFlag(CUMULATIVE) && item->getAttribute(AMOUNT) > 0){
+						weight *= item->getAttribute(AMOUNT);
+					}
+					status << ", weight: " << (weight / 100) << "." << (weight % 100) << "oz";
+				}
+
+				status << ")";
 			}
-		} else {
-			ss << "Nothing";
 		}
-	} else {
-		ss << "Nothing";
+
+		if(status.IsEmpty()){
+			status << "Nothing";
+		}
+
+		g_editor.root->SetStatusText(status, 1);
 	}
 
-	g_editor.root->SetStatusText(ss, 1);
+	{ // position
+		status.Clear();
+		status << "[" << map_x << "," << map_y << "," << floor << "]";
+		g_editor.root->SetStatusText(status, 2);
+	}
+
+	{ // sector
+		status.Clear();
+		int sectorX = map_x / MAP_SECTOR_SIZE;
+		int sectorY = map_y / MAP_SECTOR_SIZE;
+		int offsetX = map_x % MAP_SECTOR_SIZE;
+		int offsetY = map_y % MAP_SECTOR_SIZE;
+		status << sectorX << "-" << sectorY << "-" << floor
+				<< ": " << offsetX << "-" << offsetY;
+		g_editor.root->SetStatusText(status, 3);
+	}
 }
 
 void MapCanvas::UpdateZoomStatus()
 {
 	int percentage = (int)((1.0 / zoom) * 100);
-	wxString ss;
-	ss << "zoom: " << percentage << "%";
-	g_editor.root->SetStatusText(ss, 3);
+	wxString status;
+	status << "zoom: " << percentage << "%";
+	g_editor.root->SetStatusText(status, 4);
 }
 
 void MapCanvas::OnMouseMove(wxMouseEvent& event)

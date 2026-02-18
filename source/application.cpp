@@ -194,8 +194,7 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
 	g_editor.aui_manager->Update();
 	g_editor.UpdateMenubar();
 
-	wxStatusBar* statusbar = CreateStatusBar();
-	statusbar->SetFieldsCount(4);
+	CreateStatusBar(5);
 	SetStatusText(wxString("Welcome to ") << __RME_APPLICATION_NAME__ << " " << __RME_VERSION__);
 }
 

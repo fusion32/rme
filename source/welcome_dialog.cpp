@@ -93,63 +93,64 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog *dialog,
           m_text_colour(base_colour.ChangeLightness(40)),
           m_background_colour(base_colour) {
 
-    auto *recent_projects_panel = newd RecentProjectsPanel(this,
-                                                   dialog,
-                                                   base_colour,
-                                                   recent_files);
-    recent_projects_panel->SetMaxSize(wxSize(size.x / 2, size.y));
-    recent_projects_panel->SetBackgroundColour(base_colour.ChangeLightness(98));
-
-    wxSize button_size = FROM_DIP(this, wxSize(150, 35));
-    wxColour button_base_colour = base_colour.ChangeLightness(90);
-
-    auto *new_project_button = newd WelcomeDialogButton(this,
-                                                    wxDefaultPosition,
-                                                    button_size,
-                                                    button_base_colour,
-                                                    "New");
-    new_project_button->SetAction(wxID_NEW);
-    new_project_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
-
-    auto *open_project_button = newd WelcomeDialogButton(this,
-                                                     wxDefaultPosition,
-                                                     button_size,
-                                                     button_base_colour,
-                                                     "Open");
-    open_project_button->SetAction(wxID_OPEN);
-    open_project_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
-
-    auto *preferences_button = newd WelcomeDialogButton(this,
-                                                        wxDefaultPosition,
-                                                        button_size,
-                                                        button_base_colour,
-                                                        "Preferences");
-    preferences_button->SetAction(wxID_PREFERENCES);
-    preferences_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
-
     Bind(wxEVT_PAINT, &WelcomeDialogPanel::OnPaint, this);
 
     wxSizer *rootSizer = newd wxBoxSizer(wxHORIZONTAL);
-    wxSizer *buttons_sizer = newd wxBoxSizer(wxVERTICAL);
-    buttons_sizer->AddSpacer(size.y / 2);
-    buttons_sizer->Add(new_project_button, 0, wxALIGN_CENTER | wxTOP, FROM_DIP(this, 10));
-    buttons_sizer->Add(open_project_button, 0, wxALIGN_CENTER | wxTOP, FROM_DIP(this, 10));
-    buttons_sizer->Add(preferences_button, 0, wxALIGN_CENTER | wxTOP, FROM_DIP(this, 10));
 
-    wxSizer *vertical_sizer = newd wxBoxSizer(wxVERTICAL);
-    wxSizer *horizontal_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	{
+		wxSizer *vertical_sizer = newd wxBoxSizer(wxVERTICAL);
 
-    m_show_welcome_dialog_checkbox = newd wxCheckBox(this, wxID_ANY, "Show this dialog on startup");
-    m_show_welcome_dialog_checkbox->SetValue(g_settings.getInteger(Config::WELCOME_DIALOG) == 1);
-    m_show_welcome_dialog_checkbox->Bind(wxEVT_CHECKBOX, &WelcomeDialog::OnCheckboxClicked, dialog);
-    m_show_welcome_dialog_checkbox->SetBackgroundColour(m_background_colour);
-    horizontal_sizer->Add(m_show_welcome_dialog_checkbox, 0, wxALIGN_BOTTOM | wxALL, FROM_DIP(this, 10));
-    vertical_sizer->Add(buttons_sizer, 1, wxEXPAND);
-    vertical_sizer->Add(horizontal_sizer, 1, wxEXPAND);
+		{
+			wxSize button_size = FROM_DIP(this, wxSize(150, 35));
+			wxColour button_base_colour = base_colour.ChangeLightness(90);
 
-    rootSizer->Add(vertical_sizer, 1, wxEXPAND);
-    rootSizer->Add(recent_projects_panel, 1, wxEXPAND);
-    SetSizer(rootSizer);
+			wxSizer *buttons_sizer = newd wxBoxSizer(wxVERTICAL);
+			buttons_sizer->AddSpacer(size.y / 2);
+
+			WelcomeDialogButton *new_project_button = newd WelcomeDialogButton(this,
+					wxDefaultPosition, button_size, button_base_colour, "New");
+			new_project_button->SetAction(wxID_NEW);
+			new_project_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
+			buttons_sizer->Add(new_project_button, 0, wxALIGN_CENTER | wxTOP, FROM_DIP(this, 10));
+
+			WelcomeDialogButton *open_project_button = newd WelcomeDialogButton(this,
+					wxDefaultPosition, button_size, button_base_colour, "Open");
+			open_project_button->SetAction(wxID_OPEN);
+			open_project_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
+			buttons_sizer->Add(open_project_button, 0, wxALIGN_CENTER | wxTOP, FROM_DIP(this, 10));
+
+
+			WelcomeDialogButton *preferences_button = newd WelcomeDialogButton(this,
+					wxDefaultPosition, button_size, button_base_colour, "Preferences");
+			preferences_button->SetAction(wxID_PREFERENCES);
+			preferences_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
+			buttons_sizer->Add(preferences_button, 0, wxALIGN_CENTER | wxTOP, FROM_DIP(this, 10));
+
+			vertical_sizer->Add(buttons_sizer, 1, wxEXPAND);
+		}
+
+		{
+			wxSizer *sizer = newd wxBoxSizer(wxHORIZONTAL);
+			m_show_welcome_dialog_checkbox = newd wxCheckBox(this, wxID_ANY, "Show this dialog on startup");
+			m_show_welcome_dialog_checkbox->SetValue(g_settings.getInteger(Config::WELCOME_DIALOG) == 1);
+			m_show_welcome_dialog_checkbox->Bind(wxEVT_CHECKBOX, &WelcomeDialog::OnCheckboxClicked, dialog);
+			m_show_welcome_dialog_checkbox->SetForegroundColour(m_text_colour);
+			m_show_welcome_dialog_checkbox->SetBackgroundColour(m_background_colour);
+			sizer->Add(m_show_welcome_dialog_checkbox, wxSizerFlags(1).Expand().Border(wxALL, FROM_DIP(this, 10)));
+			vertical_sizer->Add(sizer);
+		}
+
+		rootSizer->Add(vertical_sizer, 1, wxEXPAND);
+	}
+
+	{
+		RecentProjectsPanel *recent_projects_panel = newd RecentProjectsPanel(this, dialog, base_colour, recent_files);
+		recent_projects_panel->SetMaxSize(wxSize(size.x / 2, size.y));
+		recent_projects_panel->SetBackgroundColour(base_colour.ChangeLightness(98));
+		rootSizer->Add(recent_projects_panel, 1, wxEXPAND);
+	}
+
+    SetSizerAndFit(rootSizer);
 }
 
 void WelcomeDialogPanel::updateInputs() {

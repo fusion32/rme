@@ -208,11 +208,7 @@ void Tile::addItem(Item *item)
 	// reverse order, to allow the list to contain the most important/immediate
 	// objects in its first ~10 entries.
 
-	bool append = (stackPriority == STACK_PRIORITY_BANK
-			|| stackPriority == STACK_PRIORITY_CLIP
-			|| stackPriority == STACK_PRIORITY_BOTTOM
-			|| stackPriority == STACK_PRIORITY_TOP);
-
+	bool append = (stackPriority == STACK_PRIORITY_CLIP);
 	bool replace = (stackPriority == STACK_PRIORITY_BANK
 			|| stackPriority == STACK_PRIORITY_BOTTOM
 			|| stackPriority == STACK_PRIORITY_TOP);
