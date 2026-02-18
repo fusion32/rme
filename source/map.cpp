@@ -667,6 +667,75 @@ bool Map::saveSpawns(void){
 		}
 	}
 
+
+	struct Spawn{
+		int x, y, z;
+		int raceId;
+		int radius;
+		int amount;
+		int regen;
+	};
+
+	std::vector<Spawn> spawns;
+
+	{
+		// TODO(fusion): I wanted to have creatures/spawns separate from the tile,
+		// in such a way that this gather step wouldn't be necessary.
+		for(const auto &[sectorId, sector]: sectors){
+			for(const Tile &tile: sector.tiles){
+				Creature *creature = tile.creature;
+				if(!creature){
+					continue;
+				}
+
+				Spawn spawn = {};
+				spawn.x = tile.pos.x;
+				spawn.y = tile.pos.y;
+				spawn.z = tile.pos.z;
+				spawn.raceId = creature->raceId;
+				spawn.radius = creature->spawnRadius;
+				spawn.amount = creature->spawnAmount;
+				spawn.regen = creature->spawnInterval;
+				spawns.push_back(spawn);
+			}
+		}
+
+		std::sort(spawns.begin(), spawns.end(),
+			[](const Spawn &a, const Spawn &b){
+				int aSectorX = a.x / MAP_SECTOR_SIZE;
+				int aOffsetX = a.x % MAP_SECTOR_SIZE;
+				int bSectorX = b.x / MAP_SECTOR_SIZE;
+				int bOffsetX = b.x % MAP_SECTOR_SIZE;
+				if(aSectorX != bSectorX){
+					return aSectorX < bSectorX;
+				}
+
+				int aSectorY = a.y / MAP_SECTOR_SIZE;
+				int aOffsetY = a.y % MAP_SECTOR_SIZE;
+				int bSectorY = b.y / MAP_SECTOR_SIZE;
+				int bOffsetY = b.y % MAP_SECTOR_SIZE;
+				if(aSectorY != bSectorY){
+					return aSectorY < bSectorY;
+				}
+
+				int aSectorZ = a.z;
+				int bSectorZ = b.z;
+				if(aSectorZ != bSectorZ){
+					return aSectorZ < bSectorZ;
+				}
+
+				if(a.raceId != b.raceId){
+					return a.raceId < b.raceId;
+				}
+
+				// TODO(fusion): Some groups follow this ascending, descending,
+				// and others don't seem to follow this at all.
+				int aOffset = aOffsetY * MAP_SECTOR_SIZE + aOffsetX;
+				int bOffset = bOffsetY * MAP_SECTOR_SIZE + bOffsetX;
+				return aOffset < bOffset;
+			});
+	}
+
 	ScriptWriter script;
 	if(!script.begin(spawnsFile.mb_str())){
 		g_editor.Warning(wxString() << "Failed to open spawn file " << spawnsFile << " for writing");
@@ -682,40 +751,26 @@ bool Map::saveSpawns(void){
 	script.writeLn();
 	script.writeLn();
 
-	// TODO(fusion): I actually wanted to have creatures/spawns separate from
-	// the tile, but that may turn out to be a large endeavour. This is probably
-	// the simplest and should be "reasonably" fast.
-
-	// TODO(fusion): The output is also not sorted because we're using a hash
-	// table instead of a grid for storing sectors, which is more flexible but
-	// has this downside (?).
-
 	char line[256] = {};
-	for(const auto &[sectorId, sector]: sectors){
-		bool sectorHeader = false;
-		for(const Tile &tile: sector.tiles){
-			if(Creature *creature = tile.creature){
-				if(!sectorHeader){
-					int sectorX = sector.tiles[0].pos.x / MAP_SECTOR_SIZE;
-					int sectorY = sector.tiles[0].pos.y / MAP_SECTOR_SIZE;
-					int sectorZ = sector.tiles[0].pos.z;
-
-					snprintf(line, sizeof(line),
-							"# ====== %04d,%04d,%02d ====================",
-							sectorX, sectorY, sectorZ);
-					script.writeText(line);
-					script.writeLn();
-					sectorHeader = true;
-				}
-
-				snprintf(line, sizeof(line), "%6d %5d %5d %2d %6d %6d %6d",
-						creature->raceId, tile.pos.x, tile.pos.y, tile.pos.z,
-						creature->spawnRadius, creature->spawnAmount,
-						creature->spawnInterval);
-				script.writeText(line);
-				script.writeLn();
-			}
+	uint32_t currentSectorId = 0;
+	for(const Spawn &spawn: spawns){
+		uint32_t sectorId = GetMapSectorId(spawn.x, spawn.y, spawn.z);
+		if(sectorId != currentSectorId){
+			snprintf(line, sizeof(line),
+					"# ====== %04d,%04d,%02d ====================",
+					(spawn.x / MAP_SECTOR_SIZE),
+					(spawn.y / MAP_SECTOR_SIZE),
+					spawn.z);
+			script.writeText(line);
+			script.writeLn();
+			currentSectorId = sectorId;
 		}
+
+		snprintf(line, sizeof(line), "%6d %5d %5d %2d %6d %6d %6d",
+				spawn.raceId, spawn.x, spawn.y, spawn.z,
+				spawn.radius, spawn.amount, spawn.regen);
+		script.writeText(line);
+		script.writeLn();
 	}
 
 	script.writeText("0 # zero for end of file");
