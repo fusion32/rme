@@ -1,54 +1,42 @@
 # Convert all .png files in the current working directory to byte arrays for embedding
 # into a C++ project.
 
-import array, glob, os, os.path, re, sys
+import glob, os, re
 
 header_file = open("pngfiles.h", "wb")
 source_file = open("pngfiles.cpp", "wb")
 
-header_file.write("#ifndef __PNG_HEADER_FILE_H__\n")
-header_file.write("#define __PNG_HEADER_FILE_H__\n")
+header_file.write(b"#ifndef RME_PNGFILES_H_\n")
+header_file.write(b"#define RME_PNGFILES_H_\n")
 
-r = re.compile("^([a-zA-Z._][a-zA-Z._0-9]*)[.][pP][nN][gG]$")
-for path in glob.glob("*.png"):
+r = re.compile("^([a-zA-Z_][a-zA-Z_0-9]*)$")
+for path in sorted(glob.glob("*.png")):
+	# Only allow filenames that can be used as C variables.
 	filename = os.path.basename(path)
-	m = r.match(filename)
-	# Allow only filenames that make sense as C variable names
-	if not(m):
-		print "Skipped file (unsuitable filename): " + filename
+	basename, ext = os.path.splitext(os.path.basename(path))
+	if not r.match(basename):
+		print(f"Skipped file (unsuitable filename): {filename}")
 		continue
 
-	# Read PNG file as character array
-	bytes = array.array('B', open(path, "rb").read())
-	count = len(bytes)
+	# Load PNG file as byte array
+	data = open(path, "rb").read()
 
 	# Output to header
-	header_file.write("extern unsigned char " + m.group(1) + "_png[" + str(count) + "];\n")
-	# Create the C file
-	text = "/* " + filename + " - " + str(count) + " bytes */\nunsigned char " + m.group(1) + "_png[" + str(count) + "] = {\n"
+	header_file.write(f"extern unsigned char {basename}_png[{len(data)}];\n".encode("utf-8"))
 
-	# Iterate the characters, we want
-	# lines like:
-	#   0x01, 0x02, .... (8 values per line maximum)
-	i = 0
-	count = len(bytes)
-	for byte in bytes:
-		# Every new line starts with two whitespaces
+	# Output to source
+	tmp = []
+	tmp.append(f"/* {filename} - {len(data)} bytes */\n")
+	tmp.append(f"unsigned char {basename}_png[{len(data)}] = {{")
+	for i, b in enumerate(data):
 		if (i % 8) == 0:
-			text += "  "
-		# Then the hex data (up to 8 values per line)
-		text += "0x%02x" % (byte)
-		# Separate all but the last values
-		if (i + 1) < count:
-			text += ", "
-		if (i % 8) == 7:
-			text += '\n'
-		i += 1
+			tmp.append(f"\n  0x{b:02x},")
+		else:
+			tmp.append(f" 0x{b:02x},")
+	tmp.append("\n")
+	tmp.append("};\n")
+	source_file.write("".join(tmp).encode("utf-8"))
 
-	# Now conclude the C source
-	text += "};\n/* End Of File */\n"
-
-	source_file.write(text)
-
-header_file.write("#endif //__PNG_HEADER_FILE_H__\n")
+header_file.write(b"#endif //RME_PNGFILES_H_")
+source_file.write(b"\n")
 

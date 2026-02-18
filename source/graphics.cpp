@@ -368,7 +368,7 @@ bool GraphicManager::loadEditorSprites()
 			loadPNGFile(eraser_png)
 		);
 #if TODO
-	// TODO(fusion): Find some an appropriate brush icon?
+	// TODO(fusion): Find an appropriate brush icon?
 	sprite_space[EDITOR_SPRITE_REFRESH_TOOL] =
 		newd EditorSprite(
 			loadPNGFile(refresh_zone_small_png),
