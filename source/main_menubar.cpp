@@ -1,18 +1,18 @@
 //////////////////////////////////////////////////////////////////////
 // This file is part of Remere's Map Editor
 //////////////////////////////////////////////////////////////////////
-// Remere's Map Editor is free software: you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Remere's Map Editor is distributed in the hope that it will be useful,
+// This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
 #include "main.h"
@@ -447,16 +447,10 @@ void MainMenuBar::LoadDefault(void){
 
 bool MainMenuBar::Load(const wxString &projectDir)
 {
-	wxString filename;
-	{
-		wxPathList paths;
-		paths.Add(projectDir);
-		paths.Add(projectDir + "/editor");
-		filename = paths.FindValidPath("menubar.xml");
-		if(filename.IsEmpty()){
-			g_editor.Error("Unable to locate menubar.xml");
-			return false;
-		}
+	wxString filename = ConcatPath(projectDir, "editor", "menubar.xml");
+	if(!wxFileName::Exists(filename)){
+		g_editor.Error("Unable to locate menubar.xml");
+		return false;
 	}
 
 	// Open the XML file
@@ -1454,10 +1448,7 @@ void MainMenuBar::OnToggleFullscreen(wxCommandEvent& WXUNUSED(event))
 
 void MainMenuBar::OnTakeScreenshot(wxCommandEvent& WXUNUSED(event))
 {
-	wxString path = wxstr(g_settings.getString(Config::SCREENSHOT_DIRECTORY));
-	if(path.size() > 0 && (path.Last() == '/' || path.Last() == '\\'))
-		path = path + "/";
-
+	wxFileName path(g_settings.getString(Config::SCREENSHOT_DIRECTORY), "");
 	g_editor.mapWindow->GetCanvas()->TakeScreenshot(
 		path, wxstr(g_settings.getString(Config::SCREENSHOT_FORMAT)));
 }

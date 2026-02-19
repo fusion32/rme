@@ -1,18 +1,18 @@
 //////////////////////////////////////////////////////////////////////
 // This file is part of Remere's Map Editor
 //////////////////////////////////////////////////////////////////////
-// Remere's Map Editor is free software: you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Remere's Map Editor is distributed in the hope that it will be useful,
+// This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
 #ifndef RME_MAP_H_
@@ -89,12 +89,6 @@ struct MapSector{
 };
 
 struct Map {
-	wxString mapDir;
-	wxString saveDir;
-	wxString spawnsFile;
-	wxString housesFile;
-	wxString houseAreasFile;
-
 	int minSectorX = 0;
 	int minSectorY = 0;
 	int minSectorZ = 0;
@@ -113,15 +107,19 @@ struct Map {
 	void loadSector(SectorType type, MapSector *sector, Script *script);
 	bool loadSector(SectorType type, const wxFileName &filename);
 	bool loadPatch(SectorType type, const wxFileName &filename);
-	bool loadSpawns(const wxString &projectDir);
-	bool loadHouses(const wxString &projectDir);
+	bool loadSpawns(const wxString &filename);
+	bool loadHouseAreas(const wxString &filename);
+	bool loadHouses(const wxString &filename);
+	bool loadMeta(const wxString &filename);
 	bool load(const wxString &projectDir);
 
 	bool saveSector(const wxString &dir, const MapSector *sector);
 	bool savePatch(const wxString &dir, const MapSector *sector, int patchNumber);
-	bool saveSpawns(void);
-	bool saveHouses(void);
-	bool save(void);
+	bool saveSpawns(const wxString &filename);
+	bool saveHouseAreas(const wxString &filename);
+	bool saveHouses(const wxString &filename);
+	bool saveMeta(const wxString &filename);
+	bool save(const wxString &projectDir);
 
 	void clear(void);
 

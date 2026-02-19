@@ -1,18 +1,18 @@
 //////////////////////////////////////////////////////////////////////
 // This file is part of Remere's Map Editor
 //////////////////////////////////////////////////////////////////////
-// Remere's Map Editor is free software: you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Remere's Map Editor is distributed in the hope that it will be useful,
+// This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
 #include "main.h"
@@ -25,77 +25,20 @@
 #include <wx/zipstrm.h>
 #include <wx/wfstream.h>
 
-static wxFileName BackupFileName(const wxString &filename){
-	wxFileName fn(filename);
-	fn.SetFullName(fn.GetFullName() + wxDateTime().UNow().Format("-%Y-%m-%d-%H%M%S%l.zip"));
-	return fn;
-}
+static bool BackupFiles(const wxString &backupDir, const wxString &ident,
+			const wxString &baseDir, const wxArrayString &filenames){
+	if(!wxDir::Exists(backupDir)){
+		g_editor.Error(wxString() << "Backup directory " << backupDir << " doesn't exist");
+		return false;
+	}
 
-static wxFileName BackupDirName(const wxString &dir){
-	wxFileName fn(dir, "");
-	const wxArrayString &dirs = fn.GetDirs();
-	if(!dirs.IsEmpty()){
-		fn.SetFullName(dirs.Last() + wxDateTime().UNow().Format("-%Y-%m-%d-%H%M%S%l.zip"));
+	wxFileName outputName(backupDir, ident + wxDateTime().UNow().Format("-%Y-%m-%d-%H%M%S%l.zip"));
+	if(!ident.IsEmpty()){
+		outputName.SetFullName(ident + wxDateTime().UNow().Format("-%Y-%m-%d-%H%M%S%l.zip"));
 	}else{
-		fn.SetFullName(wxDateTime().UNow().Format("%Y-%m-%d-%H%M%S%l.zip"));
-	}
-	return fn;
-}
-
-static bool BackupFile(const wxString &filename){
-	if(!wxFileName::Exists(filename)){
-		return true;
+		outputName.SetFullName(wxDateTime().UNow().Format("%Y-%m-%d-%H%M%S%l.zip"));
 	}
 
-	wxFileName outputName = BackupFileName(filename);
-	wxTempFileOutputStream outputFile(outputName.GetFullPath());
-	if(!outputFile.IsOk()){
-		g_editor.Error(wxString() << "Failed to create backup file " << outputName.GetFullName());
-		return false;
-	}
-
-	{
-		wxZipOutputStream zip(outputFile, 9);
-		{
-			wxFileInputStream inputStream(filename);
-			if(!inputStream.IsOk()){
-				g_editor.Error(wxString() << "Failed to open file " << filename << " for reading");
-				return false;
-			}
-
-			wxString entryName = wxFileNameFromPath(filename);
-			if(!zip.PutNextEntry(entryName)){
-				g_editor.Error(wxString() << "Failed to append ZIP entry for " << entryName);
-				return false;
-			}
-
-			zip << inputStream;
-		}
-
-		if(!zip.Close()){
-			g_editor.Error(wxString() << "Failed to wrap backup file " << outputName.GetFullName());
-			return false;
-		}
-	}
-
-	if(!outputFile.Commit()){
-		g_editor.Error(wxString() << "Failed to commit backup file " << outputName.GetFullName());
-		return false;
-	}
-
-	wxRemoveFile(filename);
-	return true;
-}
-
-static bool BackupSectorsAndPatches(const wxString &dir){
-	wxArrayString filenames;
-	wxDir::GetAllFiles(dir, &filenames, "*.sec", wxDIR_FILES | wxDIR_HIDDEN);
-	wxDir::GetAllFiles(dir, &filenames, "*.pat", wxDIR_FILES | wxDIR_HIDDEN);
-	if(filenames.IsEmpty()){
-		return true;
-	}
-
-	wxFileName outputName = BackupDirName(dir);
 	wxTempFileOutputStream outputFile(outputName.GetFullPath());
 	if(!outputFile.IsOk()){
 		g_editor.Error(wxString() << "Failed to create backup file " << outputName.GetFullName());
@@ -105,15 +48,21 @@ static bool BackupSectorsAndPatches(const wxString &dir){
 	{
 		wxZipOutputStream zip(outputFile, 9);
 		for(const wxString &filename: filenames){
+			wxFileName relativeName(filename);
+			if(!relativeName.MakeRelativeTo(baseDir)){
+				g_editor.Warning(wxString() << "Backup base directory "
+						<< baseDir << " doesn't contain " << filename);
+				continue;
+			}
+
 			wxFileInputStream inputStream(filename);
 			if(!inputStream.IsOk()){
 				g_editor.Error(wxString() << "Failed to open file " << filename << " for reading");
 				return false;
 			}
 
-			wxString entryName = wxFileNameFromPath(filename);
-			if(!zip.PutNextEntry(entryName)){
-				g_editor.Error(wxString() << "Failed to append ZIP entry for " << entryName);
+			if(!zip.PutNextEntry(relativeName.GetFullPath())){
+				g_editor.Error(wxString() << "Failed to append ZIP entry for " << relativeName.GetFullPath());
 				return false;
 			}
 
@@ -131,11 +80,15 @@ static bool BackupSectorsAndPatches(const wxString &dir){
 		return false;
 	}
 
-	for(const wxString &filename: filenames){
-		wxRemoveFile(filename);
-	}
-
 	return true;
+}
+
+static void RemoveFiles(const wxArrayString &filenames){
+	for(const wxString &filename: filenames){
+		if(!wxRemoveFile(filename)){
+			g_editor.Warning(wxString() << "Unable to delete file " << filename);
+		}
+	}
 }
 
 static Item *LoadObjects(Script *script){
@@ -389,19 +342,7 @@ bool Map::loadPatch(SectorType type, const wxFileName &filename){
 	return true;
 }
 
-bool Map::loadSpawns(const wxString &projectDir){
-	wxString filename;
-	{
-		wxPathList paths;
-		paths.Add(projectDir);
-		paths.Add(projectDir + "/dat");
-		filename = paths.FindValidPath("monster.db");
-		if(filename.IsEmpty()){
-			g_editor.Error("Unable to locate monster.db");
-			return false;
-		}
-	}
-
+bool Map::loadSpawns(const wxString &filename){
 	// NOTE(fusion): A singular ZERO is used to denote the end of the file.
 	Script script(filename.mb_str());
 	while(int raceId = script.readNumber()){
@@ -430,45 +371,34 @@ bool Map::loadSpawns(const wxString &projectDir){
 		return false;
 	}
 
-	spawnsFile = std::move(filename);
 	return true;
 }
 
-bool Map::loadHouses(const wxString &projectDir){
+bool Map::loadHouseAreas(const wxString &filename){
+	// TODO
+	return false;
+}
+
+bool Map::loadHouses(const wxString &filename){
+	// TODO
+	return false;
+}
+
+bool Map::loadMeta(const wxString &filename){
+	// TODO
 	return false;
 }
 
 bool Map::load(const wxString &projectDir)
 {
-	// TODO(fusion): Not sure about creating the directory and whether we should
-	// attempt to locate some directory with .sec files in it.
-
-	{
-		wxString mapDirAttempt = projectDir + "/origmap";
-		if(!wxDir::Exists(mapDirAttempt)){
-			if(!wxDir::Make(mapDirAttempt, 0755)){
-				g_editor.Error("Unable to create new map directory");
-				return false;
-			}
-
-			g_editor.Notice(wxString() << "Created new map directory at " << mapDirAttempt);
-		}
-
-		wxString saveDirAttempt = projectDir + "/save";
-		if(!wxDir::Exists(saveDirAttempt)){
-			if(!wxDir::Make(saveDirAttempt, 0755)){
-				g_editor.Error("Unable to locate nor create save directory");
-				return false;
-			}
-
-			g_editor.Notice(wxString() << "Created new save directory at " << mapDirAttempt);
-		}
-
-		mapDir = std::move(mapDirAttempt);
-		saveDir = std::move(saveDirAttempt);
+	wxString mapDir = ConcatPath(projectDir, "origmap");
+	if(!wxDir::Exists(mapDir)){
+		g_editor.Error(wxString() << "Unable to locate map directory " << mapDir);
+		return false;
 	}
 
-	{ // NOTE(fusion): Load base map.
+	// NOTE(fusion): Load base map.
+	{
 		g_editor.SetLoadDone(0, "Discovering sector files...");
 
 		int numSectors = 0;
@@ -497,7 +427,9 @@ bool Map::load(const wxString &projectDir)
 		}
 	}
 
-	{ // NOTE(fusion): Load patches.
+	// NOTE(fusion): Load patches.
+	wxString saveDir = ConcatPath(projectDir, "save");
+	if(wxDir::Exists(saveDir)){
 		g_editor.SetLoadDone(94, "Loading patches...");
 
 		int numLoaded = 0;
@@ -529,30 +461,59 @@ bool Map::load(const wxString &projectDir)
 				numLoaded += 1;
 			}while(dir.GetNext(&filename));
 		}
+	}else{
+		g_editor.Notice("Unable to locate save directory."
+				" Existing map patches will not be loaded.");
 	}
 
 
-	{ // NOTE(fusion): Load spawns.
+	wxString datDir = ConcatPath(projectDir, "dat");
+	if(wxDir::Exists(datDir)){
+		// NOTE(fusion): Load spawns.
 		g_editor.SetLoadDone(96, "Loading spawns...");
-		if(!loadSpawns(projectDir)){
+		wxString spawnsFile = ConcatPath(datDir, "monster.db");
+		if(!wxFileName::Exists(spawnsFile)){
+			g_editor.Notice("Unable to locate spawns file");
+		}else if(!loadSpawns(spawnsFile)){
 			g_editor.Error("Unable to load spawns");
 		}
-	}
 
 #if TODO
-	{ // TODO(fusion): Load houses.
+		// TODO(fusion): Load house areas.
 		g_editor.SetLoadDone(97, "Loading house areas...");
+		wxString houseAreasFile = ConcatPath(datDir, "houseareas.dat");
+		if(!wxFileName::Exists(houseAreasFile)){
+			g_editor.Notice("Unable to locate house areas file");
+		}else if(!loadHouseAreas(houseAreasFile)){
+			g_editor.Error("Unable to load house areas");
+		}
+
+		// TODO(fusion): Load houses.
 		g_editor.SetLoadDone(98, "Loading houses...");
-	}
+		wxString housesFile = ConcatPath(datDir, "houses.dat");
+		if(!wxFileName::Exists(housesFile)){
+			g_editor.Notice("Unable to locate houses file");
+		}else if(!loadHouseAreas(housesFile)){
+			g_editor.Error("Unable to load houses");
+		}
 #endif
 
 #if TODO
-	{ // TODO(fusion): Load map.dat (find an appropriate name? maybe map meta
-	  // data, following the convention for sprite meta data). We need to load
-	  // it completely so we're able to save it with minimal changes.
+		// TODO(fusion): Load map.dat (find an appropriate name? maybe map meta
+		// data, following the convention for sprite meta data). We need to load
+		// it completely so we're able to save it with minimal changes.
 		g_editor.SetLoadDone(99, "Loading map.dat...");
-	}
+		wxString metaFile = ConcatPath(datDir, "map.dat");
+		if(!wxFileName::Exists(metaFile)){
+			g_editor.Notice("Unable to locate map.dat");
+		}else if(!loadMeta(metaFile)){
+			g_editor.Error("Unable to load map.dat");
+		}
 #endif
+	}else{
+		g_editor.Notice("Unable to locate dat directory."
+				" Spawns, houses and marks will not be loaded");
+	}
 
 	return true;
 }
@@ -650,23 +611,10 @@ bool Map::savePatch(const wxString &dir, const MapSector *sector, int patchNumbe
 	return true;
 }
 
-bool Map::saveSpawns(void){
-	if(spawnsFile.IsEmpty()){
+bool Map::saveSpawns(const wxString &filename){
+	if(filename.IsEmpty()){
 		return false;
 	}
-
-	// TODO(fusion): Probably backup the whole dat directory to reduce the number
-	// of files once we're actually modifying houses and marks?
-	if(true){ //if(g_settings.getBoolean(Config::BACKUP_SPAWNS)){
-		while(!BackupFile(spawnsFile)){
-			int ret = g_editor.PopupDialog("Backup error",
-					"There was an error while backing up spawns, do you want to retry?",
-					wxYES | wxNO | wxCANCEL);
-			if(ret == wxID_CANCEL) return false;
-			if(ret == wxID_NO)     break;
-		}
-	}
-
 
 	struct Spawn{
 		int x, y, z;
@@ -737,8 +685,8 @@ bool Map::saveSpawns(void){
 	}
 
 	ScriptWriter script;
-	if(!script.begin(spawnsFile.mb_str())){
-		g_editor.Warning(wxString() << "Failed to open spawn file " << spawnsFile << " for writing");
+	if(!script.begin(filename.mb_str())){
+		g_editor.Warning(wxString() << "Failed to open spawn file " << filename << " for writing");
 		return false;
 	}
 
@@ -778,7 +726,7 @@ bool Map::saveSpawns(void){
 
 	if(!script.end()){
 		g_editor.Warning(wxString()
-				<< "Failed to wrap spawn file " << spawnsFile
+				<< "Failed to wrap spawn file " << filename
 					<<  ", it may not have been properly stored.");
 		return false;
 	}
@@ -786,29 +734,66 @@ bool Map::saveSpawns(void){
 	return true;
 }
 
-bool Map::saveHouses(void){
-	if(housesFile.IsEmpty() || houseAreasFile.IsEmpty()){
-		return false;
-	}
-
-	// TODO(fusion): Save houses.
-
+bool Map::saveHouseAreas(const wxString &filename){
+	// TODO(fusion): Save house areas.
 	return false;
 }
 
-bool Map::save(void) // datDir, saveDir, backupDir
+bool Map::saveHouses(const wxString &filename){
+	// TODO(fusion): Save houses.
+	return false;
+}
+
+bool Map::saveMeta(const wxString &filename){
+	// TODO(fusion): Save map.dat + mem.dat ?
+	return false;
+}
+
+bool Map::save(const wxString &projectDir)
 {
-	if(saveDir.IsEmpty()){
+	if(projectDir.IsEmpty()){
 		return false;
 	}
 
-	// TODO(fusion): Probably have a way to put all relevant files into the same
-	// backup zip, including patches, spawns, houses, etc...
+	wxString datDir = ConcatPath(projectDir, "dat");
+	if(!wxDir::Exists(datDir) && !wxDir::Make(datDir, 0755, wxPATH_MKDIR_FULL)){
+		g_editor.Error("Unable to create dat directory");
+		return false;
+	}
 
-	if(true){ //if(g_settings.getBoolean(Config::BACKUP_PATCHES)){
-		while(!BackupSectorsAndPatches(saveDir)){
+	wxString saveDir = ConcatPath(projectDir, "save");
+	if(!wxDir::Exists(datDir) && !wxDir::Make(datDir, 0755, wxPATH_MKDIR_FULL)){
+		g_editor.Error("Unable to create save directory");
+		return false;
+	}
+
+	wxString spawnsFile = ConcatPath(datDir, "monster.db");
+	wxString houseAreasFile = ConcatPath(datDir, "houseareas.dat");
+	wxString housesFile = ConcatPath(datDir, "houses.dat");
+	wxString metaFile = ConcatPath(datDir, "map.dat");
+
+	if(true){ // if(g_settings.getBoolean(Config::BACKUP_ON_SAVE){
+		wxString backupDir = ConcatPath(projectDir, "backup");
+		if(!wxDir::Exists(backupDir) && !wxDir::Make(backupDir, 0755, wxPATH_MKDIR_FULL)){
+			g_editor.Error("Unable to create backup directory");
+			return false;
+		}
+
+		while(true){
+			wxArrayString filenames;
+			filenames.Add(spawnsFile);
+			filenames.Add(houseAreasFile);
+			filenames.Add(housesFile);
+			filenames.Add(metaFile);
+			wxDir::GetAllFiles(saveDir, &filenames, "*.sec", wxDIR_FILES | wxDIR_HIDDEN);
+			wxDir::GetAllFiles(saveDir, &filenames, "*.pat", wxDIR_FILES | wxDIR_HIDDEN);
+			if(BackupFiles(backupDir, "save", projectDir, filenames)){
+				RemoveFiles(filenames);
+				break;
+			}
+
 			int ret = g_editor.PopupDialog("Backup error",
-					"There was an error while backing up patches, do you want to retry?",
+					"There was an error while backing up existing data, do you want to retry?",
 					wxYES | wxNO | wxCANCEL);
 			if(ret == wxID_CANCEL) return false;
 			if(ret == wxID_NO)     break;
@@ -839,25 +824,16 @@ bool Map::save(void) // datDir, saveDir, backupDir
 		}
 	}
 
-	// TODO(fusion): Modify map.dat as well since the size of the map may have
-	// changed. We'll also want to modify it to parse and save waypoints but
-	// that's also pending.
-
-	saveSpawns();
-	//saveHouses();
-	//saveHouseAreas();
-	//saveMapMetadata(); // ??
+	saveSpawns(spawnsFile);
+	//saveHouseAreas(houseAreasFile);
+	//saveHouses(housesFile);
+	//saveMeta(metaFile);
 
 	return true;
 }
 
 void Map::clear(void)
 {
-	mapDir.Clear();
-	saveDir.Clear();
-	spawnsFile.Clear();
-	housesFile.Clear();
-	houseAreasFile.Clear();
 	minSectorX = 0;
 	minSectorY = 0;
 	minSectorZ = 0;

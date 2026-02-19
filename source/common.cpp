@@ -1,18 +1,18 @@
 //////////////////////////////////////////////////////////////////////
 // This file is part of Remere's Map Editor
 //////////////////////////////////////////////////////////////////////
-// Remere's Map Editor is free software: you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Remere's Map Editor is distributed in the hope that it will be useful,
+// This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////
 
 #include "main.h"
@@ -341,24 +341,28 @@ wxColor colorFromEightBit(int color)
 
 wxString GetExecDirectory(void)
 {
-	wxFileName dir = wxStandardPaths::Get().GetExecutablePath();
-	return dir.GetPath(wxPATH_GET_VOLUME);
-}
-
-wxString GetUserDirectory(void)
-{
-	wxFileName dir = wxStandardPaths::Get().GetUserConfigDir();
-	return dir.GetPath(wxPATH_GET_VOLUME);
+	return wxStandardPaths::Get().GetExecutablePath();
 }
 
 wxString NormalizeDir(const wxString &dir){
-	wxFileName fn = wxFileName::DirName(dir);
+	wxFileName fn(dir, "");
 	fn.Normalize(wxPATH_NORM_ENV_VARS
 				| wxPATH_NORM_DOTS
 				| wxPATH_NORM_TILDE
 				| wxPATH_NORM_ABSOLUTE
 				| wxPATH_NORM_LONG);
-	return fn.GetPath(wxPATH_GET_VOLUME);
+	return fn.GetPath();
+}
+
+wxString ConcatPath(const wxString &a, const wxString &b){
+	wxFileName fn(a, b);
+	return fn.GetFullPath();
+}
+
+wxString ConcatPath(const wxString &a, const wxString &b, const wxString &c){
+	wxFileName fn(a, c);
+	fn.AppendDir(b);
+	return fn.GetFullPath();
 }
 
 void SetWindowToolTip(wxWindow *a, const wxString &tooltip)
