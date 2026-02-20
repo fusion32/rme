@@ -634,10 +634,10 @@ void MainMenuBar::OnExportPatch(wxCommandEvent &WXUNUSED(event))
 
 	wxString defaultPath = ConcatPath(g_editor.projectDir,
 			wxDateTime().Now().Format("patch-%Y-%m-%d-%H%M%S.zip"));
-	auto dialog = std::make_unique<ExportPatchDialog>(frame, defaultPath);
-	if(dialog->ShowModal() == wxID_OK){
-		wxFileName filename = dialog->GetFileName();
-		bool       commit   = dialog->GetCommitPatch();
+	ExportPatchDialog dialog(frame, defaultPath);
+	if(dialog.ShowModal() == wxID_OK){
+		wxFileName filename = dialog.GetFileName();
+		bool       commit   = dialog.GetCommitPatch();
 		if(!g_editor.ExportPatch(filename.GetFullPath(), commit)){
 			// TODO(fusion): We could add a "retry" loop here but is it even a good idea?
 			g_editor.PopupDialog("Error", "There was an error while exporting patch.", wxOK);
@@ -651,8 +651,8 @@ void MainMenuBar::OnImportMap(wxCommandEvent& WXUNUSED(event))
 		return;
 	}
 
-	wxDialog* importmap = newd ImportMapWindow(frame);
-	importmap->ShowModal();
+	ImportMapWindow dialog(frame);
+	dialog.ShowModal();
 }
 
 void MainMenuBar::OnExportMinimap(wxCommandEvent& WXUNUSED(event))

@@ -46,7 +46,7 @@ public:
 };
 
 /**
- * The patch dialog
+ * The export patch dialog
  */
 class ExportPatchDialog: public wxDialog {
 public:
