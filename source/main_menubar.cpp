@@ -33,8 +33,6 @@
 #include "map_display.h"
 #include "map_window.h"
 
-//#include <wx/chartype.h>
-
 BEGIN_EVENT_TABLE(MainMenuBar, wxEvtHandler)
 END_EVENT_TABLE()
 
@@ -57,10 +55,11 @@ MainMenuBar::MainMenuBar(MainFrame *frame) :
 	MAKE_ACTION(SAVE_AS, wxITEM_NORMAL, OnSaveAs);
 	MAKE_ACTION(CLOSE, wxITEM_NORMAL, OnClose);
 
+	MAKE_ACTION(EXPORT_PATCH, wxITEM_NORMAL, OnExportPatch);
 	MAKE_ACTION(IMPORT_MAP, wxITEM_NORMAL, OnImportMap);
 	MAKE_ACTION(EXPORT_MINIMAP, wxITEM_NORMAL, OnExportMinimap);
 
-	MAKE_ACTION(RELOAD_DATA, wxITEM_NORMAL, OnReloadDataFiles);
+	MAKE_ACTION(RELOAD_PROJECT, wxITEM_NORMAL, OnReloadProject);
 	MAKE_ACTION(PREFERENCES, wxITEM_NORMAL, OnPreferences);
 	MAKE_ACTION(EXIT, wxITEM_NORMAL, OnQuit);
 
@@ -269,6 +268,7 @@ void MainMenuBar::Update()
 	EnableItem(MENUBAR_SAVE, loaded && dirty);
 	EnableItem(MENUBAR_SAVE_AS, loaded && dirty);
 
+	EnableItem(MENUBAR_EXPORT_PATCH, loaded);
 	EnableItem(MENUBAR_IMPORT_MAP, loaded);
 	EnableItem(MENUBAR_EXPORT_MINIMAP, loaded);
 
@@ -626,8 +626,31 @@ void MainMenuBar::OnQuit(wxCommandEvent& WXUNUSED(event))
 	g_editor.root->Close();
 }
 
+void MainMenuBar::OnExportPatch(wxCommandEvent &WXUNUSED(event))
+{
+	if(!g_editor.IsProjectOpen()){
+		return;
+	}
+
+	wxString defaultPath = ConcatPath(g_editor.projectDir,
+			wxDateTime().Now().Format("patch-%Y-%m-%d-%H%M%S.zip"));
+	auto dialog = std::make_unique<ExportPatchDialog>(frame, defaultPath);
+	if(dialog->ShowModal() == wxID_OK){
+		wxFileName filename = dialog->GetFileName();
+		bool       commit   = dialog->GetCommitPatch();
+		if(!g_editor.ExportPatch(filename.GetFullPath(), commit)){
+			// TODO(fusion): We could add a "retry" loop here but is it even a good idea?
+			g_editor.PopupDialog("Error", "There was an error while exporting patch.", wxOK);
+		}
+	}
+}
+
 void MainMenuBar::OnImportMap(wxCommandEvent& WXUNUSED(event))
 {
+	if(!g_editor.IsProjectOpen()){
+		return;
+	}
+
 	wxDialog* importmap = newd ImportMapWindow(frame);
 	importmap->ShowModal();
 }
@@ -649,9 +672,9 @@ void MainMenuBar::OnDebugViewDat(wxCommandEvent& WXUNUSED(event))
 	dlg.ShowModal();
 }
 
-void MainMenuBar::OnReloadDataFiles(wxCommandEvent& WXUNUSED(event))
+void MainMenuBar::OnReloadProject(wxCommandEvent& WXUNUSED(event))
 {
-	// TODO(fusion): Figure out what we want to do here?
+	g_editor.ReloadProject();
 }
 
 void MainMenuBar::OnGotoWebsite(wxCommandEvent& WXUNUSED(event))

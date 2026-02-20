@@ -5,9 +5,8 @@
         <item name="$Save" hotkey="Ctrl+S" action="SAVE" help="Save project."/>
         <item name="$Close" hotkey="Ctrl+Q" action="CLOSE" help="Close project."/>
         <separator/>
-        <item name="$Import Map..." action="IMPORT_MAP" help="Import map data from another map file."/>
-        <item name="$Export Minimap..." action="EXPORT_MINIMAP" help="Export minimap to an image file."/>
-        <item name="$Reload" hotkey="F5" action="RELOAD_DATA" help="Reload data files."/>
+        <item name="Export Patch..." action="EXPORT_PATCH" help="Wrap and export patch as a zip archive."/>
+        <item name="$Reload Project" action="RELOAD_PROJECT"/>
         <separator/>
         <menu name="Recent $Files" special="RECENT_FILES"/>
         <item name="$Preferences" action="PREFERENCES" help="Configure editor."/>

@@ -246,8 +246,10 @@ public:
 	bool CloseProject(void);
 	void SaveProject(void);
 	void SaveProjectAs(void);
+	bool ReloadProject(void);
 	bool IsProjectOpen(void) const;
 	bool IsProjectDirty(void) const;
+	bool ExportPatch(const wxString &filename, bool commit = false);
 
 protected:
 	bool LoadProject(wxString dir);

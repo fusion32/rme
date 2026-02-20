@@ -205,6 +205,16 @@ void Editor::SaveProjectAs(void)
 	}
 }
 
+bool Editor::ReloadProject(void)
+{
+	if(!IsProjectOpen()){
+		return false;
+	}
+
+	wxString dir = projectDir; // make a copy to avoid aliasing issues
+	return OpenProject(dir);
+}
+
 bool Editor::IsProjectOpen(void) const {
 	return !projectDir.IsEmpty();
 }
@@ -214,6 +224,15 @@ bool Editor::IsProjectDirty(void) const {
 	// limited to a number of entries. While probably unrealistic, it could be
 	// the case that real changes are pushed off by selects/deselects.
 	return actionQueue.hasChanges();
+}
+
+bool Editor::ExportPatch(const wxString &filename, bool commit /*= false*/) {
+	if(!IsProjectOpen()){
+		return false;
+	}
+
+	ScopedLoadingBar loadingBar("Exporting patch...");
+	return g_editor.map.exportPatch(projectDir, filename, commit);
 }
 
 bool Editor::LoadProject(wxString dir)
@@ -701,6 +720,7 @@ void Editor::CreateLoadBar(wxString message, bool canCancel /* = false */)
 
 	progressBar->SetSize(280, -1);
 	progressBar->Show(true);
+	progressBar->Raise();
 	progressBar->Update(0);
 }
 
@@ -712,12 +732,7 @@ void Editor::SetLoadScale(int from, int to)
 
 bool Editor::SetLoadDone(int done, const wxString& newMessage)
 {
-	if(!progressBar || done == progress){
-		return true;
-	}
-
-	if(done >= 100) {
-		DestroyLoadBar();
+	if(!progressBar){
 		return true;
 	}
 

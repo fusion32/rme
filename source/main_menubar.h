@@ -59,11 +59,11 @@ public:
 	void OnPreferences(wxCommandEvent& event);
 	void OnQuit(wxCommandEvent& event);
 
-	// Import Menu
-	// Export Menu
+	// Import/Export Menu
+	void OnExportPatch(wxCommandEvent &event);
 	void OnImportMap(wxCommandEvent& event);
 	void OnExportMinimap(wxCommandEvent& event);
-	void OnReloadDataFiles(wxCommandEvent& event);
+	void OnReloadProject(wxCommandEvent& event);
 
 	// Edit Menu
 	void OnUndo(wxCommandEvent& event);

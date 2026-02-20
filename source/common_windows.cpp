@@ -40,6 +40,93 @@
 #endif
 
 // ============================================================================
+// Export Patch Dialog
+ExportPatchDialog::ExportPatchDialog(wxWindow *parent, const wxString &defaultPath) :
+	wxDialog(parent, wxID_ANY, "Export Patch", wxDefaultPosition, wxDefaultSize)
+{
+	Bind(wxEVT_BUTTON, &ExportPatchDialog::OnClickOk, this, wxID_OK);
+	Bind(wxEVT_BUTTON, &ExportPatchDialog::OnClickCancel, this, wxID_CANCEL);
+
+	wxSizer *windowSizer = newd wxBoxSizer(wxVERTICAL);
+
+	{
+		const int textWidth = 400;
+		wxSizer *optionSizer = newd wxBoxSizer(wxVERTICAL);
+
+		optionSizer->Add(newd wxStaticText(this, wxID_ANY, "Output ZIP:"));
+		file_picker = newd wxFilePickerCtrl(this, wxID_ANY, wxEmptyString,
+				"Output ZIP", "Zip Archive (*.zip)|*.zip", wxDefaultPosition,
+				wxSize(textWidth, -1), (wxFLP_USE_TEXTCTRL | wxFLP_SAVE));
+		file_picker->SetFileName(wxFileName(defaultPath));
+		optionSizer->Add(file_picker, wxSizerFlags(0).Expand().Border(wxTOP, 3));
+
+#if TODO
+		// TODO(fusion): It seems that the "save-house" mechanic used by the
+		// server when applying patches only works for FULL PATCH sectors, so
+		// I wonder whether it is even reasonable to have such an option here
+		// since it would be by-passed with a regular PATCH.
+		//  Either way, patched house tiles will always have their items mailed
+		// to their owner beforehand.
+		save_houses = newd wxCheckBox(this, wxID_ANY, "Save Houses");
+		save_houses->SetValue(true);
+		save_houses->SetToolTip("Prevent house tiles from being patched with FULL PATCH sectors.")
+		optionSizer->Add(commit_patch, wxSizerFlags(0).Border(wxTOP, 5));
+#endif
+
+		{
+			wxSizer *commitSizer = newd wxStaticBoxSizer(wxVERTICAL, this, "Commit");
+
+			commit_patch = newd wxCheckBox(this, wxID_ANY, "Commit Patch Locally");
+			commit_patch->SetValue(false);
+			commitSizer->Add(commit_patch, wxSizerFlags(0).Expand().Border(wxLEFT | wxTOP | wxRIGHT, 5));
+
+			// TODO(fusion): How come there isn't a regular text widget that
+			// automatically wraps text?
+			wxStaticText *warn = newd wxStaticText(this, wxID_ANY,
+					"If you're planning on transferring the patch over to the server,"
+					" you should commit the patch locally as well. If you're editing"
+					" the map from within the actual server's directory you should"
+					" let the server do the patching and then reload the project.",
+					wxDefaultPosition, wxSize(textWidth, -1));
+			warn->SetForegroundColour(*wxRED);
+			warn->Wrap(warn->GetClientSize().x);
+			commitSizer->Add(warn, wxSizerFlags(0).Expand().Border(wxALL, 5));
+
+			optionSizer->Add(commitSizer, wxSizerFlags(1).Expand());
+		}
+
+
+		windowSizer->Add(optionSizer, wxSizerFlags(1).Expand().Border(wxALL, 10));
+	}
+
+	{
+		wxSizer *buttonSizer = newd wxBoxSizer(wxHORIZONTAL);
+		buttonSizer->Add(newd wxButton(this, wxID_OK, "Apply"), wxSizerFlags(0).Border(wxALL, 5));
+		buttonSizer->Add(newd wxButton(this, wxID_CANCEL, "Cancel"), wxSizerFlags(0).Border(wxALL, 5));
+		windowSizer->Add(buttonSizer, wxSizerFlags(0).Center());
+	}
+
+	SetSizerAndFit(windowSizer);
+}
+
+void ExportPatchDialog::OnClickOk(wxCommandEvent &event){
+	wxFileName filename = file_picker->GetFileName();
+	if(filename.Exists()){
+		int ret = g_editor.PopupDialog("Overwrite existing file?",
+				wxString() << "A file named \"" << filename.GetFullPath()
+						<< "\" already exists. Do you want to overwrite it?",
+				wxYES | wxNO);
+		if(ret != wxID_YES) return;
+	}
+
+	EndModal(wxID_OK);
+}
+
+void ExportPatchDialog::OnClickCancel(wxCommandEvent &event){
+	EndModal(wxID_CANCEL);
+}
+
+// ============================================================================
 // Map Import Window
 
 BEGIN_EVENT_TABLE(ImportMapWindow, wxDialog)

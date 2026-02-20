@@ -121,6 +121,11 @@ struct Map {
 	bool saveMeta(const wxString &filename);
 	bool save(const wxString &projectDir);
 
+	bool backupPatch(const wxString &projectDir, const wxFileName &outputName, bool del = false);
+	bool backupMap(const wxString &projectDir, const wxFileName &outputName, bool del = false);
+	bool exportPatch(const wxString &projectDir,
+			const wxString &filename, bool commit /*= false*/);
+
 	void clear(void);
 
 	MapSector *getSectorAt(int x, int y, int z);
@@ -184,7 +189,7 @@ struct Map {
 						int floor = rme::MapGroundLayer,
 						bool showDialog = false);
 
-	//   void f(Tile *tile, double progress)
+	// void f(Tile *tile, double progress)
 	template<typename F>
 	void forEachTile(F &&f){
 		int numProcessed = 0;
@@ -193,6 +198,7 @@ struct Map {
 			for(Tile &tile: sector.tiles){
 				double progress = (double)numProcessed / (double)numTiles;
 				f(&tile, progress);
+				numProcessed += 1;
 			}
 		}
 	}
@@ -253,7 +259,7 @@ struct Map {
 		return numCleared;
 	}
 
-	// bool predicate(const Item *item, double progress);
+	// bool predicate(Item *item, double progress);
 	template<typename Pred>
 	int removeItems(Pred &&predicate){
 		int numRemoved = 0;
@@ -263,7 +269,7 @@ struct Map {
 			for(Tile &tile: sector.tiles){
 				double progress = ((double)numProcessed / (double)numTiles);
 				numRemoved += tile.removeItems(
-					[&predicate, progress](const Item *item){
+					[&predicate, progress](Item *item){
 						return predicate(item, progress);
 					});
 				numProcessed += 1;

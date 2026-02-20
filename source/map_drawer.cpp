@@ -167,8 +167,8 @@ void MapDrawer::SetupVars()
 	start_x = view_scroll_x / rme::TileSize + (floor - start_z);
 	start_y = view_scroll_y / rme::TileSize + (floor - start_z);
 
-	end_x = start_x + screensize_x / tile_size + 1;
-	end_y = start_y + screensize_y / tile_size + 1;
+	end_x = start_x + screensize_x / tile_size + 2;
+	end_y = start_y + screensize_y / tile_size + 2;
 }
 
 void MapDrawer::SetupGL()
@@ -301,24 +301,12 @@ void MapDrawer::DrawMap()
 					}
 
 					DrawTile(tile);
+
 					if(draw_lights){
 						AddLight(tile);
 					}
-				}
 
-				if(tile_indicators){
-					for(int offsetY = 0; offsetY < MAP_SECTOR_SIZE; offsetY += 1)
-					for(int offsetX = 0; offsetX < MAP_SECTOR_SIZE; offsetX += 1){
-						Tile *tile = sector->getTile(offsetX, offsetY);
-						if(!tile || tile->empty()){
-							continue;
-						}
-
-						if(tile->pos.x < start_x || tile->pos.x > end_x
-						|| tile->pos.y < start_y || tile->pos.y > end_y){
-							continue;
-						}
-
+					if(tile_indicators){
 						DrawTileIndicators(tile);
 					}
 				}
@@ -349,14 +337,14 @@ static void DrawTileItems(const Tile *tile, F &&f, int maxItems = 10){
 	ASSERT(buffer.empty());
 
 	// TODO(fusion): I'm not sure I like this approach too much.
-	int numItems = 0;
 	const Item *item = tile->items;
-	while(item != NULL && numItems < maxItems){
+	while(item != NULL && maxItems > 0){
 		int stackPriority = item->getStackPriority();
 		do{
 			buffer.push_back(item);
 			item = item->next;
-		}while(item != NULL && numItems < maxItems
+			maxItems -= 1;
+		}while(item != NULL && maxItems > 0
 			&& item->getStackPriority() == stackPriority);
 
 		if(stackPriority == STACK_PRIORITY_CREATURE

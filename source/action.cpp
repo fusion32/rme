@@ -107,6 +107,15 @@ void Action::undo(void)
 	commited = false;
 }
 
+void Action::setDirty(void)
+{
+	for(Change &change: changes){
+		if(ChangeTile *v = std::get_if<ChangeTile>(&change)){
+			v->tile.setTileFlag(TILE_FLAG_DIRTY);
+		}
+	}
+}
+
 // Action Group
 //==============================================================================
 const char *ActionGroup::getLabel(void) const
@@ -152,6 +161,12 @@ void ActionGroup::undo()
 	}
 }
 
+void ActionGroup::setDirty(void){
+	for(Action &action: actions){
+		action.setDirty();
+	}
+}
+
 // Action Queue
 //==============================================================================
 bool ActionQueue::hasChanges(void) const
@@ -170,6 +185,13 @@ void ActionQueue::resetTimer(void)
 {
 	if(!groups.empty()){
 		groups.back().lastUsed = 0;
+	}
+}
+
+
+void ActionQueue::setDirty(void){
+	for(ActionGroup &group: groups){
+		group.setDirty();
 	}
 }
 

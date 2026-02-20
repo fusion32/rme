@@ -25,18 +25,16 @@
 #include <wx/zipstrm.h>
 #include <wx/wfstream.h>
 
-static bool BackupFiles(const wxString &backupDir, const wxString &ident,
-			const wxString &baseDir, const wxArrayString &filenames){
-	if(!wxDir::Exists(backupDir)){
-		g_editor.Error(wxString() << "Backup directory " << backupDir << " doesn't exist");
-		return false;
-	}
+static wxString BackupName(const wxString &name){
+	return wxString() << name << (name.IsEmpty() ? "" : "-")
+		<< wxDateTime().UNow().Format("%Y-%m-%d-%H%M%S%l.zip");
+}
 
-	wxFileName outputName(backupDir, ident + wxDateTime().UNow().Format("-%Y-%m-%d-%H%M%S%l.zip"));
-	if(!ident.IsEmpty()){
-		outputName.SetFullName(ident + wxDateTime().UNow().Format("-%Y-%m-%d-%H%M%S%l.zip"));
-	}else{
-		outputName.SetFullName(wxDateTime().UNow().Format("%Y-%m-%d-%H%M%S%l.zip"));
+static bool BackupFiles(const wxFileName &outputName,
+			const wxString &baseDir, const wxArrayString &filenames){
+	if(!outputName.DirExists() && !wxDir::Make(outputName.GetPath(), 0755, wxPATH_MKDIR_FULL)){
+		g_editor.Error(wxString() << "Unable to create backup directory " << outputName.GetPath());
+		return false;
 	}
 
 	wxTempFileOutputStream outputFile(outputName.GetFullPath());
@@ -54,6 +52,8 @@ static bool BackupFiles(const wxString &backupDir, const wxString &ident,
 						<< baseDir << " doesn't contain " << filename);
 				continue;
 			}
+
+			g_editor.SetLoadDone(99, wxString() << "Backing up " << relativeName.GetFullName() << "...");
 
 			wxFileInputStream inputStream(filename);
 			if(!inputStream.IsOk()){
@@ -768,41 +768,30 @@ bool Map::save(const wxString &projectDir)
 	}
 
 	wxString spawnsFile = ConcatPath(datDir, "monster.db");
-	wxString houseAreasFile = ConcatPath(datDir, "houseareas.dat");
-	wxString housesFile = ConcatPath(datDir, "houses.dat");
-	wxString metaFile = ConcatPath(datDir, "map.dat");
+	//wxString houseAreasFile = ConcatPath(datDir, "houseareas.dat");
+	//wxString housesFile = ConcatPath(datDir, "houses.dat");
+	//wxString metaFile = ConcatPath(datDir, "map.dat");
 
-	if(true){ // if(g_settings.getBoolean(Config::BACKUP_ON_SAVE){
+	// TODO(fusion): `backupPatch` will also remove stale files. We probably always
+	// want to do some kind of backup here, but we should have a setting to control
+	// whether we should write to the same backup file, or to have one for each time
+	// we save.
+	if(true){ // g_settings.getBoolean(Config::BACKUP_ON_SAVE)
 		wxString backupDir = ConcatPath(projectDir, "backup");
-		if(!wxDir::Exists(backupDir) && !wxDir::Make(backupDir, 0755, wxPATH_MKDIR_FULL)){
-			g_editor.Error("Unable to create backup directory");
+		wxFileName backupName(backupDir, BackupName("save"));
+		if(!backupPatch(projectDir, backupName, true)){
 			return false;
-		}
-
-		while(true){
-			wxArrayString filenames;
-			filenames.Add(spawnsFile);
-			filenames.Add(houseAreasFile);
-			filenames.Add(housesFile);
-			filenames.Add(metaFile);
-			wxDir::GetAllFiles(saveDir, &filenames, "*.sec", wxDIR_FILES | wxDIR_HIDDEN);
-			wxDir::GetAllFiles(saveDir, &filenames, "*.pat", wxDIR_FILES | wxDIR_HIDDEN);
-			if(BackupFiles(backupDir, "save", projectDir, filenames)){
-				RemoveFiles(filenames);
-				break;
-			}
-
-			int ret = g_editor.PopupDialog("Backup error",
-					"There was an error while backing up existing data, do you want to retry?",
-					wxYES | wxNO | wxCANCEL);
-			if(ret == wxID_CANCEL) return false;
-			if(ret == wxID_NO)     break;
 		}
 	}
 
 	int nextPatchNumber = 0;
 	int fullPatchThreshold = (MAP_SECTOR_SIZE * MAP_SECTOR_SIZE) / 2;
 	for(const auto &[sectorId, sector]: sectors){
+		g_editor.SetLoadDone(99, wxString() << "Saving sector "
+				<< (sector.tiles[0].pos.x / MAP_SECTOR_SIZE) << "-"
+				<< (sector.tiles[0].pos.y / MAP_SECTOR_SIZE) << "-"
+				<< (sector.tiles[0].pos.z) << "...");
+
 		int numDirty = 0;
 		for(const Tile &tile: sector.tiles){
 			if(tile.getTileFlag(TILE_FLAG_DIRTY)){
@@ -828,6 +817,123 @@ bool Map::save(const wxString &projectDir)
 	//saveHouseAreas(houseAreasFile);
 	//saveHouses(housesFile);
 	//saveMeta(metaFile);
+
+	return true;
+}
+
+bool Map::backupPatch(const wxString &projectDir, const wxFileName &outputName, bool del /*= false*/){
+	wxString datDir = ConcatPath(projectDir, "dat");
+	wxString saveDir = ConcatPath(projectDir, "save");
+	wxString spawnsFile = ConcatPath(datDir, "monster.db");
+	//wxString houseAreasFile = ConcatPath(datDir, "houseareas.dat");
+	//wxString housesFile = ConcatPath(datDir, "houses.dat");
+	//wxString metaFile = ConcatPath(datDir, "map.dat");
+	while(true){
+		wxArrayString filenames;
+		filenames.Add(spawnsFile);
+		//filenames.Add(houseAreasFile);
+		//filenames.Add(housesFile);
+		//filenames.Add(metaFile);
+		wxDir::GetAllFiles(saveDir, &filenames, "*.sec", wxDIR_FILES | wxDIR_HIDDEN);
+		wxDir::GetAllFiles(saveDir, &filenames, "*.pat", wxDIR_FILES | wxDIR_HIDDEN);
+		if(BackupFiles(outputName, projectDir, filenames)){
+			if(del){
+				RemoveFiles(filenames);
+			}
+			break;
+		}
+
+		int ret = g_editor.PopupDialog("Patch backup error",
+				"There was an error while backing up existing patch data, do you want to retry?",
+				wxYES | wxNO | wxCANCEL);
+		if(ret == wxID_CANCEL) return false;
+		if(ret == wxID_NO)     break;
+	}
+
+	return true;
+}
+
+bool Map::backupMap(const wxString &projectDir, const wxFileName &outputName, bool del /*= false*/){
+	wxString mapDir = ConcatPath(projectDir, "origmap");
+	while(true){
+		wxArrayString filenames;
+		wxDir::GetAllFiles(mapDir, &filenames, "*.sec", wxDIR_FILES | wxDIR_HIDDEN);
+		if(BackupFiles(outputName, projectDir, filenames)){
+			if(del){
+				RemoveFiles(filenames);
+			}
+			break;
+		}
+
+		int ret = g_editor.PopupDialog("Map backup error",
+				"There was an error while backing up existing map data, do you want to retry?",
+				wxYES | wxNO | wxCANCEL);
+		if(ret == wxID_CANCEL) return false;
+		if(ret == wxID_NO)     break;
+	}
+
+	return true;
+}
+
+bool Map::exportPatch(const wxString &projectDir,
+		const wxString &filename, bool commit /*= false*/){
+	// IMPORTANT(fusion): We want to have the latest version of the map on disk
+	// before trying to export it.
+	if(!save(projectDir)){
+		g_editor.Error("Unable to save project while exporting patch");
+		return false;
+	}
+
+	if(!backupPatch(projectDir, filename, false)){
+		g_editor.Error("Unable to export patch");
+		return false;
+	}
+
+	if(commit){
+		// TODO(fusion): Similar to note in `Map::save`.
+		if(true){ // g_settings.getBoolean(Config::BACKUP_ON_COMMIT)
+			wxString backupDir = ConcatPath(projectDir, "backup");
+			wxFileName backupName(backupDir, BackupName("origmap"));
+			backupMap(projectDir, backupName, true);
+		}
+
+		// NOTE(fusion): Save patched map.
+		wxString mapDir = ConcatPath(projectDir, "origmap");
+		for(auto &[sectorId, sector]: sectors){
+			bool empty = true;
+			for(Tile &tile: sector.tiles){
+				if(tile.items != NULL) empty = false;
+				tile.clearTileFlag(TILE_FLAG_DIRTY);
+			}
+
+			if(!empty){
+				g_editor.SetLoadDone(99, wxString() << "Saving sector "
+						<< (sector.tiles[0].pos.x / MAP_SECTOR_SIZE) << "-"
+						<< (sector.tiles[0].pos.y / MAP_SECTOR_SIZE) << "-"
+						<< (sector.tiles[0].pos.z) << "...");
+				saveSector(mapDir, &sector);
+			}
+		}
+
+		// NOTE(fusion): We cleared the DIRTY flag from all current tiles in the
+		// loop above. That means that any previous tile states should be flagged
+		// as DIRTY, otherwise there could inconsistencies when undoing previous
+		// actions.
+		//  This is different from only saving a patch, because in that case we
+		// need to track changes relative to ORIGMAP, whereas in this case, we
+		// have just BECOME ORIGMAP.
+		g_editor.actionQueue.setDirty();
+
+		// NOTE(fusion): We don't ask `backupPatch` to remove files here because
+		// it would also remove non-patch files such as spawns, houses, etc...
+		wxString saveDir = ConcatPath(projectDir, "save");
+		{
+			wxArrayString filenames;
+			wxDir::GetAllFiles(saveDir, &filenames, "*.sec", wxDIR_FILES | wxDIR_HIDDEN);
+			wxDir::GetAllFiles(saveDir, &filenames, "*.pat", wxDIR_FILES | wxDIR_HIDDEN);
+			RemoveFiles(filenames);
+		}
+	}
 
 	return true;
 }

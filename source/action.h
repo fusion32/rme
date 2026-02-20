@@ -75,6 +75,7 @@ struct Action {
 	void changeWaypoint(std::string name, Position pos);
 	void commit(void);
 	void undo(void);
+	void setDirty(void);
 };
 
 struct ActionGroup {
@@ -91,6 +92,7 @@ struct ActionGroup {
 
 	void commit(void);
 	void undo(void);
+	void setDirty(void);
 };
 
 struct ActionQueue {
@@ -103,6 +105,7 @@ struct ActionQueue {
 	bool canRedo(void) const { return cursor < groups.size(); }
 	bool hasChanges(void) const;
 	void resetTimer(void);
+	void setDirty(void);
 
 	const ActionGroup *getGroup(size_t index) const {
 		return (index < groups.size() ? &groups[index] : NULL);

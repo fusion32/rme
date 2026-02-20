@@ -186,7 +186,7 @@ void MapWindow::ScrollRelative(int x, int y)
 
 void MapWindow::FitToMap(){
 	int mapWidth = g_editor.map.getWidth() * rme::TileSize;
-	int mapHeight = g_editor.map.getWidth() * rme::TileSize;
+	int mapHeight = g_editor.map.getHeight() * rme::TileSize;
 	if(mapWidth != currentMapWidth || mapHeight != currentMapHeight){
 		currentMapWidth = mapWidth;
 		currentMapHeight = mapHeight;

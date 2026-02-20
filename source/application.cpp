@@ -95,7 +95,9 @@ bool Application::OnInit()
 		file_to_open = argv[1];
 	}
 
-	g_editor.root = newd MainFrame(__RME_APPLICATION_NAME__, wxDefaultPosition, wxSize(700, 500));
+	g_editor.root = newd MainFrame(__RME_APPLICATION_NAME__, wxDefaultPosition, wxSize(700, 600));
+	g_editor.root->SetMinSize(wxSize(700, 600));
+
 	SetTopWindow(g_editor.root);
 	g_editor.SetTitle("");
 	g_editor.LoadRecentFiles();
@@ -175,7 +177,7 @@ void Application::Unload()
 
 
 MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& size) :
-	wxFrame((wxFrame *)nullptr, -1, title, pos, size, wxDEFAULT_FRAME_STYLE)
+	wxFrame(NULL, wxID_ANY, title, pos, size, wxDEFAULT_FRAME_STYLE)
 {
 	// Receive idle events
 	SetExtraStyle(wxWS_EX_PROCESS_IDLE);

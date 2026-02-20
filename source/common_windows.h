@@ -46,6 +46,36 @@ public:
 };
 
 /**
+ * The patch dialog
+ */
+class ExportPatchDialog: public wxDialog {
+public:
+	ExportPatchDialog(wxWindow *parent, const wxString &defaultPath);
+	void OnClickOk(wxCommandEvent &event);
+	void OnClickCancel(wxCommandEvent &event);
+
+	wxFileName GetFileName(void){
+		wxFileName result;
+		if(file_picker){
+			result = file_picker->GetFileName();
+		}
+		return result;
+	}
+
+	bool GetCommitPatch(void){
+		bool result = false;
+		if(commit_patch){
+			result = commit_patch->GetValue();
+		}
+		return result;
+	}
+
+protected:
+	wxFilePickerCtrl *file_picker = NULL;
+	wxCheckBox       *commit_patch = NULL;
+};
+
+/**
  * The import map dialog
  * Allows selection of file path, offset and some weird options.
  */
